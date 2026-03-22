@@ -142,7 +142,6 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
                 {sortedOpenedCards.map((card, index) => (
                   <div key={`${card.id}-${index}`} className="space-y-2">
                     <CardPlaceholder rarity={card.rarity} size="small" name={card.name} />
-                    <div className="text-center text-xs text-gray-600">{card.rarity}</div>
                   </div>
                 ))}
               </div>

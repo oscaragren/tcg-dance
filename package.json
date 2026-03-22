@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "scrape:vote4dance": "node scripts/scrape-vote4dance-ranking.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
@@ -25,6 +26,7 @@
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.0",
+    "socket.io-client": "2.4.0",
     "typescript": "^5.0.0",
     "vite": "^5.0.0"
   }

@@ -4,13 +4,6 @@ import { cards, rarityOrder, type CardRarity } from "../../data/cards";
 
 type RarityFilter = "all" | CardRarity;
 
-const rarityLabels: Record<CardRarity, string> = {
-  legendary: "Legendary",
-  epic: "Epic",
-  rare: "Rare",
-  common: "Common",
-};
-
 export function GalleryPage() {
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
 
@@ -59,7 +52,6 @@ export function GalleryPage() {
             {visibleCards.map((card) => (
               <div key={card.id} className="space-y-2">
                 <CardPlaceholder rarity={card.rarity} size="small" name={card.name} />
-                <div className="text-center text-xs text-gray-600">{rarityLabels[card.rarity]}</div>
               </div>
             ))}
           </div>

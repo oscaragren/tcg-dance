@@ -10,13 +10,6 @@ type CollectionPageProps = {
   userEmail: string | null;
 };
 
-const rarityLabels: Record<CardRarity, string> = {
-  legendary: "Legendary",
-  epic: "Epic",
-  rare: "Rare",
-  common: "Common",
-};
-
 function getStarterCardIds() {
   const priorityOrder: CardRarity[] = ["legendary", "epic", "rare", "common"];
   const starterCards = priorityOrder.flatMap((rarity) =>
@@ -143,14 +136,9 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                 const isOwned = ownedCardIds.includes(card.id);
 
                 return (
-                <div key={card.id} className="space-y-2">
-                  <div className={isOwned ? "" : "opacity-50 grayscale"}>
+                  <div key={card.id} className={isOwned ? "" : "opacity-50 grayscale"}>
                     <CardPlaceholder rarity={card.rarity} size="small" name={card.name} />
                   </div>
-                  <div className="text-center text-xs text-gray-600">
-                    {rarityLabels[card.rarity]} {isOwned ? "• Ägd" : "• Saknas"}
-                  </div>
-                </div>
                 );
               })}
             </div>
