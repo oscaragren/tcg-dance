@@ -46,3 +46,6 @@ src/
 ## Development
 
 The project is structured to allow easy development of both the web front page and the card game, with shared components and utilities to avoid duplication.
+
+
+Ny info här...
