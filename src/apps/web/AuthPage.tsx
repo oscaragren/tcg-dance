@@ -10,8 +10,10 @@ import {
 } from "../../components/shared/ui/card";
 import { Input } from "../../components/shared/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
+import { loginUser, registerUser } from "../../utils/authApi";
+import type { AuthUser } from "../../types/auth";
 
-type AuthUser = {
+type RegisterForm = {
   username: string;
   email: string;
   password: string;
@@ -27,8 +29,9 @@ export function AuthPage({ onLogin }: AuthPageProps) {
   const initialTab = searchParams.get("tab") === "login" ? "login" : "register";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [registerForm, setRegisterForm] = useState<AuthUser>({
+  const [registerForm, setRegisterForm] = useState<RegisterForm>({
     username: "",
     email: "",
     password: "",
@@ -39,10 +42,11 @@ export function AuthPage({ onLogin }: AuthPageProps) {
     password: "",
   });
 
-  function handleRegisterSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleRegisterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError(null);
 
-    const cleanUser: AuthUser = {
+    const cleanUser: RegisterForm = {
       username: registerForm.username.trim(),
       email: registerForm.email.trim().toLowerCase(),
       password: registerForm.password,
@@ -53,33 +57,40 @@ export function AuthPage({ onLogin }: AuthPageProps) {
       return;
     }
 
-    localStorage.setItem("tcg-user", JSON.stringify(cleanUser));
-    localStorage.setItem("tcg-session", "active");
-    onLogin(cleanUser);
-    navigate("/");
+    setIsSubmitting(true);
+    try {
+      const user = await registerUser(cleanUser);
+      onLogin(user);
+      navigate("/");
+    } catch (registerError) {
+      setError(
+        registerError instanceof Error ? registerError.message : "Kunde inte registrera konto just nu.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  function handleLoginSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleLoginSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
-    const rawUser = localStorage.getItem("tcg-user");
-    if (!rawUser) {
-      setError("Ingen användare finns ännu. Registrera dig först.");
-      return;
-    }
-
-    const storedUser = JSON.parse(rawUser) as AuthUser;
     const email = loginForm.email.trim().toLowerCase();
-
-    if (storedUser.email !== email || storedUser.password !== loginForm.password) {
-      setError("Fel e-post eller lösenord.");
+    if (!email || !loginForm.password) {
+      setError("Fyll i e-post och lösenord.");
       return;
     }
 
-    localStorage.setItem("tcg-session", "active");
-    onLogin(storedUser);
-    navigate("/");
+    setIsSubmitting(true);
+    try {
+      const user = await loginUser({ email, password: loginForm.password });
+      onLogin(user);
+      navigate("/");
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Fel e-post eller lösenord.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -141,8 +152,8 @@ export function AuthPage({ onLogin }: AuthPageProps) {
                         placeholder="Minst 1 tecken"
                       />
                     </div>
-                    <Button type="submit" className="w-full">
-                      Registrera konto
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                      {isSubmitting ? "Skapar konto..." : "Registrera konto"}
                     </Button>
                   </form>
                 </TabsContent>
@@ -177,8 +188,8 @@ export function AuthPage({ onLogin }: AuthPageProps) {
                         placeholder="Ditt lösenord"
                       />
                     </div>
-                    <Button type="submit" className="w-full">
-                      Logga in
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                      {isSubmitting ? "Loggar in..." : "Logga in"}
                     </Button>
                   </form>
                 </TabsContent>
