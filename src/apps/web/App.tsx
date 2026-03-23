@@ -4,16 +4,12 @@ import { Header } from "../../components/web/Header";
 import { Hero } from "../../components/web/Hero";
 import { CollectionShowcase } from "../../components/web/CollectionShowcase";
 import { Footer } from "../../components/web/Footer";
+import { fetchCurrentUser, logoutUser } from "../../utils/authApi";
+import type { AuthUser } from "../../types/auth";
 import { GalleryPage } from "./GalleryPage";
 import { AuthPage } from "./AuthPage";
 import { CollectionPage } from "./CollectionPage";
 import { LoggedInHomePage } from "./LoggedInHomePage";
-
-export type AuthUser = {
-  username: string;
-  email: string;
-  password: string;
-};
 
 function HomePage({ currentUser }: { currentUser: AuthUser | null }) {
   if (currentUser) {
@@ -30,28 +26,38 @@ function HomePage({ currentUser }: { currentUser: AuthUser | null }) {
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
-    const rawUser = localStorage.getItem("tcg-user");
-    const sessionState = localStorage.getItem("tcg-session");
-    if (!rawUser || sessionState !== "active") {
-      return;
+    async function loadSession() {
+      try {
+        const user = await fetchCurrentUser();
+        setCurrentUser(user);
+      } catch {
+        setCurrentUser(null);
+      } finally {
+        setIsAuthLoading(false);
+      }
     }
 
-    try {
-      setCurrentUser(JSON.parse(rawUser) as AuthUser);
-    } catch {
-      localStorage.removeItem("tcg-user");
-    }
+    void loadSession();
   }, []);
 
   function handleLogin(user: AuthUser) {
     setCurrentUser(user);
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await logoutUser();
+    } catch {
+      // Keep client session consistent even if request fails.
+    }
     setCurrentUser(null);
-    localStorage.removeItem("tcg-session");
+  }
+
+  if (isAuthLoading) {
+    return <div className="min-h-screen bg-white" />;
   }
 
   return (
