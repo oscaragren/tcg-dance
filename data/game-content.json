@@ -1,0 +1,54 @@
+{
+  "packConfigs": {
+    "bronspack": {
+      "label": "Bronspack",
+      "cardCount": 10,
+      "rarityChances": {
+        "legendary": 0.03,
+        "epic": 0.12,
+        "rare": 0.3,
+        "common": 0.55
+      }
+    },
+    "silverpack": {
+      "label": "Silverpack",
+      "cardCount": 10,
+      "rarityChances": {
+        "legendary": 0.06,
+        "epic": 0.2,
+        "rare": 0.34,
+        "common": 0.4
+      }
+    },
+    "guldpack": {
+      "label": "Guldpack",
+      "cardCount": 10,
+      "rarityChances": {
+        "legendary": 0.1,
+        "epic": 0.28,
+        "rare": 0.37,
+        "common": 0.25
+      }
+    },
+    "dagspack": {
+      "label": "Dagspack",
+      "cardCount": 5,
+      "rarityChances": {
+        "legendary": 0.03,
+        "epic": 0.12,
+        "rare": 0.3,
+        "common": 0.55
+      }
+    }
+  },
+  "commonBenchCards": [
+    { "id": "bench-1", "name": "Diana", "rarity": "common" },
+    { "id": "bench-2", "name": "Hugo", "rarity": "common" },
+    { "id": "bench-3", "name": "Leo", "rarity": "common" },
+    { "id": "bench-4", "name": "Olivia", "rarity": "common" },
+    { "id": "bench-5", "name": "Quinn", "rarity": "common" },
+    { "id": "bench-6", "name": "Ulrika", "rarity": "common" },
+    { "id": "bench-7", "name": "Viktor", "rarity": "common" },
+    { "id": "bench-8", "name": "Yasmine", "rarity": "common" }
+  ]
+}
