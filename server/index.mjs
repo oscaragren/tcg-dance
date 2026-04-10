@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import jwt from "jsonwebtoken";
+import { loadGameCatalog } from "./gameCatalog.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,54 +15,44 @@ const workspaceRoot = path.resolve(__dirname, "..");
 const usersFilePath = path.join(workspaceRoot, "data", "users.json");
 const gameStateFilePath = path.join(workspaceRoot, "data", "player-state.json");
 
+const isProduction = process.env.NODE_ENV === "production";
+const defaultJwtSecret = "dev-only-secret-change-me";
+const JWT_SECRET = process.env.AUTH_JWT_SECRET ?? defaultJwtSecret;
+
+if (isProduction && JWT_SECRET === defaultJwtSecret) {
+  console.error("Set AUTH_JWT_SECRET to a strong random value when NODE_ENV=production.");
+  process.exit(1);
+}
+
+function resolveCookieSecure() {
+  if (process.env.AUTH_COOKIE_INSECURE === "1" || process.env.AUTH_COOKIE_INSECURE === "true") {
+    return false;
+  }
+  if (process.env.AUTH_COOKIE_SECURE === "1" || process.env.AUTH_COOKIE_SECURE === "true") {
+    return true;
+  }
+  return isProduction;
+}
+
+const COOKIE_SECURE = resolveCookieSecure();
+
+const corsOrigin = process.env.AUTH_CORS_ORIGIN ?? "http://localhost:5173";
+if (isProduction && !process.env.AUTH_CORS_ORIGIN) {
+  console.error("Set AUTH_CORS_ORIGIN to your frontend origin when NODE_ENV=production.");
+  process.exit(1);
+}
+
 const app = express();
 const PORT = Number(process.env.AUTH_API_PORT ?? 4000);
-const JWT_SECRET = process.env.AUTH_JWT_SECRET ?? "dev-only-secret-change-me";
 const TOKEN_COOKIE_NAME = "tcg_auth_token";
 const tokenMaxAgeMs = 1000 * 60 * 60 * 24 * 7;
 
-const cards = [
-  { id: "1", name: "Alice", rarity: "legendary" },
-  { id: "2", name: "Bob", rarity: "epic" },
-  { id: "3", name: "Charlie", rarity: "rare" },
-  { id: "4", name: "Diana", rarity: "common" },
-  { id: "5", name: "Ella", rarity: "epic" },
-  { id: "6", name: "Felix", rarity: "legendary" },
-  { id: "7", name: "Greta", rarity: "rare" },
-  { id: "8", name: "Hugo", rarity: "common" },
-  { id: "9", name: "Ida", rarity: "rare" },
-  { id: "10", name: "Johan", rarity: "epic" },
-  { id: "11", name: "Kajsa", rarity: "legendary" },
-  { id: "12", name: "Leo", rarity: "common" },
-  { id: "13", name: "Maja", rarity: "rare" },
-  { id: "14", name: "Noah", rarity: "epic" },
-  { id: "15", name: "Olivia", rarity: "common" },
-  { id: "16", name: "Pelle", rarity: "rare" },
-  { id: "17", name: "Quinn", rarity: "common" },
-  { id: "18", name: "Ruben", rarity: "epic" },
-  { id: "19", name: "Sara", rarity: "legendary" },
-  { id: "20", name: "Ture", rarity: "rare" },
-  { id: "21", name: "Ulrika", rarity: "common" },
-  { id: "22", name: "Vera", rarity: "epic" },
-  { id: "23", name: "William", rarity: "rare" },
-  { id: "24", name: "Ylva & Zack", rarity: "legendary" },
-];
-
-const packConfigs = {
-  dagspack: {
-    cardCount: 5,
-    rarityChances: {
-      legendary: 0.03,
-      epic: 0.12,
-      rare: 0.3,
-      common: 0.55,
-    },
-  },
-};
+let cards = [];
+let packConfigs = {};
 
 app.use(
   cors({
-    origin: process.env.AUTH_CORS_ORIGIN ?? "http://localhost:5173",
+    origin: corsOrigin,
     credentials: true,
   }),
 );
@@ -97,12 +88,25 @@ function drawRarity(chances) {
 
 function drawCardByRarity(rarity) {
   const pool = cards.filter((card) => card.rarity === rarity);
+  if (pool.length === 0) {
+    const commons = cards.filter((c) => c.rarity === "common");
+    if (commons.length > 0) {
+      return commons[Math.floor(Math.random() * commons.length)];
+    }
+    if (cards.length > 0) {
+      return cards[Math.floor(Math.random() * cards.length)];
+    }
+    throw new Error("Card catalog is empty.");
+  }
   const randomIndex = Math.floor(Math.random() * pool.length);
   return pool[randomIndex];
 }
 
 function openPack(packType) {
   const config = packConfigs[packType];
+  if (!config) {
+    throw new Error(`Unknown pack type: ${packType}`);
+  }
   const pulledCards = [];
 
   for (let i = 0; i < config.cardCount; i += 1) {
@@ -171,7 +175,7 @@ function setAuthCookie(response, payload) {
   response.cookie(TOKEN_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: COOKIE_SECURE,
     maxAge: tokenMaxAgeMs,
   });
 }
@@ -180,7 +184,7 @@ function clearAuthCookie(response) {
   response.clearCookie(TOKEN_COOKIE_NAME, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: COOKIE_SECURE,
   });
 }
 
@@ -249,6 +253,12 @@ app.post("/api/auth/register", async (request, response) => {
   const emailExists = users.some((user) => user.email === email);
   if (emailExists) {
     response.status(409).json({ message: "An account with that email already exists." });
+    return;
+  }
+
+  const usernameTaken = users.some((user) => user.username.toLowerCase() === username.toLowerCase());
+  if (usernameTaken) {
+    response.status(409).json({ message: "That username is already taken." });
     return;
   }
 
@@ -345,6 +355,21 @@ app.post("/api/game/claim-daily", requireAuth, async (request, response) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Auth API listening on http://localhost:${PORT}`);
+async function start() {
+  const loaded = await loadGameCatalog();
+  cards = loaded.cards;
+  packConfigs = loaded.packConfigs;
+  if (cards.length === 0) {
+    console.error("Card catalog is empty. Check data/game-content.json.");
+    process.exit(1);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Auth API listening on http://localhost:${PORT}`);
+  });
+}
+
+start().catch((error) => {
+  console.error(error);
+  process.exit(1);
 });

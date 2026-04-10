@@ -11,13 +11,9 @@ type LoggedInHomePageProps = {
   userEmail: string;
 };
 
-function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps) {
   const [openedCards, setOpenedCards] = useState<DanceCard[]>([]);
-  const [lastClaimDate, setLastClaimDate] = useState<string | null>(null);
+  const [canClaimDailyPack, setCanClaimDailyPack] = useState(false);
   const [isLoadingState, setIsLoadingState] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +23,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       try {
         const state = await fetchGameState();
         setOpenedCards(state.lastOpenedCards);
-        setLastClaimDate(state.lastClaimDate);
+        setCanClaimDailyPack(state.canClaimDailyPack);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Kunde inte ladda speldata.");
       } finally {
@@ -37,8 +33,6 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
 
     void loadState();
   }, [userEmail]);
-
-  const canClaimDailyPack = lastClaimDate !== getTodayKey();
 
   const sortedOpenedCards = useMemo(
     () =>
@@ -62,7 +56,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     try {
       const result = await claimDailyPack();
       setOpenedCards(result.pulledCards);
-      setLastClaimDate(result.state.lastClaimDate);
+      setCanClaimDailyPack(result.state.canClaimDailyPack);
     } catch (claimError) {
       setError(claimError instanceof Error ? claimError.message : "Kunde inte claima dagspack.");
     } finally {

@@ -1,4 +1,6 @@
+import gameContent from "../../data/game-content.json";
 import { cards, type CardRarity, type DanceCard } from "./cards";
+import type { GameContentJson } from "./buildCardCatalog";
 
 export type PackType = "bronspack" | "silverpack" | "guldpack" | "dagspack";
 
@@ -8,55 +10,14 @@ type PackConfig = {
   rarityChances: Record<CardRarity, number>;
 };
 
-export const packConfigs: Record<PackType, PackConfig> = {
-  bronspack: {
-    label: "Bronspack",
-    cardCount: 10,
-    rarityChances: {
-      legendary: 0.03,
-      epic: 0.12,
-      rare: 0.3,
-      common: 0.55,
-    },
-  },
-  silverpack: {
-    label: "Silverpack",
-    cardCount: 10,
-    rarityChances: {
-      legendary: 0.06,
-      epic: 0.2,
-      rare: 0.34,
-      common: 0.4,
-    },
-  },
-  guldpack: {
-    label: "Guldpack",
-    cardCount: 10,
-    rarityChances: {
-      legendary: 0.1,
-      epic: 0.28,
-      rare: 0.37,
-      common: 0.25,
-    },
-  },
-  dagspack: {
-    label: "Dagspack",
-    cardCount: 5,
-    rarityChances: {
-      legendary: 0.03,
-      epic: 0.12,
-      rare: 0.3,
-      common: 0.55,
-    },
-  },
-};
+export const packConfigs = (gameContent as GameContentJson).packConfigs as Record<PackType, PackConfig>;
 
 function drawRarity(chances: Record<CardRarity, number>): CardRarity {
   const roll = Math.random();
   let cursor = 0;
-  const rarityOrder: CardRarity[] = ["legendary", "epic", "rare", "common"];
+  const rarityOrderKeys: CardRarity[] = ["legendary", "epic", "rare", "common"];
 
-  for (const rarity of rarityOrder) {
+  for (const rarity of rarityOrderKeys) {
     cursor += chances[rarity];
     if (roll <= cursor) {
       return rarity;

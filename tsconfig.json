@@ -22,7 +22,7 @@
     /* JSX - New JSX Transform (React 17+) */
     "jsx": "react-jsx"
   },
-  "include": ["src"],
+  "include": ["src", "data/game-content.json", "data/vote4dance-ranking.json"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
 

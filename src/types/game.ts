@@ -1,4 +1,4 @@
-import type { DanceCard } from "../data/cards";
+import type { DanceCard } from "./danceCard";
 
 export type GameState = {
   ownedCardIds: string[];
