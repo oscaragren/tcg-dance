@@ -18,11 +18,11 @@ export function FeaturedCards() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-          <CardPlaceholder rarity="legendary" />
-          <CardPlaceholder rarity="epic" />
-          <CardPlaceholder rarity="rare" />
-          <CardPlaceholder rarity="epic" />
-          <CardPlaceholder rarity="legendary" />
+          <CardPlaceholder rarity="legendary" showCaption={false} />
+          <CardPlaceholder rarity="epic" showCaption={false} />
+          <CardPlaceholder rarity="rare" showCaption={false} />
+          <CardPlaceholder rarity="epic" showCaption={false} />
+          <CardPlaceholder rarity="legendary" showCaption={false} />
         </div>
 
         <div className="text-center">

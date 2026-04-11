@@ -25,51 +25,51 @@ export function CollectionShowcase() {
 
             <TabsContent value="all" className="mt-0">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <CardPlaceholder rarity="legendary" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
-                <CardPlaceholder rarity="rare" size="small" />
-                <CardPlaceholder rarity="common" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
-                <CardPlaceholder rarity="legendary" size="small" />
-                <CardPlaceholder rarity="rare" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
-                <CardPlaceholder rarity="common" size="small" />
-                <CardPlaceholder rarity="rare" size="small" />
-                <CardPlaceholder rarity="legendary" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
+                <CardPlaceholder rarity="common" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
+                <CardPlaceholder rarity="common" size="small" showCaption={false} />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
               </div>
             </TabsContent>
 
             <TabsContent value="legendary" className="mt-0">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <CardPlaceholder rarity="legendary" size="small" />
-                <CardPlaceholder rarity="legendary" size="small" />
-                <CardPlaceholder rarity="legendary" size="small" />
-                <CardPlaceholder rarity="legendary" size="small" />
-                <CardPlaceholder rarity="legendary" size="small" />
-                <CardPlaceholder rarity="legendary" size="small" />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
+                <CardPlaceholder rarity="legendary" size="small" showCaption={false} />
               </div>
             </TabsContent>
 
             <TabsContent value="epic" className="mt-0">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <CardPlaceholder rarity="epic" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
-                <CardPlaceholder rarity="epic" size="small" />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
+                <CardPlaceholder rarity="epic" size="small" showCaption={false} />
               </div>
             </TabsContent>
 
             <TabsContent value="rare" className="mt-0">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <CardPlaceholder rarity="rare" size="small" />
-                <CardPlaceholder rarity="rare" size="small" />
-                <CardPlaceholder rarity="rare" size="small" />
-                <CardPlaceholder rarity="rare" size="small" />
-                <CardPlaceholder rarity="rare" size="small" />
-                <CardPlaceholder rarity="rare" size="small" />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
+                <CardPlaceholder rarity="rare" size="small" showCaption={false} />
               </div>
             </TabsContent>
           </Tabs>

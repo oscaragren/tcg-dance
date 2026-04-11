@@ -4,6 +4,8 @@ export interface DanceCard {
   id: string;
   name: string;
   rarity: CardRarity;
+  /** Matches PNG stem under data/designs: firstname_lastname-firstname_lastname */
+  designKey?: string;
 }
 
 export const rarityOrder: Record<CardRarity, number> = {
@@ -13,11 +15,35 @@ export const rarityOrder: Record<CardRarity, number> = {
   common: 3,
 };
 
+export function cardById(id: string): DanceCard | undefined {
+  return cards.find((card) => card.id === id);
+}
+
 export const cards: DanceCard[] = [
-  { id: "1", name: "Alice", rarity: "legendary" },
-  { id: "2", name: "Bob", rarity: "epic" },
-  { id: "3", name: "Charlie", rarity: "rare" },
-  { id: "4", name: "Diana", rarity: "common" },
+  {
+    id: "1",
+    name: "Henric Stillman & Joanna Stillman",
+    rarity: "legendary",
+    designKey: "henric_stillman-joanna_stillman",
+  },
+  {
+    id: "2",
+    name: "Oscar Ågren & Sofia Ärleskog",
+    rarity: "epic",
+    designKey: "oscar_ågren-sofia_ärleskog",
+  },
+  {
+    id: "3",
+    name: "Simon Jansson & Medelene Andersson",
+    rarity: "rare",
+    designKey: "simon_jansson-medelene_andersson",
+  },
+  {
+    id: "4",
+    name: "William Johansson & Rebecka Ärlestig",
+    rarity: "common",
+    designKey: "william_johansson-rebecka_ärlestig",
+  },
   { id: "5", name: "Ella", rarity: "epic" },
   { id: "6", name: "Felix", rarity: "legendary" },
   { id: "7", name: "Greta", rarity: "rare" },
