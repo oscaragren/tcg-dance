@@ -1,0 +1,46 @@
+{
+  "22798c05-e31f-409a-a18c-d04473e5ad7f": {
+    "ownedCardIds": [
+      "1",
+      "6",
+      "2",
+      "5",
+      "3",
+      "7",
+      "4",
+      "8",
+      "20",
+      "12",
+      "23",
+      "21"
+    ],
+    "lastClaimDate": "2026-03-23",
+    "lastOpenedCards": [
+      {
+        "id": "20",
+        "name": "Ture",
+        "rarity": "rare"
+      },
+      {
+        "id": "20",
+        "name": "Ture",
+        "rarity": "rare"
+      },
+      {
+        "id": "12",
+        "name": "Leo",
+        "rarity": "common"
+      },
+      {
+        "id": "23",
+        "name": "William",
+        "rarity": "rare"
+      },
+      {
+        "id": "21",
+        "name": "Ulrika",
+        "rarity": "common"
+      }
+    ]
+  }
+}

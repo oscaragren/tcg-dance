@@ -2,9 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
+<<<<<<< HEAD
 import { rarityOrder, type DanceCard } from "../../data/cards";
 import { packConfigs } from "../../data/packs";
 import { claimDailyPack, fetchGameState } from "../../utils/gameApi";
+=======
+import { cardById, rarityOrder, type DanceCard } from "../../data/cards";
+import { openPack, packConfigs } from "../../data/packs";
+>>>>>>> dde72c5 (Added designs to cards)
 
 type LoggedInHomePageProps = {
   username: string;
@@ -134,11 +139,19 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
               <p className="text-gray-600">Du har inte öppnat något Dagspack ännu idag.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                {sortedOpenedCards.map((card, index) => (
-                  <div key={`${card.id}-${index}`} className="space-y-2">
-                    <CardPlaceholder rarity={card.rarity} size="small" name={card.name} />
-                  </div>
-                ))}
+                {sortedOpenedCards.map((card, index) => {
+                  const canonical = cardById(card.id) ?? card;
+                  return (
+                    <div key={`${card.id}-${index}`} className="space-y-2">
+                      <CardPlaceholder
+                        rarity={canonical.rarity}
+                        size="small"
+                        name={canonical.name}
+                        designKey={canonical.designKey}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>

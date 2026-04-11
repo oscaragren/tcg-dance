@@ -130,7 +130,12 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
 
                 return (
                   <div key={card.id} className={isOwned ? "" : "opacity-50 grayscale"}>
-                    <CardPlaceholder rarity={card.rarity} size="small" name={card.name} />
+                    <CardPlaceholder
+                      rarity={card.rarity}
+                      size="small"
+                      name={card.name}
+                      designKey={card.designKey}
+                    />
                   </div>
                 );
               })}
