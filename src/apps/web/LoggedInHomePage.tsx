@@ -2,14 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
-<<<<<<< HEAD
-import { rarityOrder, type DanceCard } from "../../data/cards";
-import { packConfigs } from "../../data/packs";
-import { claimDailyPack, fetchGameState } from "../../utils/gameApi";
-=======
 import { cardById, rarityOrder, type DanceCard } from "../../data/cards";
 import { openPack, packConfigs } from "../../data/packs";
->>>>>>> dde72c5 (Added designs to cards)
 
 type LoggedInHomePageProps = {
   username: string;
