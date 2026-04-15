@@ -67,6 +67,7 @@ export function buildCardCatalog(
         id: `v4d-${String(row.danceTeamId)}`,
         name: normalized.teamName,
         rarity,
+        rankingPosition: row.rankingPosition,
       });
     }
   }

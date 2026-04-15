@@ -3,22 +3,34 @@ import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
 
 type RarityFilter = "all" | CardRarity;
+type SortMode = "ranking" | "name";
 
 export function GalleryPage() {
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("ranking");
 
   const visibleCards = useMemo(() => {
     const filteredCards =
       rarityFilter === "all" ? cards : cards.filter((card) => card.rarity === rarityFilter);
 
     return [...filteredCards].sort((a, b) => {
+      if (sortMode === "name") {
+        return a.name.localeCompare(b.name, "sv");
+      }
+
+      const aRank = a.rankingPosition ?? Number.POSITIVE_INFINITY;
+      const bRank = b.rankingPosition ?? Number.POSITIVE_INFINITY;
+      if (aRank !== bRank) {
+        return aRank - bRank;
+      }
+
       const rarityDiff = rarityOrder[a.rarity] - rarityOrder[b.rarity];
       if (rarityDiff !== 0) {
         return rarityDiff;
       }
       return a.name.localeCompare(b.name, "sv");
     });
-  }, [rarityFilter]);
+  }, [rarityFilter, sortMode]);
 
   return (
     <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
@@ -32,19 +44,33 @@ export function GalleryPage() {
               </p>
             </div>
 
-            <div className="w-full md:w-72">
-              <label className="block text-sm text-gray-600 mb-2">Visa rarity</label>
-              <select
-                value={rarityFilter}
-                onChange={(event) => setRarityFilter(event.target.value as RarityFilter)}
-                className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-              >
-                <option value="all">Alla</option>
-                <option value="legendary">Legendary</option>
-                <option value="epic">Epic</option>
-                <option value="rare">Rare</option>
-                <option value="common">Common</option>
-              </select>
+            <div className="w-full md:w-80 space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Sortera</label>
+                <select
+                  value={sortMode}
+                  onChange={(event) => setSortMode(event.target.value as SortMode)}
+                  className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                >
+                  <option value="ranking">Ranking</option>
+                  <option value="name">Namn</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Visa rarity</label>
+                <select
+                  value={rarityFilter}
+                  onChange={(event) => setRarityFilter(event.target.value as RarityFilter)}
+                  className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                >
+                  <option value="all">Alla</option>
+                  <option value="legendary">Legendary</option>
+                  <option value="epic">Epic</option>
+                  <option value="rare">Rare</option>
+                  <option value="common">Common</option>
+                </select>
+              </div>
             </div>
           </div>
 
