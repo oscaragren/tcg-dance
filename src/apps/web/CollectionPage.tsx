@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
+import { fetchGameState } from "../../utils/gameApi";
 
 type RarityFilter = "all" | CardRarity;
 
@@ -10,19 +11,12 @@ type CollectionPageProps = {
   userEmail: string | null;
 };
 
-function getStarterCardIds() {
-  const priorityOrder: CardRarity[] = ["legendary", "epic", "rare", "common"];
-  const starterCards = priorityOrder.flatMap((rarity) =>
-    cards.filter((card) => card.rarity === rarity).slice(0, 2),
-  );
-
-  return starterCards.map((card) => card.id);
-}
-
 export function CollectionPage({ userEmail }: CollectionPageProps) {
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
   const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
   const [showAllCards, setShowAllCards] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userEmail) {
@@ -30,21 +24,20 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
       return;
     }
 
-    const storageKey = `tcg-owned-cards:${userEmail}`;
-    const rawOwnedCards = localStorage.getItem(storageKey);
-
-    if (rawOwnedCards) {
+    setIsLoading(true);
+    setError(null);
+    async function loadState() {
       try {
-        setOwnedCardIds(JSON.parse(rawOwnedCards) as string[]);
-        return;
-      } catch {
-        localStorage.removeItem(storageKey);
+        const state = await fetchGameState();
+        setOwnedCardIds(state.ownedCardIds);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Kunde inte ladda samlingen.");
+      } finally {
+        setIsLoading(false);
       }
     }
 
-    const starterCardIds = getStarterCardIds();
-    localStorage.setItem(storageKey, JSON.stringify(starterCardIds));
-    setOwnedCardIds(starterCardIds);
+    void loadState();
   }, [userEmail]);
 
   const visibleCards = useMemo(() => {
@@ -128,7 +121,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
 
           {visibleCards.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
-              Du har inga kort i den här kategorin ännu.
+              {isLoading ? "Laddar samling..." : "Du har inga kort i den här kategorin ännu."}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -148,6 +141,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
               })}
             </div>
           )}
+          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
         </div>
       </div>
     </main>

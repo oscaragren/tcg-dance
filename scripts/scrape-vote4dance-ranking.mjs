@@ -67,6 +67,17 @@ function tabularToObjects(tab) {
   return tab.rows.map((row) => Object.fromEntries(keys.map((k, i) => [k, row[i]])));
 }
 
+function parseTeamLabel(raw) {
+  const withoutTier = String(raw ?? "").replace(/^\s*\[[^\]]+\]\s*/, "").trim();
+  const m = /\s*\(([^)]+)\)\s*$/.exec(withoutTier);
+  if (!m) {
+    return { teamName: withoutTier, club: null };
+  }
+  const club = m[1].trim();
+  const teamName = withoutTier.slice(0, m.index).trim();
+  return { teamName, club: club || null };
+}
+
 function streamSubscribe(socket, url) {
   return new Promise((resolve, reject) => {
     socket.emit('stream', { url }, (err, payload) => {
@@ -122,10 +133,12 @@ async function main() {
     .filter((r) => medalLeagueIds.has(String(r.league_id)))
     .map((r) => {
       const tier = tierByLeagueId[String(r.league_id)] ?? 'Unknown';
+      const parsed = parseTeamLabel(r.team_name);
       return {
         tier,
         leagueId: String(r.league_id),
-        teamName: String(r.team_name ?? ''),
+        teamName: parsed.teamName,
+        club: parsed.club,
         rankingPosition: Number(r.ranking_team_position),
         rankingOrder: Number(r.ranking_team_order),
         danceTeamId: String(r.dance_team_id ?? ''),
@@ -158,7 +171,6 @@ async function main() {
         color: r.league_color,
       })),
     couples,
-    lines: couples.map((c) => `[${c.tier}] ${c.teamName}`),
   };
 
   mkdirSync(dirname(opts.out), { recursive: true });

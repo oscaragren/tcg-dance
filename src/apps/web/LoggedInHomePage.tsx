@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
@@ -10,29 +10,28 @@ type LoggedInHomePageProps = {
   userEmail: string;
 };
 
-function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps) {
-  const [openedCards, setOpenedCards] = useState<DanceCard[]>(() => {
-    const rawCards = localStorage.getItem(`tcg-last-opened:dagspack:${userEmail}`);
-    if (!rawCards) {
-      return [];
+  const [openedCards, setOpenedCards] = useState<DanceCard[]>([]);
+  const [canClaimDailyPack, setCanClaimDailyPack] = useState(false);
+  const [isLoadingState, setIsLoadingState] = useState(true);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadState() {
+      try {
+        const state = await fetchGameState();
+        setOpenedCards(state.lastOpenedCards);
+        setCanClaimDailyPack(state.canClaimDailyPack);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Kunde inte ladda speldata.");
+      } finally {
+        setIsLoadingState(false);
+      }
     }
 
-    try {
-      return JSON.parse(rawCards) as DanceCard[];
-    } catch {
-      localStorage.removeItem(`tcg-last-opened:dagspack:${userEmail}`);
-      return [];
-    }
-  });
-  const [lastClaimDate, setLastClaimDate] = useState(() =>
-    localStorage.getItem(`tcg-last-claim:dagspack:${userEmail}`),
-  );
-
-  const canClaimDailyPack = lastClaimDate !== getTodayKey();
+    void loadState();
+  }, [userEmail]);
 
   const sortedOpenedCards = useMemo(
     () =>
@@ -46,34 +45,22 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     [openedCards],
   );
 
-  function handleClaimDailyPack() {
-    if (!canClaimDailyPack) {
+  async function handleClaimDailyPack() {
+    if (!canClaimDailyPack || isClaiming) {
       return;
     }
 
-    const pulledCards = openPack("dagspack");
-    setOpenedCards(pulledCards);
-    localStorage.setItem(`tcg-last-opened:dagspack:${userEmail}`, JSON.stringify(pulledCards));
-
-    const today = getTodayKey();
-    const claimKey = `tcg-last-claim:dagspack:${userEmail}`;
-    localStorage.setItem(claimKey, today);
-    setLastClaimDate(today);
-
-    const ownedKey = `tcg-owned-cards:${userEmail}`;
-    const existingOwned = localStorage.getItem(ownedKey);
-    let ownedCardIds: string[] = [];
-
-    if (existingOwned) {
-      try {
-        ownedCardIds = JSON.parse(existingOwned) as string[];
-      } catch {
-        localStorage.removeItem(ownedKey);
-      }
+    setIsClaiming(true);
+    setError(null);
+    try {
+      const result = await claimDailyPack();
+      setOpenedCards(result.pulledCards);
+      setCanClaimDailyPack(result.state.canClaimDailyPack);
+    } catch (claimError) {
+      setError(claimError instanceof Error ? claimError.message : "Kunde inte claima dagspack.");
+    } finally {
+      setIsClaiming(false);
     }
-
-    const mergedIds = new Set([...ownedCardIds, ...pulledCards.map((card) => card.id)]);
-    localStorage.setItem(ownedKey, JSON.stringify(Array.from(mergedIds)));
   }
 
   return (
@@ -91,18 +78,25 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
               <Button
                 size="lg"
                 onClick={handleClaimDailyPack}
-                disabled={!canClaimDailyPack}
+                disabled={!canClaimDailyPack || isLoadingState || isClaiming}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
               >
-                {canClaimDailyPack ? "Claima Dagspack" : "Dagspack redan claimat idag"}
+                {isClaiming
+                  ? "Claimar..."
+                  : canClaimDailyPack
+                    ? "Claima Dagspack"
+                    : "Dagspack redan claimat idag"}
               </Button>
             </div>
 
             <div className="mt-6 text-sm text-gray-600">
-              {canClaimDailyPack
+              {isLoadingState
+                ? "Laddar din spelstatus..."
+                : canClaimDailyPack
                 ? "Du kan claima ditt gratis Dagspack nu."
                 : "Du har redan claimat ditt Dagspack idag. Kom tillbaka imorgon."}
             </div>
+            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
           </section>
 
           <section className="rounded-2xl border bg-white p-8">
