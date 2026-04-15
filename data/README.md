@@ -24,7 +24,6 @@ Only couples in the **medal leagues** shown on the site as **Guld**, **Silver**,
 | `source` | Where this snapshot came from. |
 | `leagues` | The three medal leagues for this ranking (ids, names, display order, UI colour hint). |
 | `couples` | List of couples in those leagues, sorted by tier (Guld → Silver → Brons), then ranking. |
-| `lines` | Human-readable strings: `"[Guld] First Last & First Last (CLUB)"` — same info as `couples`, easy to grep or paste. |
 
 ### `source`
 
@@ -49,7 +48,8 @@ Only couples in the **medal leagues** shown on the site as **Guld**, **Silver**,
 |--------|--------|
 | `tier` | Same as league display name: `Guld`, `Silver`, or `Brons`. |
 | `leagueId` | League this couple belongs to; matches `leagues[].leagueId`. |
-| `teamName` | Full label from Vote4Dance: `Leader & Partner (CLUB)` — club(s) in parentheses, sometimes several codes separated by `/`. |
+| `teamName` | Couple label without club suffix: `Leader & Partner`. |
+| `club` | Club code(s), extracted from Vote4Dance parentheses: `CLUB` (sometimes several separated by `/`). |
 | `rankingPosition` | Published placement within the tier (ties can share the same position). |
 | `rankingOrder` | Tie-break / list order when positions are equal. |
 | `danceTeamId` | Stable id for the couple in Vote4Dance. |

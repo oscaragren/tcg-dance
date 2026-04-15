@@ -16,7 +16,7 @@ function rarityFromRankingPosition(position) {
   if (pos <= 15) {
     return "epic";
   }
-  if (pos <= 50) {
+  if (pos <= 40) {
     return "rare";
   }
   return "common";
@@ -26,15 +26,25 @@ function buildCardCatalog(gameContent, ranking) {
   const bench = Array.isArray(gameContent.commonBenchCards) ? gameContent.commonBenchCards : [];
   const fromRanking = [];
 
+  function normalizeTeamLabel(raw) {
+    const withoutTier = String(raw ?? "").replace(/^\s*\[[^\]]+\]\s*/, "").trim();
+    const m = /\s*\(([^)]+)\)\s*$/.exec(withoutTier);
+    if (!m) return { teamName: withoutTier, club: null };
+    const club = m[1].trim();
+    const teamName = withoutTier.slice(0, m.index).trim();
+    return { teamName, club: club || null };
+  }
+
   if (ranking?.couples && Array.isArray(ranking.couples)) {
     for (const row of ranking.couples) {
       if (row.danceTeamId == null || !row.teamName) {
         continue;
       }
       const rarity = rarityFromRankingPosition(row.rankingPosition);
+      const normalized = normalizeTeamLabel(row.teamName);
       fromRanking.push({
         id: `v4d-${String(row.danceTeamId)}`,
-        name: row.teamName,
+        name: normalized.teamName,
         rarity,
       });
     }

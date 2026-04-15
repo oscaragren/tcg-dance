@@ -14,13 +14,25 @@ export type GameContentJson = {
 
 export type Vote4DanceRankingJson = {
   couples?: Array<{
+    tier?: string;
     teamName: string;
+    club?: string | null;
     danceTeamId: string;
     rankingPosition: number;
   }>;
 };
 
-/** 1–5 legendary, 6–15 epic, 16–50 rare, 51+ common (invalid / missing → common). */
+function normalizeTeamLabel(raw: string): { teamName: string; club: string | null } {
+  const withoutTier = String(raw ?? "").replace(/^\s*\[[^\]]+\]\s*/, "").trim();
+  const m = /\s*\(([^)]+)\)\s*$/.exec(withoutTier);
+  if (!m) {
+    return { teamName: withoutTier, club: null };
+  }
+  const club = m[1].trim();
+  const teamName = withoutTier.slice(0, m.index).trim();
+  return { teamName, club: club || null };
+}
+
 export function rarityFromRankingPosition(position: number): CardRarity {
   const pos = Number(position);
   if (!Number.isFinite(pos) || pos < 1) {
@@ -32,17 +44,16 @@ export function rarityFromRankingPosition(position: number): CardRarity {
   if (pos <= 15) {
     return "epic";
   }
-  if (pos <= 50) {
+  if (pos <= 40) {
     return "rare";
   }
   return "common";
 }
 
 export function buildCardCatalog(
-  gameContent: GameContentJson,
+  _gameContent: GameContentJson,
   ranking: Vote4DanceRankingJson | null | undefined,
 ): DanceCard[] {
-  const bench = Array.isArray(gameContent.commonBenchCards) ? gameContent.commonBenchCards : [];
   const fromRanking: DanceCard[] = [];
 
   if (ranking?.couples && Array.isArray(ranking.couples)) {
@@ -51,23 +62,14 @@ export function buildCardCatalog(
         continue;
       }
       const rarity = rarityFromRankingPosition(row.rankingPosition);
+      const normalized = normalizeTeamLabel(row.teamName);
       fromRanking.push({
         id: `v4d-${String(row.danceTeamId)}`,
-        name: row.teamName,
+        name: normalized.teamName,
         rarity,
       });
     }
   }
 
-  const byId = new Map<string, DanceCard>();
-  for (const card of fromRanking) {
-    byId.set(card.id, card);
-  }
-  for (const card of bench) {
-    if (!byId.has(card.id)) {
-      byId.set(card.id, card);
-    }
-  }
-
-  return Array.from(byId.values());
+  return fromRanking;
 }
