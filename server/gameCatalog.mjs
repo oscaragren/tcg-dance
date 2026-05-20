@@ -79,5 +79,10 @@ export async function loadGameCatalog() {
   }
 
   const cards = buildCardCatalog(gameContent, ranking);
-  return { cards, packConfigs: gameContent.packConfigs };
+  return {
+    cards,
+    packConfigs: gameContent.packConfigs,
+    dailyDiamonds: gameContent.dailyDiamonds ?? 150,
+    copiesPerRarity: gameContent.copiesPerRarity ?? { legendary: 3, epic: 7, rare: 15, common: 40 },
+  };
 }

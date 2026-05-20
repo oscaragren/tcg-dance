@@ -1,19 +1,15 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
+import path from "node:path";
 import bcrypt from "bcryptjs";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import jwt from "jsonwebtoken";
+import db from "./db.mjs";
 import { loadGameCatalog } from "./gameCatalog.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const workspaceRoot = path.resolve(__dirname, "..");
-const usersFilePath = path.join(workspaceRoot, "data", "users.json");
-const playerStateFilePath = path.join(workspaceRoot, "data", "player-state.json");
-const gameContentFilePath = path.join(workspaceRoot, "data", "game-content.json");
 
 const app = express();
 const PORT = Number(process.env.AUTH_API_PORT ?? 4000);
@@ -30,40 +26,55 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-async function ensureUsersFile() {
-  const directory = path.dirname(usersFilePath);
-  await fs.mkdir(directory, { recursive: true });
-  try {
-    await fs.access(usersFilePath);
-  } catch {
-    await fs.writeFile(usersFilePath, "[]", "utf8");
-  }
+// ── Pool sync ─────────────────────────────────────────────────────────────────
+// Called once at startup. Adds new cards, removes stale ones, preserves state
+// for cards already in the pool. Accounts for cards already owned so remaining
+// copies start at total − already_distributed.
+
+function syncCardPool(allCards, copiesPerRarity) {
+  const existingPool = new Map(
+    db.prepare("SELECT card_id, rarity FROM card_pool").all().map((r) => [r.card_id, r]),
+  );
+  const catalogIds = new Set(allCards.map((c) => c.id));
+
+  const stmtInsert = db.prepare(
+    "INSERT INTO card_pool (card_id, rarity, total_copies, copies_remaining) VALUES (?, ?, ?, ?)",
+  );
+  const stmtZero = db.prepare(
+    "UPDATE card_pool SET copies_remaining = 0 WHERE card_id = ?",
+  );
+  const stmtCountOwned = db.prepare(
+    "SELECT COUNT(*) as n FROM owned_cards WHERE card_id = ?",
+  );
+
+  db.transaction(() => {
+    for (const card of allCards) {
+      if (!existingPool.has(card.id)) {
+        const total = copiesPerRarity[card.rarity] ?? 10;
+        const alreadyOwned = stmtCountOwned.get(card.id).n;
+        const remaining = Math.max(0, total - alreadyOwned);
+        stmtInsert.run(card.id, card.rarity, total, remaining);
+      }
+    }
+    for (const cardId of existingPool.keys()) {
+      if (!catalogIds.has(cardId)) {
+        stmtZero.run(cardId);
+      }
+    }
+  })();
 }
 
-async function readUsers() {
-  await ensureUsersFile();
-  const raw = await fs.readFile(usersFilePath, "utf8");
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    await fs.writeFile(usersFilePath, "[]", "utf8");
-    return [];
-  }
-}
+// ── Startup: load catalog once ────────────────────────────────────────────────
 
-async function writeUsers(users) {
-  await ensureUsersFile();
-  await fs.writeFile(usersFilePath, JSON.stringify(users, null, 2), "utf8");
-}
+const { cards: allCards, packConfigs, dailyDiamonds, copiesPerRarity } = await loadGameCatalog();
+const cardById = new Map(allCards.map((c) => [c.id, c]));
+syncCardPool(allCards, copiesPerRarity);
+console.log(`Card pool ready — ${allCards.length} cards (${allCards.filter(c => c.rarity === "legendary").length} legendary, ${allCards.filter(c => c.rarity === "epic").length} epic, ${allCards.filter(c => c.rarity === "rare").length} rare, ${allCards.filter(c => c.rarity === "common").length} common).`);
+
+// ── Auth helpers ──────────────────────────────────────────────────────────────
 
 function publicUser(user) {
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    createdAt: user.createdAt,
-  };
+  return { id: user.id, username: user.username, email: user.email, createdAt: user.created_at };
 }
 
 function setAuthCookie(response, payload) {
@@ -77,11 +88,7 @@ function setAuthCookie(response, payload) {
 }
 
 function clearAuthCookie(response) {
-  response.clearCookie(TOKEN_COOKIE_NAME, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false,
-  });
+  response.clearCookie(TOKEN_COOKIE_NAME, { httpOnly: true, sameSite: "lax", secure: false });
 }
 
 function requireAuth(request, response, next) {
@@ -90,7 +97,6 @@ function requireAuth(request, response, next) {
     response.status(401).json({ message: "Not authenticated" });
     return;
   }
-
   try {
     request.auth = jwt.verify(token, JWT_SECRET);
     next();
@@ -99,6 +105,8 @@ function requireAuth(request, response, next) {
     response.status(401).json({ message: "Invalid session" });
   }
 }
+
+// ── Auth routes ───────────────────────────────────────────────────────────────
 
 app.get("/api/health", (_request, response) => {
   response.json({ ok: true });
@@ -113,60 +121,52 @@ app.post("/api/auth/register", async (request, response) => {
     response.status(400).json({ message: "Username, email, and password are required." });
     return;
   }
-
   if (password.length < 8) {
     response.status(400).json({ message: "Password must be at least 8 characters." });
     return;
   }
 
-  const users = await readUsers();
-  const emailExists = users.some((user) => user.email === email);
-  if (emailExists) {
+  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+  if (existing) {
     response.status(409).json({ message: "An account with that email already exists." });
     return;
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
   const nowIso = new Date().toISOString();
-  const user = {
-    id: crypto.randomUUID(),
-    username,
-    email,
-    passwordHash,
-    createdAt: nowIso,
-  };
+  const id = crypto.randomUUID();
 
-  users.push(user);
-  await writeUsers(users);
+  db.prepare(
+    "INSERT INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+  ).run(id, username, email, passwordHash, nowIso);
 
-  const sessionPayload = { userId: user.id, email: user.email };
-  setAuthCookie(response, sessionPayload);
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
+  setAuthCookie(response, { userId: id, email });
   response.status(201).json({ user: publicUser(user) });
 });
 
 app.post("/api/auth/login", async (request, response) => {
   const email = String(request.body?.email ?? "").trim().toLowerCase();
   const password = String(request.body?.password ?? "");
+
   if (!email || !password) {
     response.status(400).json({ message: "Email and password are required." });
     return;
   }
 
-  const users = await readUsers();
-  const user = users.find((candidate) => candidate.email === email);
+  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
   if (!user) {
     response.status(401).json({ message: "Invalid email or password." });
     return;
   }
 
-  const validPassword = await bcrypt.compare(password, user.passwordHash);
-  if (!validPassword) {
+  const valid = await bcrypt.compare(password, user.password_hash);
+  if (!valid) {
     response.status(401).json({ message: "Invalid email or password." });
     return;
   }
 
-  const sessionPayload = { userId: user.id, email: user.email };
-  setAuthCookie(response, sessionPayload);
+  setAuthCookie(response, { userId: user.id, email: user.email });
   response.json({ user: publicUser(user) });
 });
 
@@ -175,158 +175,171 @@ app.post("/api/auth/logout", (_request, response) => {
   response.status(204).send();
 });
 
-app.get("/api/auth/me", requireAuth, async (request, response) => {
-  const users = await readUsers();
-  const user = users.find((candidate) => candidate.id === request.auth.userId);
+app.get("/api/auth/me", requireAuth, (request, response) => {
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(request.auth.userId);
   if (!user) {
     clearAuthCookie(response);
     response.status(401).json({ message: "Session user no longer exists." });
     return;
   }
-
   response.json({ user: publicUser(user) });
 });
 
-// ── Game helpers ────────────────────────────────────────────────────────────
-
-async function readPlayerState() {
-  try {
-    const raw = await fs.readFile(playerStateFilePath, "utf8");
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-async function writePlayerState(state) {
-  await fs.writeFile(playerStateFilePath, JSON.stringify(state, null, 2), "utf8");
-}
-
-function getOrInitUserState(allState, userId) {
-  if (!allState[userId]) {
-    allState[userId] = {
-      ownedCardIds: [],
-      diamonds: 0,
-      lastDailyClaimDate: null,
-      lastOpenedCards: [],
-    };
-    return allState[userId];
-  }
-
-  const s = allState[userId];
-
-  // Migration: rename lastClaimDate → lastDailyClaimDate
-  if (s.lastClaimDate !== undefined && s.lastDailyClaimDate === undefined) {
-    s.lastDailyClaimDate = s.lastClaimDate;
-    delete s.lastClaimDate;
-  }
-  if (s.lastDailyClaimDate === undefined) s.lastDailyClaimDate = null;
-  if (typeof s.diamonds !== "number") s.diamonds = 0;
-  if (!Array.isArray(s.lastOpenedCards)) s.lastOpenedCards = [];
-
-  return s;
-}
+// ── Game helpers ──────────────────────────────────────────────────────────────
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function buildStateResponse(userState) {
+function ensurePlayerState(userId) {
+  const existing = db.prepare("SELECT user_id FROM player_state WHERE user_id = ?").get(userId);
+  if (!existing) {
+    db.prepare(
+      "INSERT INTO player_state (user_id, diamonds, last_daily_claim_date, last_opened_cards) VALUES (?, 0, NULL, '[]')",
+    ).run(userId);
+  }
+}
+
+function buildStateResponse(userId) {
+  ensurePlayerState(userId);
+  const state = db.prepare("SELECT * FROM player_state WHERE user_id = ?").get(userId);
+  const ownedCardIds = db
+    .prepare("SELECT card_id FROM owned_cards WHERE user_id = ?")
+    .all(userId)
+    .map((r) => r.card_id);
+
   return {
-    ownedCardIds: userState.ownedCardIds,
-    diamonds: userState.diamonds,
-    lastDailyClaimDate: userState.lastDailyClaimDate,
-    canClaimDailyDiamonds: userState.lastDailyClaimDate !== todayIso(),
-    lastOpenedCards: userState.lastOpenedCards,
+    ownedCardIds,
+    diamonds: state.diamonds,
+    lastDailyClaimDate: state.last_daily_claim_date,
+    canClaimDailyDiamonds: state.last_daily_claim_date !== todayIso(),
+    lastOpenedCards: JSON.parse(state.last_opened_cards),
   };
 }
+
+// Draw one card from the pool for the given rarity. If that rarity is exhausted,
+// cascades to the next lower rarity. Returns null if nothing remains.
+const stmtPickCard = db.prepare(
+  "SELECT card_id FROM card_pool WHERE rarity = ? AND copies_remaining > 0 ORDER BY RANDOM() LIMIT 1",
+);
+const stmtDecrementCard = db.prepare(
+  "UPDATE card_pool SET copies_remaining = copies_remaining - 1 WHERE card_id = ?",
+);
+const rarityFallback = ["legendary", "epic", "rare", "common"];
+
+const drawCardTx = db.transaction((rarity) => {
+  const startIdx = Math.max(0, rarityFallback.indexOf(rarity));
+  for (let i = startIdx; i < rarityFallback.length; i++) {
+    const row = stmtPickCard.get(rarityFallback[i]);
+    if (!row) continue;
+    stmtDecrementCard.run(row.card_id);
+    return row.card_id;
+  }
+  return null;
+});
 
 function drawRarity(chances) {
   const roll = Math.random();
   let cursor = 0;
-  for (const rarity of ["legendary", "epic", "rare", "common"]) {
+  for (const rarity of rarityFallback) {
     cursor += chances[rarity] ?? 0;
     if (roll <= cursor) return rarity;
   }
   return "common";
 }
 
-function openPackCards(packConfig, allCards) {
+function openPackCards(packConfig) {
   const pulled = [];
   for (let i = 0; i < packConfig.cardCount; i++) {
     const rarity = drawRarity(packConfig.rarityChances);
-    const pool = allCards.filter((c) => c.rarity === rarity);
-    if (pool.length === 0) continue;
-    pulled.push(pool[Math.floor(Math.random() * pool.length)]);
+    const cardId = drawCardTx(rarity);
+    if (!cardId) continue;
+    const card = cardById.get(cardId);
+    if (card) pulled.push(card);
   }
   return pulled;
 }
 
-// ── Game routes ──────────────────────────────────────────────────────────────
+// ── Game routes ───────────────────────────────────────────────────────────────
 
-app.get("/api/game/state", requireAuth, async (request, response) => {
-  const allState = await readPlayerState();
-  const userState = getOrInitUserState(allState, request.auth.userId);
-  response.json(buildStateResponse(userState));
+app.get("/api/game/state", requireAuth, (request, response) => {
+  response.json(buildStateResponse(request.auth.userId));
 });
 
-app.post("/api/game/claim-daily-diamonds", requireAuth, async (request, response) => {
-  const gameContentRaw = await fs.readFile(gameContentFilePath, "utf8");
-  const gameContent = JSON.parse(gameContentRaw);
-  const reward = typeof gameContent.dailyDiamonds === "number" ? gameContent.dailyDiamonds : 150;
+app.get("/api/game/pool", (_request, response) => {
+  const rows = db
+    .prepare("SELECT card_id, total_copies, copies_remaining FROM card_pool")
+    .all();
+  const result = {};
+  for (const row of rows) {
+    result[row.card_id] = {
+      totalCopies: row.total_copies,
+      copiesRemaining: row.copies_remaining,
+    };
+  }
+  response.json(result);
+});
 
-  const allState = await readPlayerState();
-  const userState = getOrInitUserState(allState, request.auth.userId);
+app.post("/api/game/claim-daily-diamonds", requireAuth, (request, response) => {
+  ensurePlayerState(request.auth.userId);
+  const state = db
+    .prepare("SELECT last_daily_claim_date FROM player_state WHERE user_id = ?")
+    .get(request.auth.userId);
 
-  if (userState.lastDailyClaimDate === todayIso()) {
+  if (state.last_daily_claim_date === todayIso()) {
     response.status(400).json({ message: "Dagliga diamanter redan hämtade." });
     return;
   }
 
-  userState.diamonds += reward;
-  userState.lastDailyClaimDate = todayIso();
-  allState[request.auth.userId] = userState;
-  await writePlayerState(allState);
+  db.prepare(
+    "UPDATE player_state SET diamonds = diamonds + ?, last_daily_claim_date = ? WHERE user_id = ?",
+  ).run(dailyDiamonds, todayIso(), request.auth.userId);
 
-  response.json({ diamondsAwarded: reward, state: buildStateResponse(userState) });
+  response.json({ diamondsAwarded: dailyDiamonds, state: buildStateResponse(request.auth.userId) });
 });
 
-app.post("/api/game/buy-pack", requireAuth, async (request, response) => {
+app.post("/api/game/buy-pack", requireAuth, (request, response) => {
   const packId = String(request.body?.packId ?? "").trim();
   if (!packId) {
     response.status(400).json({ message: "packId krävs." });
     return;
   }
 
-  const { cards: allCards, packConfigs } = await loadGameCatalog();
   const packConfig = packConfigs[packId];
   if (!packConfig) {
     response.status(400).json({ message: "Okänt pack." });
     return;
   }
 
-  const allState = await readPlayerState();
-  const userState = getOrInitUserState(allState, request.auth.userId);
+  ensurePlayerState(request.auth.userId);
+  const state = db
+    .prepare("SELECT diamonds FROM player_state WHERE user_id = ?")
+    .get(request.auth.userId);
 
-  if (userState.diamonds < packConfig.price) {
+  if (state.diamonds < packConfig.price) {
     response.status(400).json({ message: "Inte tillräckligt med diamanter." });
     return;
   }
 
-  userState.diamonds -= packConfig.price;
-  const pulledCards = openPackCards(packConfig, allCards);
-  for (const card of pulledCards) {
-    userState.ownedCardIds.push(card.id);
-  }
-  userState.lastOpenedCards = pulledCards;
-  allState[request.auth.userId] = userState;
-  await writePlayerState(allState);
+  const pulledCards = openPackCards(packConfig);
 
-  response.json({ pulledCards, state: buildStateResponse(userState) });
+  db.transaction(() => {
+    db.prepare(
+      "UPDATE player_state SET diamonds = diamonds - ?, last_opened_cards = ? WHERE user_id = ?",
+    ).run(packConfig.price, JSON.stringify(pulledCards), request.auth.userId);
+    const stmtInsertCard = db.prepare(
+      "INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)",
+    );
+    for (const card of pulledCards) {
+      stmtInsertCard.run(request.auth.userId, card.id);
+    }
+  })();
+
+  response.json({ pulledCards, state: buildStateResponse(request.auth.userId) });
 });
 
-// ── Server start ─────────────────────────────────────────────────────────────
+// ── Start ─────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`Auth API listening on http://localhost:${PORT}`);
+  console.log(`Server listening on http://localhost:${PORT}`);
 });

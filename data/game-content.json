@@ -1,5 +1,11 @@
 {
   "dailyDiamonds": 150,
+  "copiesPerRarity": {
+    "legendary": 3,
+    "epic": 7,
+    "rare": 15,
+    "common": 40
+  },
   "packConfigs": {
     "bronspack": {
       "label": "Bronspack",

@@ -17,3 +17,5 @@ export type BuyPackResponse = {
   pulledCards: DanceCard[];
   state: GameState;
 };
+
+export type CardPoolInfo = Record<string, { totalCopies: number; copiesRemaining: number }>;

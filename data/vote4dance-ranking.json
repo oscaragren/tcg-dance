@@ -1,5 +1,5 @@
 {
-  "scrapedAt": "2026-04-15T11:01:58.024Z",
+  "scrapedAt": "2026-05-20T20:19:29.852Z",
   "source": {
     "publicUrl": "https://vote4dance.com/public/federation/3/division/13/ranking/2",
     "apiBase": "https://api.vote4dance.com",
@@ -36,7 +36,7 @@
       "rankingPosition": 1,
       "rankingOrder": 1,
       "danceTeamId": "103",
-      "rankingScoreSum": 589.5
+      "rankingScoreSum": 627
     },
     {
       "tier": "Guld",
@@ -46,7 +46,7 @@
       "rankingPosition": 2,
       "rankingOrder": 2,
       "danceTeamId": "137",
-      "rankingScoreSum": 586.5
+      "rankingScoreSum": 621
     },
     {
       "tier": "Guld",
@@ -56,7 +56,7 @@
       "rankingPosition": 3,
       "rankingOrder": 3,
       "danceTeamId": "50",
-      "rankingScoreSum": 577.5
+      "rankingScoreSum": 609
     },
     {
       "tier": "Guld",
@@ -66,37 +66,47 @@
       "rankingPosition": 4,
       "rankingOrder": 4,
       "danceTeamId": "69",
-      "rankingScoreSum": 562.5
+      "rankingScoreSum": 595.5
     },
     {
       "tier": "Guld",
       "leagueId": "4",
-      "teamName": "Kim Malmberg & Caroline Bejstam",
-      "club": "UBSS/NSW",
+      "teamName": "Tobias Ramberg & Lena Magnusson",
+      "club": "MÄLAR",
       "rankingPosition": 5,
       "rankingOrder": 5,
-      "danceTeamId": "60",
-      "rankingScoreSum": 549
+      "danceTeamId": "165",
+      "rankingScoreSum": 586.5
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Conrad Lindström & Cajsa Weinemo",
+      "club": "BLÅA/DKB",
+      "rankingPosition": 6,
+      "rankingOrder": 6,
+      "danceTeamId": "566",
+      "rankingScoreSum": 585
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "André Sandström & Fanny Elfving",
       "club": "UDI",
-      "rankingPosition": 6,
-      "rankingOrder": 6,
+      "rankingPosition": 7,
+      "rankingOrder": 7,
       "danceTeamId": "40",
-      "rankingScoreSum": 547.5
+      "rankingScoreSum": 570
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "Oscar Ågren & Sofia Ärleskog",
       "club": "MÄLAR",
-      "rankingPosition": 7,
-      "rankingOrder": 7,
+      "rankingPosition": 8,
+      "rankingOrder": 8,
       "danceTeamId": "113",
-      "rankingScoreSum": 544.5
+      "rankingScoreSum": 568.5
     },
     {
       "tier": "Guld",
@@ -104,29 +114,9 @@
       "teamName": "Valdemar Selgeryd & Amanda Berglind",
       "club": "SSS",
       "rankingPosition": 8,
-      "rankingOrder": 8,
-      "danceTeamId": "38",
-      "rankingScoreSum": 543
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Andreas Sundbom & Viktoria Björnsson-Spets",
-      "club": "NSW",
-      "rankingPosition": 9,
       "rankingOrder": 9,
-      "danceTeamId": "41",
-      "rankingScoreSum": 541.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Robin Ziebell & Hanna Johansson",
-      "club": "BDF/DKB",
-      "rankingPosition": 10,
-      "rankingOrder": 10,
-      "danceTeamId": "77",
-      "rankingScoreSum": 511.5
+      "danceTeamId": "38",
+      "rankingScoreSum": 568.5
     },
     {
       "tier": "Guld",
@@ -134,59 +124,79 @@
       "teamName": "Fabian Rosell & Zarah Rosell",
       "club": "JDC",
       "rankingPosition": 10,
-      "rankingOrder": 11,
+      "rankingOrder": 10,
       "danceTeamId": "88",
-      "rankingScoreSum": 511.5
+      "rankingScoreSum": 564
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Andreas Sundbom & Viktoria Björnsson-Spets",
+      "club": "NSW",
+      "rankingPosition": 11,
+      "rankingOrder": 11,
+      "danceTeamId": "41",
+      "rankingScoreSum": 559.5
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Kim Malmberg & Caroline Bejstam",
+      "club": "UBSS/NSW",
+      "rankingPosition": 12,
+      "rankingOrder": 12,
+      "danceTeamId": "60",
+      "rankingScoreSum": 549
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Robin Ziebell & Hanna Johansson",
+      "club": "BDF/DKB",
+      "rankingPosition": 12,
+      "rankingOrder": 13,
+      "danceTeamId": "77",
+      "rankingScoreSum": 549
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "August Selgeryd & Malin Svensson",
+      "club": "ENA/RS",
+      "rankingPosition": 14,
+      "rankingOrder": 14,
+      "danceTeamId": "34",
+      "rankingScoreSum": 541.5
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "Joel Lundberg & Pia Andersson",
       "club": "DTC/CAN",
-      "rankingPosition": 10,
-      "rankingOrder": 12,
-      "danceTeamId": "80",
-      "rankingScoreSum": 511.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Jonas Boberg & Cajsa Weinemo",
-      "club": "MÄLAR/DKB",
-      "rankingPosition": 13,
-      "rankingOrder": 13,
-      "danceTeamId": "63",
-      "rankingScoreSum": 506.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Amanda Stenman & Lina Stenman",
-      "club": "SDK",
       "rankingPosition": 14,
-      "rankingOrder": 14,
-      "danceTeamId": "48",
-      "rankingScoreSum": 502.5
+      "rankingOrder": 15,
+      "danceTeamId": "80",
+      "rankingScoreSum": 541.5
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Ludwig Wilhelmsson & Felicia Strömstedt",
+      "club": "RS",
+      "rankingPosition": 16,
+      "rankingOrder": 16,
+      "danceTeamId": "71",
+      "rankingScoreSum": 535.5
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "Patrik Ziebell & Jessica Fältman",
       "club": "BDF/UBSS",
-      "rankingPosition": 15,
-      "rankingOrder": 15,
+      "rankingPosition": 17,
+      "rankingOrder": 17,
       "danceTeamId": "109",
-      "rankingScoreSum": 496.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Tobias Ramberg & Lena Magnusson",
-      "club": "MÄLAR",
-      "rankingPosition": 16,
-      "rankingOrder": 16,
-      "danceTeamId": "165",
-      "rankingScoreSum": 495
+      "rankingScoreSum": 534
     },
     {
       "tier": "Guld",
@@ -194,138 +204,248 @@
       "teamName": "Arvid Jönsson & Elin Löfgren",
       "club": "HVD",
       "rankingPosition": 17,
-      "rankingOrder": 17,
-      "danceTeamId": "96",
-      "rankingScoreSum": 493.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "William Persson & Cornelia Jönsson",
-      "club": "BLÅA/LBH",
-      "rankingPosition": 17,
       "rankingOrder": 18,
-      "danceTeamId": "74",
-      "rankingScoreSum": 493.5
+      "danceTeamId": "96",
+      "rankingScoreSum": 534
     },
     {
       "tier": "Guld",
       "leagueId": "4",
-      "teamName": "Mikael Svensson & Janni Söderberg",
-      "club": "DFE",
-      "rankingPosition": 17,
+      "teamName": "Amanda Stenman & Lina Stenman",
+      "club": "SDK",
+      "rankingPosition": 19,
       "rankingOrder": 19,
-      "danceTeamId": "66",
-      "rankingScoreSum": 493.5
+      "danceTeamId": "48",
+      "rankingScoreSum": 532.5
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "Viktor Sjösten & Debbie Lewinter",
       "club": "UBSS/NSW",
-      "rankingPosition": 17,
+      "rankingPosition": 20,
       "rankingOrder": 20,
       "danceTeamId": "52",
-      "rankingScoreSum": 493.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Freddy Sandberg & Hanna Nylander Strömberg",
-      "club": "BLÅA/LBH",
-      "rankingPosition": 17,
-      "rankingOrder": 21,
-      "danceTeamId": "76",
-      "rankingScoreSum": 493.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Elias Corlin & Emma Corlin",
-      "club": "MAR",
-      "rankingPosition": 17,
-      "rankingOrder": 22,
-      "danceTeamId": "151",
-      "rankingScoreSum": 493.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Simon Jansson & Madelene Andersson",
-      "club": "HVD/LBRR",
-      "rankingPosition": 23,
-      "rankingOrder": 23,
-      "danceTeamId": "1194",
-      "rankingScoreSum": 492
+      "rankingScoreSum": 531
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "Viktor Torstensson & Julia Lauri",
       "club": "NSW",
+      "rankingPosition": 20,
+      "rankingOrder": 21,
+      "danceTeamId": "55",
+      "rankingScoreSum": 531
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Mikael Svensson & Janni Söderberg",
+      "club": "DFE",
+      "rankingPosition": 20,
+      "rankingOrder": 22,
+      "danceTeamId": "66",
+      "rankingScoreSum": 531
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "William Persson & Cornelia Jönsson",
+      "club": "BLÅA/LBH",
+      "rankingPosition": 20,
+      "rankingOrder": 23,
+      "danceTeamId": "74",
+      "rankingScoreSum": 531
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Elias Corlin & Emma Corlin",
+      "club": "MAR",
       "rankingPosition": 24,
       "rankingOrder": 24,
-      "danceTeamId": "55",
-      "rankingScoreSum": 490.5
+      "danceTeamId": "151",
+      "rankingScoreSum": 528
     },
     {
       "tier": "Guld",
       "leagueId": "4",
-      "teamName": "Isak Gerre & Olivia Dahlgren",
-      "club": "ÖDF",
-      "rankingPosition": 25,
+      "teamName": "Freddy Sandberg & Hanna Nylander Strömberg",
+      "club": "BLÅA/LBH",
+      "rankingPosition": 24,
       "rankingOrder": 25,
-      "danceTeamId": "61",
-      "rankingScoreSum": 487.5
+      "danceTeamId": "76",
+      "rankingScoreSum": 528
     },
     {
       "tier": "Guld",
       "leagueId": "4",
-      "teamName": "Andreas Ivarsson & Eleonor Lundby",
-      "club": "DFE",
-      "rankingPosition": 25,
+      "teamName": "John Engström & Gabriella Claeson",
+      "club": "CAN",
+      "rankingPosition": 26,
       "rankingOrder": 26,
-      "danceTeamId": "36",
-      "rankingScoreSum": 487.5
+      "danceTeamId": "110",
+      "rankingScoreSum": 525
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Simon Jansson & Madelene Andersson",
+      "club": "HVD/LBRR",
+      "rankingPosition": 26,
+      "rankingOrder": 27,
+      "danceTeamId": "1194",
+      "rankingScoreSum": 525
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "Fredrik Frenning & Anna Engstrand",
       "club": "MAR",
-      "rankingPosition": 25,
-      "rankingOrder": 27,
+      "rankingPosition": 26,
+      "rankingOrder": 28,
       "danceTeamId": "156",
-      "rankingScoreSum": 487.5
+      "rankingScoreSum": 525
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "Rasmus Liljekrans & Rebecka Liljekrans",
       "club": "RS",
-      "rankingPosition": 25,
-      "rankingOrder": 28,
+      "rankingPosition": 26,
+      "rankingOrder": 29,
       "danceTeamId": "166",
-      "rankingScoreSum": 487.5
+      "rankingScoreSum": 525
     },
     {
       "tier": "Guld",
       "leagueId": "4",
-      "teamName": "Daniel Johansson & Sofia Lundberg",
-      "club": "JSDK/RS",
-      "rankingPosition": 25,
-      "rankingOrder": 29,
-      "danceTeamId": "632",
-      "rankingScoreSum": 487.5
+      "teamName": "Andreas Ivarsson & Eleonor Lundby",
+      "club": "DFE",
+      "rankingPosition": 26,
+      "rankingOrder": 30,
+      "danceTeamId": "36",
+      "rankingScoreSum": 525
     },
     {
       "tier": "Guld",
       "leagueId": "4",
       "teamName": "Marcus Bergqvist & Hanna Markusson",
       "club": "GRRC",
-      "rankingPosition": 25,
-      "rankingOrder": 30,
+      "rankingPosition": 26,
+      "rankingOrder": 31,
       "danceTeamId": "39",
+      "rankingScoreSum": 525
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Isak Gerre & Olivia Dahlgren",
+      "club": "ÖDF",
+      "rankingPosition": 26,
+      "rankingOrder": 32,
+      "danceTeamId": "61",
+      "rankingScoreSum": 525
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Daniel Johansson & Sofia Lundberg",
+      "club": "JSDK/RS",
+      "rankingPosition": 26,
+      "rankingOrder": 33,
+      "danceTeamId": "632",
+      "rankingScoreSum": 525
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "David Eriksson & Linnea Holm",
+      "club": "LBRR/NSW",
+      "rankingPosition": 34,
+      "rankingOrder": 34,
+      "danceTeamId": "561",
+      "rankingScoreSum": 519
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Felix Albrecht & Lisa Grönblad",
+      "club": "GÅS",
+      "rankingPosition": 35,
+      "rankingOrder": 35,
+      "danceTeamId": "78",
+      "rankingScoreSum": 512.5
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Robert Svensson & Sara Wilsborn",
+      "club": "HVD",
+      "rankingPosition": 36,
+      "rankingOrder": 36,
+      "danceTeamId": "1190",
+      "rankingScoreSum": 498
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "David Wahlström & Julia Andersson",
+      "club": "DFE",
+      "rankingPosition": 37,
+      "rankingOrder": 37,
+      "danceTeamId": "716",
+      "rankingScoreSum": 493.5
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Alma Forsberg & Maja Forsberg",
+      "club": "SOG",
+      "rankingPosition": 38,
+      "rankingOrder": 38,
+      "danceTeamId": "10",
+      "rankingScoreSum": 492.75
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Andreas Johansson & Hannah Nilsson",
+      "club": "LSDK/LDT",
+      "rankingPosition": 39,
+      "rankingOrder": 39,
+      "danceTeamId": "718",
+      "rankingScoreSum": 490.5
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Alexander Gustafsson & Caroline Almgren",
+      "club": "CAN",
+      "rankingPosition": 39,
+      "rankingOrder": 40,
+      "danceTeamId": "728",
+      "rankingScoreSum": 490.5
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Filip Söderqvist & Sofie Bewernick",
+      "club": "DZV",
+      "rankingPosition": 41,
+      "rankingOrder": 41,
+      "danceTeamId": "122",
+      "rankingScoreSum": 488.8
+    },
+    {
+      "tier": "Guld",
+      "leagueId": "4",
+      "teamName": "Gustav Lundberg & Emelie Fasth",
+      "club": "DFE",
+      "rankingPosition": 42,
+      "rankingOrder": 42,
+      "danceTeamId": "1223",
       "rankingScoreSum": 487.5
     },
     {
@@ -333,179 +453,129 @@
       "leagueId": "4",
       "teamName": "Joakim Borg & Lotta Gunnarsson",
       "club": "MÄLAR",
-      "rankingPosition": 25,
-      "rankingOrder": 31,
+      "rankingPosition": 42,
+      "rankingOrder": 43,
       "danceTeamId": "154",
       "rankingScoreSum": 487.5
     },
     {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Conrad Lindström & Cajsa Weinemo",
-      "club": "BLÅA/DKB",
-      "rankingPosition": 32,
-      "rankingOrder": 32,
-      "danceTeamId": "566",
-      "rankingScoreSum": 481
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "David Eriksson & Linnea Holm",
-      "club": "LBRR/NSW",
-      "rankingPosition": 33,
-      "rankingOrder": 33,
-      "danceTeamId": "561",
-      "rankingScoreSum": 478.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Pierre Hagström & Linn Kjerrgren Edlund",
-      "club": "RR/MÄLAR",
-      "rankingPosition": 34,
-      "rankingOrder": 34,
-      "danceTeamId": "631",
-      "rankingScoreSum": 472.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "John Engström & Gabriella Claeson",
-      "club": "CAN",
-      "rankingPosition": 35,
-      "rankingOrder": 35,
-      "danceTeamId": "110",
-      "rankingScoreSum": 468.8
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Ludwig Wilhelmsson & Felicia Strömstedt",
-      "club": "RS",
-      "rankingPosition": 36,
-      "rankingOrder": 36,
-      "danceTeamId": "71",
-      "rankingScoreSum": 461
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Robert Svensson & Sara Wilsborn",
-      "club": "HVD",
-      "rankingPosition": 37,
-      "rankingOrder": 37,
-      "danceTeamId": "1190",
-      "rankingScoreSum": 457.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "August Selgeryd & Malin Svensson",
-      "club": "ENA/RS",
-      "rankingPosition": 38,
-      "rankingOrder": 38,
-      "danceTeamId": "34",
-      "rankingScoreSum": 456
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "David Wahlström & Julia Andersson",
-      "club": "DFE",
-      "rankingPosition": 38,
-      "rankingOrder": 39,
-      "danceTeamId": "716",
-      "rankingScoreSum": 456
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Linus Ellström & Sanna Belmén",
-      "club": "RS",
-      "rankingPosition": 38,
-      "rankingOrder": 40,
-      "danceTeamId": "86",
-      "rankingScoreSum": 456
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Hugo Hardestam & Lisa Lundström",
-      "club": "UBSS/NSW",
-      "rankingPosition": 41,
-      "rankingOrder": 41,
-      "danceTeamId": "56",
-      "rankingScoreSum": 455
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
-      "teamName": "Andreas Johansson & Hannah Nilsson",
-      "club": "LSDK/LDT",
-      "rankingPosition": 42,
-      "rankingOrder": 42,
-      "danceTeamId": "718",
-      "rankingScoreSum": 440.5
-    },
-    {
-      "tier": "Guld",
-      "leagueId": "4",
+      "tier": "Silver",
+      "leagueId": "5",
       "teamName": "Axel Lind & Ella Lidström",
       "club": "ÄDD",
-      "rankingPosition": 43,
-      "rankingOrder": 43,
-      "danceTeamId": "54",
-      "rankingScoreSum": 437.5
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Felix Albrecht & Lisa Grönblad",
-      "club": "GÅS",
-      "rankingPosition": 44,
+      "rankingPosition": 42,
       "rankingOrder": 44,
-      "danceTeamId": "78",
-      "rankingScoreSum": 435
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Alexander Gustafsson & Caroline Almgren",
-      "club": "CAN",
-      "rankingPosition": 45,
-      "rankingOrder": 45,
-      "danceTeamId": "728",
-      "rankingScoreSum": 434.3
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Gustav Lundberg & Emelie Fasth",
-      "club": "DFE",
-      "rankingPosition": 46,
-      "rankingOrder": 46,
-      "danceTeamId": "1223",
-      "rankingScoreSum": 431.3
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Alma Forsberg & Maja Forsberg",
-      "club": "SOG",
-      "rankingPosition": 47,
-      "rankingOrder": 47,
-      "danceTeamId": "10",
-      "rankingScoreSum": 425.63
+      "danceTeamId": "54",
+      "rankingScoreSum": 487.5
     },
     {
       "tier": "Silver",
       "leagueId": "5",
       "teamName": "Erik Gelotte & Sofia Söderberg",
       "club": "UBSS",
+      "rankingPosition": 42,
+      "rankingOrder": 45,
+      "danceTeamId": "65",
+      "rankingScoreSum": 487.5
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Ragnar Oskarsson & Nathalie Andersson",
+      "club": "RING",
+      "rankingPosition": 42,
+      "rankingOrder": 46,
+      "danceTeamId": "846",
+      "rankingScoreSum": 487.5
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Hugo Hardestam & Matilda Lindgren",
+      "club": "UBSS",
+      "rankingPosition": 47,
+      "rankingOrder": 47,
+      "danceTeamId": "1248",
+      "rankingScoreSum": 483.5
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Johan Åberg & Mariola Karlsson",
+      "club": "NSW",
       "rankingPosition": 48,
       "rankingOrder": 48,
-      "danceTeamId": "65",
+      "danceTeamId": "1192",
+      "rankingScoreSum": 476.3
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Pierre Hagström & Linn Kjerrgren Edlund",
+      "club": "RR/MÄLAR",
+      "rankingPosition": 49,
+      "rankingOrder": 49,
+      "danceTeamId": "631",
+      "rankingScoreSum": 472.5
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Linus Dunér Axelsson & Lisa Lundström",
+      "club": "UBSS/NSW",
+      "rankingPosition": 50,
+      "rankingOrder": 50,
+      "danceTeamId": "1495",
+      "rankingScoreSum": 464
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Fredrik Siljevik & Amelie Gustavsson",
+      "club": "MORA",
+      "rankingPosition": 51,
+      "rankingOrder": 51,
+      "danceTeamId": "1490",
+      "rankingScoreSum": 460
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Linus Ellström & Sanna Belmén",
+      "club": "RS",
+      "rankingPosition": 52,
+      "rankingOrder": 52,
+      "danceTeamId": "86",
+      "rankingScoreSum": 456
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Joel Jansson & Alice Johansson",
+      "club": "DBB",
+      "rankingPosition": 53,
+      "rankingOrder": 53,
+      "danceTeamId": "1924",
+      "rankingScoreSum": 455.5
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Filip Lindqvist & Sofie Lindqvist",
+      "club": "GÅS",
+      "rankingPosition": 54,
+      "rankingOrder": 54,
+      "danceTeamId": "715",
+      "rankingScoreSum": 432.5
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Henrik Wahrén & Estelle Naumanen",
+      "club": "DFE",
+      "rankingPosition": 55,
+      "rankingOrder": 55,
+      "danceTeamId": "1297",
       "rankingScoreSum": 425
     },
     {
@@ -513,98 +583,48 @@
       "leagueId": "5",
       "teamName": "Mattias Båtsman & Ida Ståhl",
       "club": "UDI",
-      "rankingPosition": 48,
-      "rankingOrder": 49,
+      "rankingPosition": 55,
+      "rankingOrder": 56,
       "danceTeamId": "1605",
       "rankingScoreSum": 425
     },
     {
       "tier": "Silver",
       "leagueId": "5",
-      "teamName": "Henrik Wahrén & Estelle Naumanen",
-      "club": "DFE",
-      "rankingPosition": 48,
-      "rankingOrder": 50,
-      "danceTeamId": "1297",
-      "rankingScoreSum": 425
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Hugo Hardestam & Matilda Lindgren",
-      "club": "UBSS",
-      "rankingPosition": 51,
-      "rankingOrder": 51,
-      "danceTeamId": "1248",
-      "rankingScoreSum": 416
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
       "teamName": "Tom Petersson & Therese Andersson",
       "club": "BDF",
-      "rankingPosition": 52,
-      "rankingOrder": 52,
+      "rankingPosition": 57,
+      "rankingOrder": 57,
       "danceTeamId": "95",
-      "rankingScoreSum": 415.5
+      "rankingScoreSum": 413.5
     },
     {
       "tier": "Silver",
       "leagueId": "5",
       "teamName": "Joakim Borg & Linn Edlund",
       "club": "MÄLAR",
-      "rankingPosition": 53,
-      "rankingOrder": 53,
+      "rankingPosition": 58,
+      "rankingOrder": 58,
       "danceTeamId": "1681",
       "rankingScoreSum": 406.5
     },
     {
       "tier": "Silver",
       "leagueId": "5",
-      "teamName": "Johan Åberg & Mariola Karlsson",
-      "club": "NSW",
-      "rankingPosition": 54,
-      "rankingOrder": 54,
-      "danceTeamId": "1192",
-      "rankingScoreSum": 403.8
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
       "teamName": "Eric Lindblad & Therése Planell",
       "club": "GÅS",
-      "rankingPosition": 55,
-      "rankingOrder": 55,
+      "rankingPosition": 59,
+      "rankingOrder": 59,
       "danceTeamId": "714",
       "rankingScoreSum": 403.5
     },
     {
       "tier": "Silver",
       "leagueId": "5",
-      "teamName": "Filip Söderqvist & Sofie Bewernick",
-      "club": "DZV",
-      "rankingPosition": 56,
-      "rankingOrder": 56,
-      "danceTeamId": "122",
-      "rankingScoreSum": 401.3
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Ragnar Oskarsson & Nathalie Andersson",
-      "club": "RING",
-      "rankingPosition": 57,
-      "rankingOrder": 57,
-      "danceTeamId": "846",
-      "rankingScoreSum": 400
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
       "teamName": "Rasmus Johansson Dynesius & Emelie Genborg",
       "club": "RING",
-      "rankingPosition": 57,
-      "rankingOrder": 58,
+      "rankingPosition": 60,
+      "rankingOrder": 60,
       "danceTeamId": "1896",
       "rankingScoreSum": 400
     },
@@ -613,28 +633,18 @@
       "leagueId": "5",
       "teamName": "Jimmy Bergh & Therese Strömberg Köpsén",
       "club": "ÖBRK",
-      "rankingPosition": 59,
-      "rankingOrder": 59,
+      "rankingPosition": 61,
+      "rankingOrder": 61,
       "danceTeamId": "42",
       "rankingScoreSum": 396.3
     },
     {
       "tier": "Silver",
       "leagueId": "5",
-      "teamName": "Linus Dunér Axelsson & Lisa Lundström",
-      "club": "UBSS/NSW",
-      "rankingPosition": 60,
-      "rankingOrder": 60,
-      "danceTeamId": "1495",
-      "rankingScoreSum": 387.5
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
       "teamName": "Philip Källman & Ellen Skoglund",
       "club": "NSW/TSDK",
-      "rankingPosition": 60,
-      "rankingOrder": 61,
+      "rankingPosition": 62,
+      "rankingOrder": 62,
       "danceTeamId": "124",
       "rankingScoreSum": 387.5
     },
@@ -643,40 +653,10 @@
       "leagueId": "5",
       "teamName": "Per Nylund & Moa Nikanorsson",
       "club": "DDK",
-      "rankingPosition": 62,
-      "rankingOrder": 62,
-      "danceTeamId": "1193",
-      "rankingScoreSum": 380
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Fredrik Siljevik & Amelie Gustavsson",
-      "club": "MORA",
       "rankingPosition": 63,
       "rankingOrder": 63,
-      "danceTeamId": "1490",
-      "rankingScoreSum": 377.5
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Henrik Larsson & Christina Aronsson",
-      "club": "BDF",
-      "rankingPosition": 64,
-      "rankingOrder": 64,
-      "danceTeamId": "73",
-      "rankingScoreSum": 375
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Jakob Kocaarik & Wictoria Thelberg Hannü",
-      "club": "GRRC",
-      "rankingPosition": 64,
-      "rankingOrder": 65,
-      "danceTeamId": "1899",
-      "rankingScoreSum": 375
+      "danceTeamId": "1193",
+      "rankingScoreSum": 380
     },
     {
       "tier": "Silver",
@@ -684,18 +664,8 @@
       "teamName": "Rasmus Andersson & Helena Karlsson",
       "club": "UBSS",
       "rankingPosition": 64,
-      "rankingOrder": 66,
+      "rankingOrder": 64,
       "danceTeamId": "144",
-      "rankingScoreSum": 375
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Erik Engström & Ellen Ekstav",
-      "club": "UBSS",
-      "rankingPosition": 64,
-      "rankingOrder": 67,
-      "danceTeamId": "850",
       "rankingScoreSum": 375
     },
     {
@@ -704,19 +674,39 @@
       "teamName": "Casper Carlsson & Elin Ehrlund",
       "club": "RS",
       "rankingPosition": 64,
-      "rankingOrder": 68,
+      "rankingOrder": 65,
       "danceTeamId": "168",
       "rankingScoreSum": 375
     },
     {
       "tier": "Silver",
       "leagueId": "5",
-      "teamName": "Joel Jansson & Alice Johansson",
-      "club": "DBB",
-      "rankingPosition": 69,
-      "rankingOrder": 69,
-      "danceTeamId": "1924",
-      "rankingScoreSum": 373
+      "teamName": "Jakob Kocaarik & Wictoria Thelberg Hannü",
+      "club": "GRRC",
+      "rankingPosition": 64,
+      "rankingOrder": 66,
+      "danceTeamId": "1899",
+      "rankingScoreSum": 375
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Henrik Larsson & Christina Aronsson",
+      "club": "BDF",
+      "rankingPosition": 64,
+      "rankingOrder": 67,
+      "danceTeamId": "73",
+      "rankingScoreSum": 375
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Erik Engström & Ellen Ekstav",
+      "club": "UBSS",
+      "rankingPosition": 64,
+      "rankingOrder": 68,
+      "danceTeamId": "850",
+      "rankingScoreSum": 375
     },
     {
       "tier": "Silver",
@@ -724,7 +714,7 @@
       "teamName": "Joakim Karlsson & Josefin Risberg",
       "club": "ÖDF",
       "rankingPosition": 69,
-      "rankingOrder": 70,
+      "rankingOrder": 69,
       "danceTeamId": "193",
       "rankingScoreSum": 373
     },
@@ -733,8 +723,8 @@
       "leagueId": "5",
       "teamName": "Jonas Lindblad & Emelie Johansson",
       "club": "LBH",
-      "rankingPosition": 71,
-      "rankingOrder": 71,
+      "rankingPosition": 70,
+      "rankingOrder": 70,
       "danceTeamId": "896",
       "rankingScoreSum": 367
     },
@@ -743,8 +733,8 @@
       "leagueId": "5",
       "teamName": "Linnea Svartz & Theres Nylund",
       "club": "LBS",
-      "rankingPosition": 72,
-      "rankingOrder": 72,
+      "rankingPosition": 71,
+      "rankingOrder": 71,
       "danceTeamId": "1897",
       "rankingScoreSum": 364
     },
@@ -753,17 +743,27 @@
       "leagueId": "5",
       "teamName": "Arvid Holgersson & Loise Palm",
       "club": "OLAND/GRRC",
-      "rankingPosition": 73,
-      "rankingOrder": 73,
+      "rankingPosition": 72,
+      "rankingOrder": 72,
       "danceTeamId": "44",
       "rankingScoreSum": 357.5
     },
     {
       "tier": "Silver",
       "leagueId": "5",
+      "teamName": "Emma Elfström & Jennie Modin",
+      "club": "RR",
+      "rankingPosition": 73,
+      "rankingOrder": 73,
+      "danceTeamId": "1191",
+      "rankingScoreSum": 350
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
       "teamName": "Gisela Drugge & Martina Larsson",
       "club": "GRRC",
-      "rankingPosition": 74,
+      "rankingPosition": 73,
       "rankingOrder": 74,
       "danceTeamId": "1901",
       "rankingScoreSum": 350
@@ -773,7 +773,7 @@
       "leagueId": "5",
       "teamName": "Tobias Celander & Eva-Sara Celander",
       "club": "DKDM",
-      "rankingPosition": 74,
+      "rankingPosition": 73,
       "rankingOrder": 75,
       "danceTeamId": "197",
       "rankingScoreSum": 350
@@ -781,10 +781,30 @@
     {
       "tier": "Silver",
       "leagueId": "5",
+      "teamName": "Jakob Wåhlander & Nova Holmström",
+      "club": "NSW/LBRR",
+      "rankingPosition": 73,
+      "rankingOrder": 76,
+      "danceTeamId": "912",
+      "rankingScoreSum": 350
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
+      "teamName": "Tim Vahlberg & Linnéa Holgersson",
+      "club": "SNE",
+      "rankingPosition": 77,
+      "rankingOrder": 77,
+      "danceTeamId": "911",
+      "rankingScoreSum": 346.3
+    },
+    {
+      "tier": "Silver",
+      "leagueId": "5",
       "teamName": "André Gustafsson & Emma Rosell",
       "club": "DSW/DKSS",
-      "rankingPosition": 76,
-      "rankingOrder": 76,
+      "rankingPosition": 78,
+      "rankingOrder": 78,
       "danceTeamId": "1219",
       "rankingScoreSum": 345.8
     },
@@ -793,40 +813,20 @@
       "leagueId": "5",
       "teamName": "Tim Rickeskär & Hanna Vendin Andersson",
       "club": "GRRC",
-      "rankingPosition": 77,
-      "rankingOrder": 77,
+      "rankingPosition": 79,
+      "rankingOrder": 79,
       "danceTeamId": "157",
       "rankingScoreSum": 345
     },
     {
       "tier": "Silver",
       "leagueId": "5",
-      "teamName": "Jakob Wåhlander & Nova Holmström",
-      "club": "NSW/LBRR",
-      "rankingPosition": 78,
-      "rankingOrder": 78,
-      "danceTeamId": "912",
-      "rankingScoreSum": 342
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
       "teamName": "Billy Johansson & Ester Andersson",
       "club": "DBB",
-      "rankingPosition": 79,
-      "rankingOrder": 79,
-      "danceTeamId": "1494",
-      "rankingScoreSum": 341
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Filip Lindqvist & Sofie Lindqvist",
-      "club": "GÅS",
       "rankingPosition": 80,
       "rankingOrder": 80,
-      "danceTeamId": "715",
-      "rankingScoreSum": 339
+      "danceTeamId": "1494",
+      "rankingScoreSum": 341
     },
     {
       "tier": "Silver",
@@ -851,30 +851,10 @@
     {
       "tier": "Silver",
       "leagueId": "5",
-      "teamName": "Emma Elfström & Jennie Modin",
-      "club": "RR",
-      "rankingPosition": 83,
-      "rankingOrder": 83,
-      "danceTeamId": "1191",
-      "rankingScoreSum": 332
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
-      "teamName": "Tim Vahlberg & Linnéa Holgersson",
-      "club": "SNE",
-      "rankingPosition": 84,
-      "rankingOrder": 84,
-      "danceTeamId": "911",
-      "rankingScoreSum": 330.3
-    },
-    {
-      "tier": "Silver",
-      "leagueId": "5",
       "teamName": "Viktor Sjölin & Felicia Johansson",
       "club": "BDF",
-      "rankingPosition": 85,
-      "rankingOrder": 85,
+      "rankingPosition": 83,
+      "rankingOrder": 83,
       "danceTeamId": "120",
       "rankingScoreSum": 330
     },
@@ -883,38 +863,28 @@
       "leagueId": "5",
       "teamName": "Rickard Ambros & Alva Östberg",
       "club": "DBB",
-      "rankingPosition": 85,
-      "rankingOrder": 86,
+      "rankingPosition": 83,
+      "rankingOrder": 84,
       "danceTeamId": "1292",
       "rankingScoreSum": 330
     },
     {
       "tier": "Silver",
       "leagueId": "5",
-      "teamName": "Felix Eriksson & Amanda Tillas",
-      "club": "NSW/UBSS",
-      "rankingPosition": 85,
-      "rankingOrder": 87,
-      "danceTeamId": "897",
-      "rankingScoreSum": 330
-    },
-    {
-      "tier": "Brons",
-      "leagueId": "6",
       "teamName": "Johan Åslund & Sara Pauselius",
       "club": "RS",
-      "rankingPosition": 85,
-      "rankingOrder": 88,
+      "rankingPosition": 83,
+      "rankingOrder": 85,
       "danceTeamId": "152",
       "rankingScoreSum": 330
     },
     {
-      "tier": "Brons",
-      "leagueId": "6",
+      "tier": "Silver",
+      "leagueId": "5",
       "teamName": "Kasper Gullbring & Ida Adolfsson",
       "club": "RS",
-      "rankingPosition": 89,
-      "rankingOrder": 89,
+      "rankingPosition": 86,
+      "rankingOrder": 86,
       "danceTeamId": "1188",
       "rankingScoreSum": 325
     },
@@ -923,8 +893,8 @@
       "leagueId": "6",
       "teamName": "Martin Nilsson & Tove Olai",
       "club": "UBSS",
-      "rankingPosition": 89,
-      "rankingOrder": 90,
+      "rankingPosition": 86,
+      "rankingOrder": 87,
       "danceTeamId": "1247",
       "rankingScoreSum": 325
     },
@@ -933,9 +903,19 @@
       "leagueId": "6",
       "teamName": "Sebastian Brisjö & Kajsa Risberg",
       "club": "LBH",
-      "rankingPosition": 91,
-      "rankingOrder": 91,
+      "rankingPosition": 88,
+      "rankingOrder": 88,
       "danceTeamId": "11",
+      "rankingScoreSum": 323
+    },
+    {
+      "tier": "Brons",
+      "leagueId": "6",
+      "teamName": "Felix Eriksson & Amanda Tillas",
+      "club": "NSW/UBSS",
+      "rankingPosition": 88,
+      "rankingOrder": 89,
+      "danceTeamId": "897",
       "rankingScoreSum": 323
     },
     {
@@ -943,8 +923,8 @@
       "leagueId": "6",
       "teamName": "Andreas Ohlin & Hanna Chytraeus",
       "club": "JSDK",
-      "rankingPosition": 91,
-      "rankingOrder": 92,
+      "rankingPosition": 88,
+      "rankingOrder": 90,
       "danceTeamId": "93",
       "rankingScoreSum": 323
     },
@@ -953,8 +933,8 @@
       "leagueId": "6",
       "teamName": "David Johansson & Nicole Fridvall",
       "club": "ÖDF",
-      "rankingPosition": 93,
-      "rankingOrder": 93,
+      "rankingPosition": 91,
+      "rankingOrder": 91,
       "danceTeamId": "1165",
       "rankingScoreSum": 321
     },
@@ -963,8 +943,8 @@
       "leagueId": "6",
       "teamName": "Oliver Sandberg & Gabriella Oskarsson",
       "club": "SOG",
-      "rankingPosition": 94,
-      "rankingOrder": 94,
+      "rankingPosition": 92,
+      "rankingOrder": 92,
       "danceTeamId": "101",
       "rankingScoreSum": 317
     },
@@ -973,8 +953,8 @@
       "leagueId": "6",
       "teamName": "Rickard Engström & Lina Håll",
       "club": "GRRC",
-      "rankingPosition": 95,
-      "rankingOrder": 95,
+      "rankingPosition": 93,
+      "rankingOrder": 93,
       "danceTeamId": "939",
       "rankingScoreSum": 316
     },
@@ -983,8 +963,8 @@
       "leagueId": "6",
       "teamName": "Fredrik Häll & Felicia Sternhammar",
       "club": "FTD",
-      "rankingPosition": 96,
-      "rankingOrder": 96,
+      "rankingPosition": 94,
+      "rankingOrder": 94,
       "danceTeamId": "845",
       "rankingScoreSum": 315
     },
@@ -993,8 +973,8 @@
       "leagueId": "6",
       "teamName": "Andreas Wirefeldt & Therese Frisell",
       "club": "VBO",
-      "rankingPosition": 97,
-      "rankingOrder": 97,
+      "rankingPosition": 95,
+      "rankingOrder": 95,
       "danceTeamId": "102",
       "rankingScoreSum": 312.3
     },
@@ -1003,8 +983,8 @@
       "leagueId": "6",
       "teamName": "Christoffer Nordquist & Nathalie Basiri",
       "club": "RS",
-      "rankingPosition": 98,
-      "rankingOrder": 98,
+      "rankingPosition": 96,
+      "rankingOrder": 96,
       "danceTeamId": "1253",
       "rankingScoreSum": 307
     },
@@ -1013,8 +993,8 @@
       "leagueId": "6",
       "teamName": "Håkan Axelsson & Lovisa Pettersson",
       "club": "ÖBRK",
-      "rankingPosition": 98,
-      "rankingOrder": 99,
+      "rankingPosition": 96,
+      "rankingOrder": 97,
       "danceTeamId": "1922",
       "rankingScoreSum": 307
     },
@@ -1023,8 +1003,8 @@
       "leagueId": "6",
       "teamName": "Erik Norén & Vanja Eskilsson Sund",
       "club": "VBO",
-      "rankingPosition": 100,
-      "rankingOrder": 100,
+      "rankingPosition": 98,
+      "rankingOrder": 98,
       "danceTeamId": "828",
       "rankingScoreSum": 306.3
     },
@@ -1033,8 +1013,8 @@
       "leagueId": "6",
       "teamName": "Erik Koldemar & Emelie Slätteräng",
       "club": "DFE",
-      "rankingPosition": 101,
-      "rankingOrder": 101,
+      "rankingPosition": 99,
+      "rankingOrder": 99,
       "danceTeamId": "1296",
       "rankingScoreSum": 306
     },
@@ -1043,8 +1023,8 @@
       "leagueId": "6",
       "teamName": "Viktor Kåräng & Nathalie Lövgren",
       "club": "RS",
-      "rankingPosition": 102,
-      "rankingOrder": 102,
+      "rankingPosition": 100,
+      "rankingOrder": 100,
       "danceTeamId": "1195",
       "rankingScoreSum": 305
     },
@@ -1053,8 +1033,8 @@
       "leagueId": "6",
       "teamName": "Jakob Wållander & Cornelia Alriksson",
       "club": "NSW",
-      "rankingPosition": 102,
-      "rankingOrder": 103,
+      "rankingPosition": 100,
+      "rankingOrder": 101,
       "danceTeamId": "1354",
       "rankingScoreSum": 305
     },
@@ -1063,28 +1043,18 @@
       "leagueId": "6",
       "teamName": "Mikael Blom & Jane Rohdin",
       "club": "RS",
-      "rankingPosition": 104,
-      "rankingOrder": 104,
+      "rankingPosition": 102,
+      "rankingOrder": 102,
       "danceTeamId": "1293",
       "rankingScoreSum": 302
     },
     {
       "tier": "Brons",
       "leagueId": "6",
-      "teamName": "Sebastian Arlmark & Helen Bäcklin",
-      "club": "DDK",
-      "rankingPosition": 105,
-      "rankingOrder": 105,
-      "danceTeamId": "847",
-      "rankingScoreSum": 300
-    },
-    {
-      "tier": "Brons",
-      "leagueId": "6",
       "teamName": "Fredrik Munther & Malin Forsman",
       "club": "DKDM",
-      "rankingPosition": 105,
-      "rankingOrder": 106,
+      "rankingPosition": 103,
+      "rankingOrder": 103,
       "danceTeamId": "105",
       "rankingScoreSum": 300
     },
@@ -1093,17 +1063,47 @@
       "leagueId": "6",
       "teamName": "Johan Augustsson & Emma Fremberg",
       "club": "JDC",
-      "rankingPosition": 105,
-      "rankingOrder": 107,
+      "rankingPosition": 103,
+      "rankingOrder": 104,
       "danceTeamId": "1220",
       "rankingScoreSum": 300
     },
     {
       "tier": "Brons",
       "leagueId": "6",
+      "teamName": "Sebastian Arlmark & Helen Bäcklin",
+      "club": "DDK",
+      "rankingPosition": 103,
+      "rankingOrder": 105,
+      "danceTeamId": "847",
+      "rankingScoreSum": 300
+    },
+    {
+      "tier": "Brons",
+      "leagueId": "6",
+      "teamName": "Robert Törnqvist & Sofie Nilsdotter",
+      "club": "LSDK",
+      "rankingPosition": 106,
+      "rankingOrder": 106,
+      "danceTeamId": "1251",
+      "rankingScoreSum": 294
+    },
+    {
+      "tier": "Brons",
+      "leagueId": "6",
+      "teamName": "Filip Sandberg & Sofia Yngve",
+      "club": "RS",
+      "rankingPosition": 107,
+      "rankingOrder": 107,
+      "danceTeamId": "1294",
+      "rankingScoreSum": 285
+    },
+    {
+      "tier": "Brons",
+      "leagueId": "6",
       "teamName": "Filip Börjesson & Elin Johansson",
       "club": "LBRR",
-      "rankingPosition": 108,
+      "rankingPosition": 107,
       "rankingOrder": 108,
       "danceTeamId": "169",
       "rankingScoreSum": 285
@@ -1111,20 +1111,10 @@
     {
       "tier": "Brons",
       "leagueId": "6",
-      "teamName": "Filip Sandberg & Sofia Yngve",
-      "club": "RS",
-      "rankingPosition": 108,
-      "rankingOrder": 109,
-      "danceTeamId": "1294",
-      "rankingScoreSum": 285
-    },
-    {
-      "tier": "Brons",
-      "leagueId": "6",
       "teamName": "Gustav Patriksson & Amanda Hjort",
       "club": "UBSS",
-      "rankingPosition": 110,
-      "rankingOrder": 110,
+      "rankingPosition": 109,
+      "rankingOrder": 109,
       "danceTeamId": "1252",
       "rankingScoreSum": 283
     },
@@ -1133,8 +1123,8 @@
       "leagueId": "6",
       "teamName": "Philip Wingfelt & Klara Appelqvist",
       "club": "RS",
-      "rankingPosition": 111,
-      "rankingOrder": 111,
+      "rankingPosition": 110,
+      "rankingOrder": 110,
       "danceTeamId": "1186",
       "rankingScoreSum": 280
     },
@@ -1143,18 +1133,48 @@
       "leagueId": "6",
       "teamName": "Rasmus Karlström & Fanny Thelander",
       "club": "UBSS",
-      "rankingPosition": 111,
-      "rankingOrder": 112,
+      "rankingPosition": 110,
+      "rankingOrder": 111,
       "danceTeamId": "222",
       "rankingScoreSum": 280
     },
     {
       "tier": "Brons",
       "leagueId": "6",
+      "teamName": "Filip Petersson & Rebecka Dahlgren",
+      "club": "DFE",
+      "rankingPosition": 112,
+      "rankingOrder": 112,
+      "danceTeamId": "1679",
+      "rankingScoreSum": 277
+    },
+    {
+      "tier": "Brons",
+      "leagueId": "6",
+      "teamName": "Ambjörn Olsson & Jenny Henriksson",
+      "club": "NOSD",
+      "rankingPosition": 112,
+      "rankingOrder": 113,
+      "danceTeamId": "170",
+      "rankingScoreSum": 277
+    },
+    {
+      "tier": "Brons",
+      "leagueId": "6",
+      "teamName": "Samuel Wakman & Mia Wissendorf Jensen",
+      "club": "RR",
+      "rankingPosition": 114,
+      "rankingOrder": 114,
+      "danceTeamId": "1355",
+      "rankingScoreSum": 275
+    },
+    {
+      "tier": "Brons",
+      "leagueId": "6",
       "teamName": "Daniel Graan & Emelie Oskarsson",
       "club": "JSDK",
-      "rankingPosition": 113,
-      "rankingOrder": 113,
+      "rankingPosition": 114,
+      "rankingOrder": 115,
       "danceTeamId": "829",
       "rankingScoreSum": 275
     },
@@ -1163,28 +1183,18 @@
       "leagueId": "6",
       "teamName": "John Jönsson & Johanna Nilsson",
       "club": "VOLL",
-      "rankingPosition": 113,
-      "rankingOrder": 114,
+      "rankingPosition": 114,
+      "rankingOrder": 116,
       "danceTeamId": "921",
       "rankingScoreSum": 275
     },
     {
       "tier": "Brons",
       "leagueId": "6",
-      "teamName": "Robert Törnqvist & Sofie Nilsdotter",
-      "club": "LSDK",
-      "rankingPosition": 115,
-      "rankingOrder": 115,
-      "danceTeamId": "1251",
-      "rankingScoreSum": 274
-    },
-    {
-      "tier": "Brons",
-      "leagueId": "6",
       "teamName": "Kasper Karlsson & Anna Blücher",
       "club": "SPIR",
-      "rankingPosition": 116,
-      "rankingOrder": 116,
+      "rankingPosition": 117,
+      "rankingOrder": 117,
       "danceTeamId": "115",
       "rankingScoreSum": 272.3
     },
@@ -1193,49 +1203,49 @@
       "leagueId": "6",
       "teamName": "Andreas Milton & Emma Exinge",
       "club": "RR",
-      "rankingPosition": 117,
-      "rankingOrder": 117,
+      "rankingPosition": 118,
+      "rankingOrder": 118,
       "danceTeamId": "162",
       "rankingScoreSum": 258
     },
     {
       "tier": "Brons",
       "leagueId": "6",
+      "teamName": "Morgan Engkvist & Louice Wersén",
+      "club": "HVD",
+      "rankingPosition": 119,
+      "rankingOrder": 119,
+      "danceTeamId": "1928",
+      "rankingScoreSum": 257
+    },
+    {
+      "tier": "Brons",
+      "leagueId": "6",
       "teamName": "Catharina Carlsson & Simone Ellgaard",
       "club": "BLÅA",
-      "rankingPosition": 118,
-      "rankingOrder": 118,
+      "rankingPosition": 120,
+      "rankingOrder": 120,
       "danceTeamId": "1234",
       "rankingScoreSum": 255
     },
     {
       "tier": "Brons",
       "leagueId": "6",
-      "teamName": "Filip Petersson & Rebecka Dahlgren",
-      "club": "DFE",
-      "rankingPosition": 119,
-      "rankingOrder": 119,
-      "danceTeamId": "1679",
-      "rankingScoreSum": 252
-    },
-    {
-      "tier": "Brons",
-      "leagueId": "6",
       "teamName": "Mattias Enochsson & Karolina Lindström Nilsson",
       "club": "LBH/BLÅA",
-      "rankingPosition": 119,
-      "rankingOrder": 120,
+      "rankingPosition": 121,
+      "rankingOrder": 121,
       "danceTeamId": "910",
       "rankingScoreSum": 252
     },
     {
       "tier": "Brons",
       "leagueId": "6",
-      "teamName": "Samuel Wakman & Mia Wissendorf Jensen",
-      "club": "RR",
-      "rankingPosition": 121,
-      "rankingOrder": 121,
-      "danceTeamId": "1355",
+      "teamName": "Adam Gustafsson & Emelie Malm",
+      "club": "LSDK",
+      "rankingPosition": 122,
+      "rankingOrder": 122,
+      "danceTeamId": "917",
       "rankingScoreSum": 250
     },
     {
@@ -1243,8 +1253,8 @@
       "leagueId": "6",
       "teamName": "Tim Nilsson & Catharina Carlsson",
       "club": "LBH/BLÅA",
-      "rankingPosition": 122,
-      "rankingOrder": 122,
+      "rankingPosition": 123,
+      "rankingOrder": 123,
       "danceTeamId": "1917",
       "rankingScoreSum": 244
     },
@@ -1253,27 +1263,17 @@
       "leagueId": "6",
       "teamName": "Peter Hjelm & Ebba Eriksson",
       "club": "DFE",
-      "rankingPosition": 123,
-      "rankingOrder": 123,
+      "rankingPosition": 124,
+      "rankingOrder": 124,
       "danceTeamId": "1469",
       "rankingScoreSum": 232
     },
     {
       "tier": "Brons",
       "leagueId": "6",
-      "teamName": "Lukas Tilmaz & Emilia Blomé",
-      "club": "GÅS",
-      "rankingPosition": 124,
-      "rankingOrder": 124,
-      "danceTeamId": "1926",
-      "rankingScoreSum": 225
-    },
-    {
-      "tier": "Brons",
-      "leagueId": "6",
       "teamName": "Rickard Isaksson & Johannah Steen",
       "club": "RS",
-      "rankingPosition": 124,
+      "rankingPosition": 125,
       "rankingOrder": 125,
       "danceTeamId": "1489",
       "rankingScoreSum": 225
@@ -1281,11 +1281,11 @@
     {
       "tier": "Brons",
       "leagueId": "6",
-      "teamName": "Adam Gustafsson & Emelie Malm",
-      "club": "LSDK",
-      "rankingPosition": 124,
+      "teamName": "Lukas Tilmaz & Emilia Blomé",
+      "club": "GÅS",
+      "rankingPosition": 125,
       "rankingOrder": 126,
-      "danceTeamId": "917",
+      "danceTeamId": "1926",
       "rankingScoreSum": 225
     },
     {
@@ -1293,7 +1293,7 @@
       "leagueId": "6",
       "teamName": "Markus Elofsson & Elin Oldenburg",
       "club": "DKB",
-      "rankingPosition": 124,
+      "rankingPosition": 125,
       "rankingOrder": 127,
       "danceTeamId": "83",
       "rankingScoreSum": 225
@@ -1303,7 +1303,7 @@
       "leagueId": "6",
       "teamName": "Emil Sköldenborg & Madelene Hermansson",
       "club": "DBB",
-      "rankingPosition": 124,
+      "rankingPosition": 125,
       "rankingOrder": 128,
       "danceTeamId": "883",
       "rankingScoreSum": 225
@@ -1313,20 +1313,10 @@
       "leagueId": "6",
       "teamName": "Dennis Jagenheim & Johanna Gustafsson",
       "club": "DKSS",
-      "rankingPosition": 124,
+      "rankingPosition": 125,
       "rankingOrder": 129,
       "danceTeamId": "915",
       "rankingScoreSum": 225
-    },
-    {
-      "tier": "Brons",
-      "leagueId": "6",
-      "teamName": "Johan Duvlund & Cornelia Johansson",
-      "club": "ENA",
-      "rankingPosition": 130,
-      "rankingOrder": 130,
-      "danceTeamId": "849",
-      "rankingScoreSum": 200
     }
   ]
 }
