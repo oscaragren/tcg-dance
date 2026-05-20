@@ -6,11 +6,14 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import jwt from "jsonwebtoken";
+import { loadGameCatalog } from "./gameCatalog.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, "..");
 const usersFilePath = path.join(workspaceRoot, "data", "users.json");
+const playerStateFilePath = path.join(workspaceRoot, "data", "player-state.json");
+const gameContentFilePath = path.join(workspaceRoot, "data", "game-content.json");
 
 const app = express();
 const PORT = Number(process.env.AUTH_API_PORT ?? 4000);
@@ -183,6 +186,146 @@ app.get("/api/auth/me", requireAuth, async (request, response) => {
 
   response.json({ user: publicUser(user) });
 });
+
+// ── Game helpers ────────────────────────────────────────────────────────────
+
+async function readPlayerState() {
+  try {
+    const raw = await fs.readFile(playerStateFilePath, "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+async function writePlayerState(state) {
+  await fs.writeFile(playerStateFilePath, JSON.stringify(state, null, 2), "utf8");
+}
+
+function getOrInitUserState(allState, userId) {
+  if (!allState[userId]) {
+    allState[userId] = {
+      ownedCardIds: [],
+      diamonds: 0,
+      lastDailyClaimDate: null,
+      lastOpenedCards: [],
+    };
+    return allState[userId];
+  }
+
+  const s = allState[userId];
+
+  // Migration: rename lastClaimDate → lastDailyClaimDate
+  if (s.lastClaimDate !== undefined && s.lastDailyClaimDate === undefined) {
+    s.lastDailyClaimDate = s.lastClaimDate;
+    delete s.lastClaimDate;
+  }
+  if (s.lastDailyClaimDate === undefined) s.lastDailyClaimDate = null;
+  if (typeof s.diamonds !== "number") s.diamonds = 0;
+  if (!Array.isArray(s.lastOpenedCards)) s.lastOpenedCards = [];
+
+  return s;
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function buildStateResponse(userState) {
+  return {
+    ownedCardIds: userState.ownedCardIds,
+    diamonds: userState.diamonds,
+    lastDailyClaimDate: userState.lastDailyClaimDate,
+    canClaimDailyDiamonds: userState.lastDailyClaimDate !== todayIso(),
+    lastOpenedCards: userState.lastOpenedCards,
+  };
+}
+
+function drawRarity(chances) {
+  const roll = Math.random();
+  let cursor = 0;
+  for (const rarity of ["legendary", "epic", "rare", "common"]) {
+    cursor += chances[rarity] ?? 0;
+    if (roll <= cursor) return rarity;
+  }
+  return "common";
+}
+
+function openPackCards(packConfig, allCards) {
+  const pulled = [];
+  for (let i = 0; i < packConfig.cardCount; i++) {
+    const rarity = drawRarity(packConfig.rarityChances);
+    const pool = allCards.filter((c) => c.rarity === rarity);
+    if (pool.length === 0) continue;
+    pulled.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  return pulled;
+}
+
+// ── Game routes ──────────────────────────────────────────────────────────────
+
+app.get("/api/game/state", requireAuth, async (request, response) => {
+  const allState = await readPlayerState();
+  const userState = getOrInitUserState(allState, request.auth.userId);
+  response.json(buildStateResponse(userState));
+});
+
+app.post("/api/game/claim-daily-diamonds", requireAuth, async (request, response) => {
+  const gameContentRaw = await fs.readFile(gameContentFilePath, "utf8");
+  const gameContent = JSON.parse(gameContentRaw);
+  const reward = typeof gameContent.dailyDiamonds === "number" ? gameContent.dailyDiamonds : 150;
+
+  const allState = await readPlayerState();
+  const userState = getOrInitUserState(allState, request.auth.userId);
+
+  if (userState.lastDailyClaimDate === todayIso()) {
+    response.status(400).json({ message: "Dagliga diamanter redan hämtade." });
+    return;
+  }
+
+  userState.diamonds += reward;
+  userState.lastDailyClaimDate = todayIso();
+  allState[request.auth.userId] = userState;
+  await writePlayerState(allState);
+
+  response.json({ diamondsAwarded: reward, state: buildStateResponse(userState) });
+});
+
+app.post("/api/game/buy-pack", requireAuth, async (request, response) => {
+  const packId = String(request.body?.packId ?? "").trim();
+  if (!packId) {
+    response.status(400).json({ message: "packId krävs." });
+    return;
+  }
+
+  const { cards: allCards, packConfigs } = await loadGameCatalog();
+  const packConfig = packConfigs[packId];
+  if (!packConfig) {
+    response.status(400).json({ message: "Okänt pack." });
+    return;
+  }
+
+  const allState = await readPlayerState();
+  const userState = getOrInitUserState(allState, request.auth.userId);
+
+  if (userState.diamonds < packConfig.price) {
+    response.status(400).json({ message: "Inte tillräckligt med diamanter." });
+    return;
+  }
+
+  userState.diamonds -= packConfig.price;
+  const pulledCards = openPackCards(packConfig, allCards);
+  for (const card of pulledCards) {
+    userState.ownedCardIds.push(card.id);
+  }
+  userState.lastOpenedCards = pulledCards;
+  allState[request.auth.userId] = userState;
+  await writePlayerState(allState);
+
+  response.json({ pulledCards, state: buildStateResponse(userState) });
+});
+
+// ── Server start ─────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
   console.log(`Auth API listening on http://localhost:${PORT}`);

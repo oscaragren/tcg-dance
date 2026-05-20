@@ -2,12 +2,18 @@ import type { DanceCard } from "./danceCard";
 
 export type GameState = {
   ownedCardIds: string[];
-  lastClaimDate: string | null;
-  canClaimDailyPack: boolean;
+  diamonds: number;
+  lastDailyClaimDate: string | null;
+  canClaimDailyDiamonds: boolean;
   lastOpenedCards: DanceCard[];
 };
 
-export type ClaimDailyPackResponse = {
+export type ClaimDailyDiamondsResponse = {
+  diamondsAwarded: number;
+  state: GameState;
+};
+
+export type BuyPackResponse = {
   pulledCards: DanceCard[];
   state: GameState;
 };

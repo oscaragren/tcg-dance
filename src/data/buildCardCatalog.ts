@@ -1,11 +1,13 @@
 import type { CardRarity, DanceCard } from "../types/danceCard";
 
 export type GameContentJson = {
+  dailyDiamonds?: number;
   packConfigs: Record<
     string,
     {
       label: string;
       cardCount: number;
+      price: number;
       rarityChances: Record<CardRarity, number>;
     }
   >;

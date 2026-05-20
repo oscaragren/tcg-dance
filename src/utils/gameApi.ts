@@ -1,4 +1,4 @@
-import type { ClaimDailyPackResponse, GameState } from "../types/game";
+import type { BuyPackResponse, ClaimDailyDiamondsResponse, GameState } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -33,6 +33,13 @@ export async function fetchGameState(): Promise<GameState> {
   return requestJson<GameState>("/api/game/state", { method: "GET" });
 }
 
-export async function claimDailyPack(): Promise<ClaimDailyPackResponse> {
-  return requestJson<ClaimDailyPackResponse>("/api/game/claim-daily", { method: "POST" });
+export async function claimDailyDiamonds(): Promise<ClaimDailyDiamondsResponse> {
+  return requestJson<ClaimDailyDiamondsResponse>("/api/game/claim-daily-diamonds", { method: "POST" });
+}
+
+export async function buyPack(packId: string): Promise<BuyPackResponse> {
+  return requestJson<BuyPackResponse>("/api/game/buy-pack", {
+    method: "POST",
+    body: JSON.stringify({ packId }),
+  });
 }

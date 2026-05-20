@@ -14,7 +14,8 @@
       "23",
       "21"
     ],
-    "lastClaimDate": "2026-03-23",
+    "diamonds": 0,
+    "lastDailyClaimDate": null,
     "lastOpenedCards": [
       {
         "id": "20",
@@ -42,5 +43,20 @@
         "rarity": "common"
       }
     ]
+  },
+  "4f519841-c1ab-4ba0-afec-0234e5b24027": {
+    "ownedCardIds": [
+      "1",
+      "6",
+      "2",
+      "5",
+      "3",
+      "7",
+      "4",
+      "8"
+    ],
+    "diamonds": 0,
+    "lastDailyClaimDate": null,
+    "lastOpenedCards": []
   }
 }
