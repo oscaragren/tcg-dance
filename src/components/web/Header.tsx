@@ -18,15 +18,18 @@ export function Header({ username, onLogout }: HeaderProps) {
                 <span className="text-white text-xl">⚡</span>
               </div>
               <span className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Danskort
+                Peppelinos Bar
               </span>
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link to="/samling" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Samling
               </Link>
-              <Link to="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                Marknad
+              <Link to="/handel" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                Handel
+              </Link>
+              <Link to="/byte" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                Byte
               </Link>
               <Link to="/galleri" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Galleri

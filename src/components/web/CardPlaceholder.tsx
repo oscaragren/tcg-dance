@@ -7,6 +7,7 @@ interface CardPlaceholderProps {
   rarity?: "common" | "rare" | "epic" | "legendary";
   size?: "small" | "medium" | "large";
   name?: string;
+  danceStyle?: string;
   designKey?: string;
   /** When false, only the card frame is shown (no name/rarity below). */
   showCaption?: boolean;
@@ -16,6 +17,7 @@ export function CardPlaceholder({
   rarity = "common",
   size = "medium",
   name = "Your Card Design",
+  danceStyle,
   designKey,
   showCaption = true,
 }: CardPlaceholderProps) {
@@ -60,9 +62,9 @@ export function CardPlaceholder({
   };
 
   const captionWidths = {
-    small: "w-32",
-    medium: "w-48",
-    large: "w-64",
+    small: "w-36",
+    medium: "w-52",
+    large: "w-68",
   };
 
   const rarityGlow = {
@@ -83,8 +85,11 @@ export function CardPlaceholder({
 
   const caption = showCaption ? (
     <div className={`${captionWidths[size]} text-center mt-1.5 space-y-0.5`}>
-      <div className={`text-[10px] uppercase tracking-wider ${rarityCaption[rarity]}`}>{rarity}</div>
-      <div className="text-xs text-gray-800 line-clamp-2 leading-snug">{name}</div>
+      <div className={`text-[10px] uppercase tracking-wider font-semibold ${rarityCaption[rarity]}`}>{rarity}</div>
+      <div className="text-xs text-gray-900 leading-snug font-medium">{name}</div>
+      {danceStyle && (
+        <div className="text-[10px] text-gray-400 leading-tight">{danceStyle}</div>
+      )}
     </div>
   ) : null;
 
@@ -125,13 +130,15 @@ export function CardPlaceholder({
     </div>
   );
 
-  const lightboxCaption =
-    showCaption ? (
-      <div className="mt-5 max-w-lg px-2 text-center">
-        <div className="text-sm font-medium uppercase tracking-wider text-white/75">{rarity}</div>
-        <div className="mt-1 text-lg font-medium leading-snug text-white">{name}</div>
-      </div>
-    ) : null;
+  const lightboxCaption = (
+    <div className="mt-5 max-w-lg px-2 text-center">
+      <div className="text-sm font-medium uppercase tracking-wider text-white/75">{rarity}</div>
+      <div className="mt-1 text-lg font-semibold leading-snug text-white">{name}</div>
+      {danceStyle && (
+        <div className="mt-1 text-sm text-white/60">{danceStyle}</div>
+      )}
+    </div>
+  );
 
   const lightbox =
     lightboxOpen &&

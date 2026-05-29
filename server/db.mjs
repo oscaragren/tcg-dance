@@ -35,13 +35,43 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_owned_cards_user_id ON owned_cards(user_id);
 
+  CREATE TABLE IF NOT EXISTS trades (
+    id                 TEXT PRIMARY KEY,
+    sender_user_id     TEXT NOT NULL REFERENCES users(id),
+    receiver_user_id   TEXT NOT NULL REFERENCES users(id),
+    offered_card_ids   TEXT NOT NULL DEFAULT '[]',
+    offered_diamonds   INTEGER NOT NULL DEFAULT 0,
+    requested_card_ids TEXT NOT NULL DEFAULT '[]',
+    requested_diamonds INTEGER NOT NULL DEFAULT 0,
+    status             TEXT NOT NULL DEFAULT 'pending',
+    created_at         TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_trades_sender   ON trades(sender_user_id);
+  CREATE INDEX IF NOT EXISTS idx_trades_receiver ON trades(receiver_user_id);
+
+  CREATE TABLE IF NOT EXISTS cards_for_trade (
+    user_id TEXT NOT NULL REFERENCES users(id),
+    card_id TEXT NOT NULL,
+    PRIMARY KEY (user_id, card_id)
+  );
+
   CREATE TABLE IF NOT EXISTS card_pool (
     card_id          TEXT PRIMARY KEY,
+    collection_id    TEXT NOT NULL DEFAULT 'sm2026',
     rarity           TEXT NOT NULL,
     total_copies     INTEGER NOT NULL,
     copies_remaining INTEGER NOT NULL
   );
 `);
+
+// Add collection_id column if upgrading from an older schema
+const hasCollectionId =
+  db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('card_pool') WHERE name='collection_id'").get().n > 0;
+if (!hasCollectionId) {
+  db.exec("ALTER TABLE card_pool ADD COLUMN collection_id TEXT NOT NULL DEFAULT 'sm2026'");
+  console.log("Migrated card_pool: added collection_id column.");
+}
 
 // One-time migration from JSON files
 const isEmpty = db.prepare("SELECT COUNT(*) as n FROM users").get().n === 0;

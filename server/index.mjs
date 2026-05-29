@@ -27,49 +27,53 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ── Pool sync ─────────────────────────────────────────────────────────────────
-// Called once at startup. Adds new cards, removes stale ones, preserves state
-// for cards already in the pool. Accounts for cards already owned so remaining
-// copies start at total − already_distributed.
 
 function syncCardPool(allCards, copiesPerRarity) {
   const existingPool = new Map(
-    db.prepare("SELECT card_id, rarity FROM card_pool").all().map((r) => [r.card_id, r]),
+    db.prepare("SELECT card_id, collection_id, rarity, total_copies FROM card_pool").all().map((r) => [r.card_id, r]),
   );
   const catalogIds = new Set(allCards.map((c) => c.id));
 
   const stmtInsert = db.prepare(
-    "INSERT INTO card_pool (card_id, rarity, total_copies, copies_remaining) VALUES (?, ?, ?, ?)",
+    "INSERT INTO card_pool (card_id, collection_id, rarity, total_copies, copies_remaining) VALUES (?, ?, ?, ?, ?)",
   );
-  const stmtZero = db.prepare(
-    "UPDATE card_pool SET copies_remaining = 0 WHERE card_id = ?",
+  const stmtUpdate = db.prepare(
+    "UPDATE card_pool SET rarity = ?, total_copies = ?, copies_remaining = MAX(0, copies_remaining + ?) WHERE card_id = ?",
   );
-  const stmtCountOwned = db.prepare(
-    "SELECT COUNT(*) as n FROM owned_cards WHERE card_id = ?",
-  );
+  const stmtZero = db.prepare("UPDATE card_pool SET copies_remaining = 0 WHERE card_id = ?");
+  const stmtCountOwned = db.prepare("SELECT COUNT(*) as n FROM owned_cards WHERE card_id = ?");
 
   db.transaction(() => {
     for (const card of allCards) {
-      if (!existingPool.has(card.id)) {
-        const total = copiesPerRarity[card.rarity] ?? 10;
+      const total = copiesPerRarity[card.rarity] ?? 10;
+      const existing = existingPool.get(card.id);
+      if (!existing) {
         const alreadyOwned = stmtCountOwned.get(card.id).n;
         const remaining = Math.max(0, total - alreadyOwned);
-        stmtInsert.run(card.id, card.rarity, total, remaining);
+        stmtInsert.run(card.id, card.collectionId ?? "sm2026", card.rarity, total, remaining);
+      } else if (existing.total_copies !== total || existing.rarity !== card.rarity) {
+        // Copies or rarity changed — adjust remaining by the delta
+        const delta = total - existing.total_copies;
+        stmtUpdate.run(card.rarity, total, delta, card.id);
       }
     }
     for (const cardId of existingPool.keys()) {
-      if (!catalogIds.has(cardId)) {
-        stmtZero.run(cardId);
-      }
+      if (!catalogIds.has(cardId)) stmtZero.run(cardId);
     }
   })();
 }
 
 // ── Startup: load catalog once ────────────────────────────────────────────────
 
-const { cards: allCards, packConfigs, dailyDiamonds, copiesPerRarity } = await loadGameCatalog();
+const { cards: allCards, collections, dailyDiamonds, copiesPerRarity } = await loadGameCatalog();
 const cardById = new Map(allCards.map((c) => [c.id, c]));
+const collectionsMap = new Map(collections.map((c) => [c.id, c]));
 syncCardPool(allCards, copiesPerRarity);
-console.log(`Card pool ready — ${allCards.length} cards (${allCards.filter(c => c.rarity === "legendary").length} legendary, ${allCards.filter(c => c.rarity === "epic").length} epic, ${allCards.filter(c => c.rarity === "rare").length} rare, ${allCards.filter(c => c.rarity === "common").length} common).`);
+
+const rarityBreakdown = ["legendary", "epic", "rare", "common"]
+  .map((r) => `${allCards.filter((c) => c.rarity === r).length} ${r}`)
+  .join(", ");
+console.log(`Card pool ready — ${allCards.length} cards (${rarityBreakdown}) across ${collections.length} collection(s).`);
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -93,10 +97,7 @@ function clearAuthCookie(response) {
 
 function requireAuth(request, response, next) {
   const token = request.cookies[TOKEN_COOKIE_NAME];
-  if (!token) {
-    response.status(401).json({ message: "Not authenticated" });
-    return;
-  }
+  if (!token) { response.status(401).json({ message: "Not authenticated" }); return; }
   try {
     request.auth = jwt.verify(token, JWT_SECRET);
     next();
@@ -108,9 +109,7 @@ function requireAuth(request, response, next) {
 
 // ── Auth routes ───────────────────────────────────────────────────────────────
 
-app.get("/api/health", (_request, response) => {
-  response.json({ ok: true });
-});
+app.get("/api/health", (_request, response) => { response.json({ ok: true }); });
 
 app.post("/api/auth/register", async (request, response) => {
   const username = String(request.body?.username ?? "").trim();
@@ -126,19 +125,16 @@ app.post("/api/auth/register", async (request, response) => {
     return;
   }
 
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
-  if (existing) {
+  if (db.prepare("SELECT id FROM users WHERE email = ?").get(email)) {
     response.status(409).json({ message: "An account with that email already exists." });
     return;
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const nowIso = new Date().toISOString();
   const id = crypto.randomUUID();
-
   db.prepare(
     "INSERT INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-  ).run(id, username, email, passwordHash, nowIso);
+  ).run(id, username, email, passwordHash, new Date().toISOString());
 
   const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
   setAuthCookie(response, { userId: id, email });
@@ -155,13 +151,7 @@ app.post("/api/auth/login", async (request, response) => {
   }
 
   const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
-  if (!user) {
-    response.status(401).json({ message: "Invalid email or password." });
-    return;
-  }
-
-  const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) {
+  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     response.status(401).json({ message: "Invalid email or password." });
     return;
   }
@@ -192,8 +182,7 @@ function todayIso() {
 }
 
 function ensurePlayerState(userId) {
-  const existing = db.prepare("SELECT user_id FROM player_state WHERE user_id = ?").get(userId);
-  if (!existing) {
+  if (!db.prepare("SELECT user_id FROM player_state WHERE user_id = ?").get(userId)) {
     db.prepare(
       "INSERT INTO player_state (user_id, diamonds, last_daily_claim_date, last_opened_cards) VALUES (?, 0, NULL, '[]')",
     ).run(userId);
@@ -217,42 +206,24 @@ function buildStateResponse(userId) {
   };
 }
 
-// Draw one card from the pool for the given rarity. If that rarity is exhausted,
-// cascades to the next lower rarity. Returns null if nothing remains.
-const stmtPickCard = db.prepare(
-  "SELECT card_id FROM card_pool WHERE rarity = ? AND copies_remaining > 0 ORDER BY RANDOM() LIMIT 1",
+const stmtPickAnyCard = db.prepare(
+  "SELECT card_id FROM card_pool WHERE collection_id = ? AND copies_remaining > 0 ORDER BY RANDOM() LIMIT 1",
 );
 const stmtDecrementCard = db.prepare(
   "UPDATE card_pool SET copies_remaining = copies_remaining - 1 WHERE card_id = ?",
 );
-const rarityFallback = ["legendary", "epic", "rare", "common"];
 
-const drawCardTx = db.transaction((rarity) => {
-  const startIdx = Math.max(0, rarityFallback.indexOf(rarity));
-  for (let i = startIdx; i < rarityFallback.length; i++) {
-    const row = stmtPickCard.get(rarityFallback[i]);
-    if (!row) continue;
-    stmtDecrementCard.run(row.card_id);
-    return row.card_id;
-  }
-  return null;
+const drawCardTx = db.transaction((collectionId) => {
+  const row = stmtPickAnyCard.get(collectionId);
+  if (!row) return null;
+  stmtDecrementCard.run(row.card_id);
+  return row.card_id;
 });
 
-function drawRarity(chances) {
-  const roll = Math.random();
-  let cursor = 0;
-  for (const rarity of rarityFallback) {
-    cursor += chances[rarity] ?? 0;
-    if (roll <= cursor) return rarity;
-  }
-  return "common";
-}
-
-function openPackCards(packConfig) {
+function openPackCards(packConfig, collectionId) {
   const pulled = [];
   for (let i = 0; i < packConfig.cardCount; i++) {
-    const rarity = drawRarity(packConfig.rarityChances);
-    const cardId = drawCardTx(rarity);
+    const cardId = drawCardTx(collectionId);
     if (!cardId) continue;
     const card = cardById.get(cardId);
     if (card) pulled.push(card);
@@ -268,16 +239,21 @@ app.get("/api/game/state", requireAuth, (request, response) => {
 
 app.get("/api/game/pool", (_request, response) => {
   const rows = db
-    .prepare("SELECT card_id, total_copies, copies_remaining FROM card_pool")
+    .prepare("SELECT card_id, collection_id, total_copies, copies_remaining FROM card_pool")
     .all();
   const result = {};
   for (const row of rows) {
     result[row.card_id] = {
+      collectionId: row.collection_id,
       totalCopies: row.total_copies,
       copiesRemaining: row.copies_remaining,
     };
   }
   response.json(result);
+});
+
+app.get("/api/game/collections", (_request, response) => {
+  response.json(collections);
 });
 
 app.post("/api/game/claim-daily-diamonds", requireAuth, (request, response) => {
@@ -299,15 +275,15 @@ app.post("/api/game/claim-daily-diamonds", requireAuth, (request, response) => {
 });
 
 app.post("/api/game/buy-pack", requireAuth, (request, response) => {
-  const packId = String(request.body?.packId ?? "").trim();
-  if (!packId) {
-    response.status(400).json({ message: "packId krävs." });
+  const collectionId = String(request.body?.collectionId ?? "").trim();
+  if (!collectionId) {
+    response.status(400).json({ message: "collectionId krävs." });
     return;
   }
 
-  const packConfig = packConfigs[packId];
-  if (!packConfig) {
-    response.status(400).json({ message: "Okänt pack." });
+  const collection = collectionsMap.get(collectionId);
+  if (!collection) {
+    response.status(400).json({ message: "Okänd kollektion." });
     return;
   }
 
@@ -316,26 +292,261 @@ app.post("/api/game/buy-pack", requireAuth, (request, response) => {
     .prepare("SELECT diamonds FROM player_state WHERE user_id = ?")
     .get(request.auth.userId);
 
-  if (state.diamonds < packConfig.price) {
+  if (state.diamonds < collection.pack.price) {
     response.status(400).json({ message: "Inte tillräckligt med diamanter." });
     return;
   }
 
-  const pulledCards = openPackCards(packConfig);
+  const pulledCards = openPackCards(collection.pack, collectionId);
 
   db.transaction(() => {
     db.prepare(
       "UPDATE player_state SET diamonds = diamonds - ?, last_opened_cards = ? WHERE user_id = ?",
-    ).run(packConfig.price, JSON.stringify(pulledCards), request.auth.userId);
-    const stmtInsertCard = db.prepare(
-      "INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)",
-    );
-    for (const card of pulledCards) {
-      stmtInsertCard.run(request.auth.userId, card.id);
-    }
+    ).run(collection.pack.price, JSON.stringify(pulledCards), request.auth.userId);
+    const stmtInsertCard = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
+    for (const card of pulledCards) stmtInsertCard.run(request.auth.userId, card.id);
   })();
 
   response.json({ pulledCards, state: buildStateResponse(request.auth.userId) });
+});
+
+// ── Trade helpers ─────────────────────────────────────────────────────────────
+
+function buildTrade(row) {
+  return {
+    id: row.id,
+    status: row.status,
+    sender: { id: row.sender_user_id, username: row.sender_username },
+    receiver: { id: row.receiver_user_id, username: row.receiver_username },
+    offeredCardIds: JSON.parse(row.offered_card_ids),
+    offeredDiamonds: row.offered_diamonds,
+    requestedCardIds: JSON.parse(row.requested_card_ids),
+    requestedDiamonds: row.requested_diamonds,
+    createdAt: row.created_at,
+  };
+}
+
+const stmtTradeById = db.prepare(`
+  SELECT t.*, su.username AS sender_username, ru.username AS receiver_username
+  FROM trades t
+  JOIN users su ON su.id = t.sender_user_id
+  JOIN users ru ON ru.id = t.receiver_user_id
+  WHERE t.id = ?
+`);
+
+// ── User routes ───────────────────────────────────────────────────────────────
+
+app.get("/api/users/search", requireAuth, (request, response) => {
+  const q = String(request.query.q ?? "").trim();
+  if (q.length < 2) { response.json([]); return; }
+  const users = db
+    .prepare("SELECT id, username FROM users WHERE username LIKE ? AND id != ? LIMIT 10")
+    .all(`%${q}%`, request.auth.userId);
+  response.json(users);
+});
+
+app.get("/api/users/:userId/cards", requireAuth, (request, response) => {
+  const ownedCardIds = db
+    .prepare("SELECT card_id FROM owned_cards WHERE user_id = ?")
+    .all(request.params.userId)
+    .map((r) => r.card_id);
+  response.json({ ownedCardIds });
+});
+
+// ── Cards-for-trade routes ────────────────────────────────────────────────────
+
+app.get("/api/game/cards-for-trade", requireAuth, (request, response) => {
+  const cardIds = db
+    .prepare("SELECT card_id FROM cards_for_trade WHERE user_id = ?")
+    .all(request.auth.userId)
+    .map((r) => r.card_id);
+  response.json(cardIds);
+});
+
+app.post("/api/game/toggle-card-for-trade", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  const cardId = String(request.body?.cardId ?? "").trim();
+  if (!cardId) { response.status(400).json({ message: "cardId krävs." }); return; }
+
+  if (!db.prepare("SELECT 1 FROM owned_cards WHERE user_id = ? AND card_id = ?").get(userId, cardId)) {
+    response.status(400).json({ message: "Du äger inte det kortet." }); return;
+  }
+
+  const exists = db.prepare("SELECT 1 FROM cards_for_trade WHERE user_id = ? AND card_id = ?").get(userId, cardId);
+  if (exists) {
+    db.prepare("DELETE FROM cards_for_trade WHERE user_id = ? AND card_id = ?").run(userId, cardId);
+    response.json({ forTrade: false });
+  } else {
+    db.prepare("INSERT INTO cards_for_trade (user_id, card_id) VALUES (?, ?)").run(userId, cardId);
+    response.json({ forTrade: true });
+  }
+});
+
+app.get("/api/users/:userId/cards-for-trade", requireAuth, (request, response) => {
+  // Only return cards that are both marked for trade AND still owned
+  const cardIds = db.prepare(`
+    SELECT cft.card_id
+    FROM cards_for_trade cft
+    JOIN owned_cards oc ON oc.user_id = cft.user_id AND oc.card_id = cft.card_id
+    WHERE cft.user_id = ?
+  `).all(request.params.userId).map((r) => r.card_id);
+  response.json({ ownedCardIds: cardIds });
+});
+
+app.get("/api/trade/search", requireAuth, (request, response) => {
+  const cardId = String(request.query.cardId ?? "").trim();
+  if (!cardId) { response.json([]); return; }
+
+  const users = db.prepare(`
+    SELECT DISTINCT u.id, u.username
+    FROM cards_for_trade cft
+    JOIN users u ON u.id = cft.user_id
+    JOIN owned_cards oc ON oc.user_id = cft.user_id AND oc.card_id = cft.card_id
+    WHERE cft.card_id = ? AND cft.user_id != ?
+    LIMIT 20
+  `).all(cardId, request.auth.userId);
+  response.json(users);
+});
+
+// ── Trade routes ──────────────────────────────────────────────────────────────
+
+app.post("/api/trade", requireAuth, (request, response) => {
+  const senderId = request.auth.userId;
+  const {
+    receiverUserId,
+    offeredCardIds = [],
+    offeredDiamonds = 0,
+    requestedCardIds = [],
+    requestedDiamonds = 0,
+  } = request.body ?? {};
+
+  if (!receiverUserId) { response.status(400).json({ message: "receiverUserId krävs." }); return; }
+  if (receiverUserId === senderId) { response.status(400).json({ message: "Du kan inte handla med dig själv." }); return; }
+  if (!db.prepare("SELECT 1 FROM users WHERE id = ?").get(receiverUserId)) {
+    response.status(404).json({ message: "Mottagaren hittades inte." }); return;
+  }
+  if (offeredCardIds.length === 0 && offeredDiamonds === 0) {
+    response.status(400).json({ message: "Du måste erbjuda minst ett kort eller diamanter." }); return;
+  }
+  if (requestedCardIds.length === 0 && requestedDiamonds === 0) {
+    response.status(400).json({ message: "Du måste begära minst ett kort eller diamanter." }); return;
+  }
+
+  for (const cardId of offeredCardIds) {
+    if (!db.prepare("SELECT 1 FROM owned_cards WHERE user_id = ? AND card_id = ?").get(senderId, cardId)) {
+      response.status(400).json({ message: "Du äger inte alla erbjudna kort." }); return;
+    }
+  }
+
+  if (offeredDiamonds > 0) {
+    ensurePlayerState(senderId);
+    const ps = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(senderId);
+    if (ps.diamonds < offeredDiamonds) {
+      response.status(400).json({ message: "Inte tillräckligt med diamanter." }); return;
+    }
+  }
+
+  const id = crypto.randomUUID();
+  db.prepare(
+    "INSERT INTO trades (id, sender_user_id, receiver_user_id, offered_card_ids, offered_diamonds, requested_card_ids, requested_diamonds, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)",
+  ).run(id, senderId, receiverUserId, JSON.stringify(offeredCardIds), offeredDiamonds, JSON.stringify(requestedCardIds), requestedDiamonds, new Date().toISOString());
+
+  response.status(201).json({ tradeId: id });
+});
+
+app.get("/api/trade", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  const rows = db.prepare(`
+    SELECT t.*, su.username AS sender_username, ru.username AS receiver_username
+    FROM trades t
+    JOIN users su ON su.id = t.sender_user_id
+    JOIN users ru ON ru.id = t.receiver_user_id
+    WHERE t.sender_user_id = ? OR t.receiver_user_id = ?
+    ORDER BY t.created_at DESC
+  `).all(userId, userId);
+  response.json(rows.map(buildTrade));
+});
+
+app.post("/api/trade/:id/accept", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  const row = stmtTradeById.get(request.params.id);
+
+  if (!row) { response.status(404).json({ message: "Handel hittades inte." }); return; }
+  if (row.receiver_user_id !== userId) { response.status(403).json({ message: "Inte behörig." }); return; }
+  if (row.status !== "pending") { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
+
+  const offeredCardIds = JSON.parse(row.offered_card_ids);
+  const requestedCardIds = JSON.parse(row.requested_card_ids);
+  const senderId = row.sender_user_id;
+
+  try {
+    db.transaction(() => {
+      for (const cardId of offeredCardIds) {
+        if (!db.prepare("SELECT 1 FROM owned_cards WHERE user_id = ? AND card_id = ?").get(senderId, cardId))
+          throw new Error("Avsändaren äger inte längre alla erbjudna kort.");
+      }
+      for (const cardId of requestedCardIds) {
+        if (!db.prepare("SELECT 1 FROM owned_cards WHERE user_id = ? AND card_id = ?").get(userId, cardId))
+          throw new Error("Du äger inte längre alla begärda kort.");
+      }
+      if (row.offered_diamonds > 0) {
+        ensurePlayerState(senderId);
+        const ps = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(senderId);
+        if (ps.diamonds < row.offered_diamonds) throw new Error("Avsändaren har inte tillräckligt med diamanter.");
+      }
+      if (row.requested_diamonds > 0) {
+        ensurePlayerState(userId);
+        const ps = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(userId);
+        if (ps.diamonds < row.requested_diamonds) throw new Error("Du har inte tillräckligt med diamanter.");
+      }
+
+      const stmtDel = db.prepare("DELETE FROM owned_cards WHERE id = (SELECT id FROM owned_cards WHERE user_id = ? AND card_id = ? LIMIT 1)");
+      const stmtAdd = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
+
+      const stmtDelForTrade = db.prepare("DELETE FROM cards_for_trade WHERE user_id = ? AND card_id = ?");
+      for (const cardId of offeredCardIds) {
+        stmtDel.run(senderId, cardId); stmtAdd.run(userId, cardId);
+        stmtDelForTrade.run(senderId, cardId);
+      }
+      for (const cardId of requestedCardIds) {
+        stmtDel.run(userId, cardId); stmtAdd.run(senderId, cardId);
+        stmtDelForTrade.run(userId, cardId);
+      }
+
+      if (row.offered_diamonds > 0) {
+        db.prepare("UPDATE player_state SET diamonds = diamonds - ? WHERE user_id = ?").run(row.offered_diamonds, senderId);
+        db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(row.offered_diamonds, userId);
+      }
+      if (row.requested_diamonds > 0) {
+        db.prepare("UPDATE player_state SET diamonds = diamonds - ? WHERE user_id = ?").run(row.requested_diamonds, userId);
+        db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(row.requested_diamonds, senderId);
+      }
+
+      db.prepare("UPDATE trades SET status = 'accepted' WHERE id = ?").run(row.id);
+    })();
+
+    response.json({ state: buildStateResponse(userId) });
+  } catch (err) {
+    response.status(409).json({ message: err.message });
+  }
+});
+
+app.post("/api/trade/:id/reject", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  const row = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
+  if (!row || row.receiver_user_id !== userId) { response.status(403).json({ message: "Inte behörig." }); return; }
+  if (row.status !== "pending") { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
+  db.prepare("UPDATE trades SET status = 'rejected' WHERE id = ?").run(row.id);
+  response.status(204).send();
+});
+
+app.post("/api/trade/:id/cancel", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  const row = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
+  if (!row || row.sender_user_id !== userId) { response.status(403).json({ message: "Inte behörig." }); return; }
+  if (row.status !== "pending") { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
+  db.prepare("UPDATE trades SET status = 'cancelled' WHERE id = ?").run(row.id);
+  response.status(204).send();
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

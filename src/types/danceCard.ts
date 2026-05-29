@@ -4,6 +4,11 @@ export interface DanceCard {
   id: string;
   name: string;
   rarity: CardRarity;
+  collectionId?: string;
+  /** Abbreviated club name (förening). */
+  club?: string;
+  /** Dance style, e.g. "Bugg", "Lindy Hop". */
+  danceStyle?: string;
   /** Matches PNG stem under data/designs: firstname_lastname-firstname_lastname */
   designKey?: string;
   /** Vote4Dance position within its tier (if sourced from Vote4Dance). */

@@ -1,0 +1,1964 @@
+{
+  "scrapedAt": "2026-05-22T18:07:54.185Z",
+  "source": {
+    "compIds": [
+      "4026",
+      "4027"
+    ],
+    "apiBase": "https://api.vote4dance.com"
+  },
+  "cards": [
+    {
+      "id": "sm26-1413096",
+      "name": "Martin Ringkvist & Carin Miehling",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKDM/MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391955",
+      "name": "Simon Jonasson & Liz Örtlund",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391956",
+      "name": "Pontus Nordin & Anna Morgansdotter",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391957",
+      "name": "Fredrik Olausson & Lina Olausson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SPIR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391958",
+      "name": "Andreas Janliden & Kristina Hellberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391959",
+      "name": "Jonas Strand & Åsa Boman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413097",
+      "name": "Erik Lindberg & Pia Lindberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413098",
+      "name": "Emil Johansson & Rebecka Hallberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391961",
+      "name": "Jon Landström & Sara Karlsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DFDB",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391967",
+      "name": "Robin Ivarsson & Martina Nilsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391969",
+      "name": "Urban Haglund & Linda Stridkvist",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBH",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391968",
+      "name": "Johan Olsson & Sanna Theodorsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "JDC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413099",
+      "name": "Thomas Modin & Linn Carlsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391972",
+      "name": "Martin Månsson & Elin Lindström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391971",
+      "name": "Jonas Fågelström & Hanna Nilsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391973",
+      "name": "Mats Andersson & Emilie Sörholm",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391976",
+      "name": "Henric Stillman & Joanna Stillman",
+      "rarity": "epic",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413100",
+      "name": "Tobbe Sellberg & Victoria Ros",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC/BL",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413101",
+      "name": "Jonathan Ehrlund & Emma Danielsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413102",
+      "name": "Peter Gustafsson & Louise Lindén",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBRR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413103",
+      "name": "Johan Stillman & Annika Westin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391980",
+      "name": "Axel Engstrand & Emma Linnman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391981",
+      "name": "Jimmy Mårdberg & Felicia Svensson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS/RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413104",
+      "name": "Karl Lettenström & Elizabeth Lindström",
+      "rarity": "legendary",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391986",
+      "name": "Daniel Everborn & Jennie Johansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF/LBS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391985",
+      "name": "Björn Lindman & Susanna Everborn",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD/BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391997",
+      "name": "Tommy Ogfelt & Linda Göransson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391987",
+      "name": "Pierre Larsson & Madelene Zackrisson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391989",
+      "name": "Christian Tillman & Linda Tillman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "JSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391988",
+      "name": "Pontus Johqvist & Caroline Bengtsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBH",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391994",
+      "name": "Anton Johansson & Mimmi Larsson Markebo",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBH",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413105",
+      "name": "Anders Tell & Elna Gunnarsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÖDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391991",
+      "name": "Linus Isaksson & Anette Schultzberg Isaksson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "Dala",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413106",
+      "name": "Stefan Tärnström & Caroline Grute",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391993",
+      "name": "Mikael Säfström & Gabriella Säfström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413107",
+      "name": "Henrik Jönsson & Therese Söderberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÖBRK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392001",
+      "name": "Patrik Hjerteblom & Cecilia Zimmerman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR/NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1391996",
+      "name": "Herman Hedlund & Elin Zakrisson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RING",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413108",
+      "name": "Precious Kamboma & Anna Bäärnhielm",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW/ÖBRK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392004",
+      "name": "Mikael Karlsson & Annika Åslund",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413109",
+      "name": "Mikael Åberg & Zandra Lundmark",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UDI/ÄDD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392000",
+      "name": "Petter Adolfsson & Malin Isaksson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DZV",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413110",
+      "name": "Per Andersson & Ellen Hansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DBB",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392003",
+      "name": "Patric Karlsson & Sandra Larsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392010",
+      "name": "David Widell & Sara Holmberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKB",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392005",
+      "name": "Thomas Modin & Sara Blomdin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SPIR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392007",
+      "name": "Peter Mårtensson & Ida Mårtensson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ENA",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413111",
+      "name": "Johan Haag & Hanna Kupljen",
+      "rarity": "epic",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413112",
+      "name": "Malin Klerén & Sofie Asker",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392009",
+      "name": "Rikard Wallin & Anna Wallin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392013",
+      "name": "Kent Pettersson & Marina Pada-Pettersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392011",
+      "name": "Fredrik Svärdell & Katrin Svärdell",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392019",
+      "name": "Björn Åkesson & Annika Borg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GÅS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392014",
+      "name": "Kenneth Augustsson & Åsa Klintberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR/MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413113",
+      "name": "Robert Olofsson & Margareta Olofsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DDK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392018",
+      "name": "Ralf Velander & Anne Ränk",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392028",
+      "name": "Bengt Sandström & Annjeanette Sandström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UDI",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413114",
+      "name": "Magnus Vedin & Karolina Tornberg",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "ALT",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392034",
+      "name": "Sven Larsson & Anne Karlsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392030",
+      "name": "Tommy Geiros & Anna Geiros",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392032",
+      "name": "Kjell Landström & Maria Engström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÄDD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392026",
+      "name": "Tony Forsberg & Marie Forsberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392039",
+      "name": "Magnus Söderberg & Susanne Söderberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392033",
+      "name": "Tomas Blom & Helen Eriksson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392046",
+      "name": "Roger Sundin & Kristina Sundin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ALT",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392035",
+      "name": "Håkan Hellström & Kerstin Larsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392040",
+      "name": "Mathias Borin & Annelie Borin",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "UDI",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392041",
+      "name": "Orvar Carlsson & Anette Carlsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413115",
+      "name": "Jörgen Ingelmark & Ulrika Wendel",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GÅS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392037",
+      "name": "Henrik Andersson & Åsa Andersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SPIR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413116",
+      "name": "Peter Viberg & Anne-Marie Lund",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BL",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392055",
+      "name": "Christoffer Nilsson & Jenny Johansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UMDK/BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392038",
+      "name": "Andreas Sundberg & Victoria Sundberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392049",
+      "name": "Robert Wilhelmsson & Camilla Wilhelmsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392045",
+      "name": "Tommy Svensson & Anneli Svensson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SOG",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392053",
+      "name": "Peter Siberg & Maria Siberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DFE",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392052",
+      "name": "Mattias Gregorius & Martina Gregorius",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÖDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392071",
+      "name": "Jörgen Viklund & Kristin Viklund",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392044",
+      "name": "Johan Möllerberg & Linda Chadell",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392056",
+      "name": "Daniel Rolin & Golda Einstein",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413117",
+      "name": "Erik Engel & Harriet Engel",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392059",
+      "name": "Lars Fältman & Suzanne Fältman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392067",
+      "name": "Magnus Åström & Nina Åström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392060",
+      "name": "Mats Söderberg & Jessica Lindegren",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392057",
+      "name": "Roger Lindberg & Ylva Lindberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392061",
+      "name": "Leif Borglund & Britt-Inger Bäverfalk",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW/UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392058",
+      "name": "Ulf Berglund & Anette Berglund",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413118",
+      "name": "Mikael Ekström & Katarina Ekström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392065",
+      "name": "Tony Wallin & Tina Wallin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392077",
+      "name": "Tord Bergström & Märith Aronsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392066",
+      "name": "Bert Olausson & Britt Olausson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SPIR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413119",
+      "name": "Mikael Tornberg & Malin Stegeby",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ALT",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392069",
+      "name": "Robert Johansson & Ann-Sofie Rönnebrand",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392074",
+      "name": "Johan Sjösten & Ann-Christina Petersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392082",
+      "name": "Thomas Nilefalk & Carina Nilefalk",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LDT",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392070",
+      "name": "David Wadbrant & Caroline Wadbrant",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392078",
+      "name": "Claes Bergström & Ann-Catrin Bergström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392075",
+      "name": "Jonathan Ehrlund, Emma Danielsson & Fanny Ellström",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392088",
+      "name": "Kim Malmberg, Amanda Hjort & Debbie Lewinter",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392076",
+      "name": "Elias Corlin, Anna Engstrand & Emma Corlin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392095",
+      "name": "William Johansson & Rebecka Ärlestig",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÄDD/UMDK",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413090",
+      "name": "Hannes Store Malefors & Clara Store Malefors",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392083",
+      "name": "Felix Freidmann & Emilia Hedlund",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392084",
+      "name": "Simon Jonsson & Astrid Eriksson",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413091",
+      "name": "Gustav Svensén & Lovisa Svensén",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "JDC",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392101",
+      "name": "Oliver Odenius & Emelie Nordeberg",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413092",
+      "name": "Hjalmar Törnkvist & Stina Eriksson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÖBRK",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413093",
+      "name": "Sixten Gauffin & Lisa Vesterberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS/MÄLAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413094",
+      "name": "Hannes Ardbäck & Selma Lundin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ENA",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413095",
+      "name": "Axel Törnblad & Maja Kvist",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DSW",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413120",
+      "name": "Alma Forsberg & Maja Forsberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SOG",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413121",
+      "name": "August Selgeryd & Malin Svensson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS/RS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413122",
+      "name": "Amanda Stenman & Lina Stenman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SDK",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392108",
+      "name": "Viktor Edlund & Wilma Edlund",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UMDK",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413123",
+      "name": "Tobias Ramberg & Lena Magnusson",
+      "rarity": "legendary",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392118",
+      "name": "Oscar Ågren & Sofia Ärleskog",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392103",
+      "name": "Conrad Lindström & Cajsa Weinemo",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BLÅA/DKB",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392099",
+      "name": "Valdemar Selgeryd & Amanda Berglind",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SSS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413124",
+      "name": "Rasmus Liljekrans & Rebecka Liljekrans",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413125",
+      "name": "Viktor Sjösten & Debbie Lewinter",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392107",
+      "name": "Gustav Svensén & Lovisa Svensén",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "JDC",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392106",
+      "name": "Dante Karlgren Grerup & Ida Ernemo",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SSS",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392120",
+      "name": "Bror Ernemo & Liv Kjellberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SSS",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392104",
+      "name": "Oliver Odenius & Emelie Nordeberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392127",
+      "name": "Sixten Gauffin & Lisa Vesterberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS/MÄLAR",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392109",
+      "name": "Jonatan Lindström & Erika Trygg",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "SSS",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1413126",
+      "name": "Mattias Sandberg & Annelie Damberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKB",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1413127",
+      "name": "Amanda Stenman & Lina Stenman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SDK",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392113",
+      "name": "Conrad Lindström & Cajsa Weinemo",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BLÅA/DKB",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1413128",
+      "name": "Viktor Sjösten & Caroline Bejstam",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1413129",
+      "name": "Oscar Ågren & Sofia Ärleskog",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1413130",
+      "name": "Tobias Claesson & Martina Svanbäck",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR/MAR",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1413131",
+      "name": "Valdemar Selgeryd & Amanda Berglind",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SSS",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392128",
+      "name": "Viktor Edlund & Wilma Edlund",
+      "rarity": "epic",
+      "collectionId": "sm2026",
+      "club": "UMDK",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1413132",
+      "name": "Tobias Ramberg & Lena Magnusson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392121",
+      "name": "Leo Holmström & Hilda Rosell",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DSW/DKSS",
+      "danceStyle": "Rock'n'Roll"
+    },
+    {
+      "id": "sm26-1392126",
+      "name": "Isa Elfving & Rebecka Ärlestig",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UMDK",
+      "danceStyle": "Rock'n'Roll"
+    },
+    {
+      "id": "sm26-1392133",
+      "name": "Alve Weber & Annie Weber",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBH",
+      "danceStyle": "Rock'n'Roll"
+    },
+    {
+      "id": "sm26-1392124",
+      "name": "Hugo Magnusson & Ester Andersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HED/DBB",
+      "danceStyle": "Rock'n'Roll"
+    },
+    {
+      "id": "sm26-1392135",
+      "name": "Felicia Carlberg & Marie Schulze",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UMDK",
+      "danceStyle": "Rock'n'Roll"
+    },
+    {
+      "id": "sm26-1392134",
+      "name": "Erik Engström & Marit Lindbom",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Rock'n'Roll"
+    },
+    {
+      "id": "sm26-1392125",
+      "name": "Tobias Claesson & Emmy Henriksson",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "MÄLAR/MAR",
+      "danceStyle": "Rock'n'Roll"
+    },
+    {
+      "id": "sm26-1392136",
+      "name": "Peter Magnusson Sedig & Maria Andersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKB",
+      "danceStyle": "Rullstolsdans Combi 1"
+    },
+    {
+      "id": "sm26-1392137",
+      "name": "Hanna Käld & Lena Käld Palmer",
+      "rarity": "epic",
+      "collectionId": "sm2026",
+      "club": "KPF",
+      "danceStyle": "Rullstolsdans Combi 1"
+    },
+    {
+      "id": "sm26-1392138",
+      "name": "Andrea Gazzola & Karin Malmkvist",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "Dala",
+      "danceStyle": "Rullstolsdans Combi 1"
+    },
+    {
+      "id": "sm26-1392139",
+      "name": "Lillemor Jensen & Zanna Petersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKB",
+      "danceStyle": "Rullstolsdans Combi 2"
+    },
+    {
+      "id": "sm26-1392140",
+      "name": "Erika Pettersson & Maila Lauronen",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKB",
+      "danceStyle": "Rullstolsdans Combi 2"
+    },
+    {
+      "id": "sm26-1392142",
+      "name": "Hannes Ardbäck & Selma Lundin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ENA",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413136",
+      "name": "Hannes Store Malefors & Clara Store Malefors",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392143",
+      "name": "Oliver Odenius & Emelie Nordeberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392148",
+      "name": "William Johansson & Rebecka Ärlestig",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÄDD/UMDK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392152",
+      "name": "Isaac Bengtsson & Mira Berg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ALT/ÖBRK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413137",
+      "name": "Hjalmar Törnkvist & Stina Eriksson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÖBRK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392155",
+      "name": "Axel Törnblad & Maja Kvist",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413138",
+      "name": "Hjalmar Jonsson & Nellie Olofsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DDK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413139",
+      "name": "Leo Holmström & Hilda Rosell",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DSW/DKSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413140",
+      "name": "Sixten Gauffin & Lisa Vesterberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS/MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392162",
+      "name": "Simon Jonsson & Astrid Eriksson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392160",
+      "name": "Felix Freidmann & Emilia Hedlund",
+      "rarity": "epic",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392161",
+      "name": "Amanda Stenman & Lina Stenman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SDK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392164",
+      "name": "Rasmus Liljekrans & Rebecka Liljekrans",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392165",
+      "name": "Andreas Ivarsson & Eleonor Lundby",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF/DFE",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413148",
+      "name": "Fredrik Siljevik & Amelie Gustavsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MORA",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392168",
+      "name": "David Eriksson & Linnéa Holm",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBRR/NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392166",
+      "name": "Elias Corlin & Emma Corlin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392172",
+      "name": "Viktor Sjösten & Debbie Lewinter",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413149",
+      "name": "Joel Jansson & Alice Johansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DBB",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392169",
+      "name": "Isak Gerre & Olivia Dahlgren",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÖDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392171",
+      "name": "Hampus Falk & Fanny Ellström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413150",
+      "name": "Linus Dunér Axelsson & Lisa Lundström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS/NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413141",
+      "name": "Gustav Lundberg & Emelie Fasth",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DFE",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413144",
+      "name": "Alma Forsberg & Maja Forsberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SOG",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392179",
+      "name": "Ludwig Wilhelmsson & Felicia Strömstedt",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392176",
+      "name": "Robert Svensson & Sara Wilsborn",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392180",
+      "name": "Freddy Sandberg & Hanna Nylander",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BLÅA/LBH",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392182",
+      "name": "Axel Lind & Ella Lidström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ÄDD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413145",
+      "name": "Filip Söderqvist & Sofie Bewernick",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DZV",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392187",
+      "name": "Robin Ziebell & Hanna Gyllenbring",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF/DKB",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392189",
+      "name": "John Engström & Gabriella Claeson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392188",
+      "name": "Simon Jansson & Madelene Andersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD/UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392193",
+      "name": "Marcus Bergqvist & Hanna Markusson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GRRC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413146",
+      "name": "Filip Lindqvist & Sofie Lindqvist",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GÅS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392195",
+      "name": "August Selgeryd & Malin Svensson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS/RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392196",
+      "name": "Fredrik Frenning & Anna Engstrand",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392197",
+      "name": "Oscar Ågren & Sofia Ärleskog",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392211",
+      "name": "Felix Albrecht & Lisa Grönblad",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "GÅS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392201",
+      "name": "Patrik Ziebell & Jessica Fältman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392199",
+      "name": "Benjamin Österlund & Angelica Källström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392200",
+      "name": "Viktor Torstensson & Julia Lauri",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392205",
+      "name": "Alexander Gustafsson & Caroline Almgren",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "CAN",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413151",
+      "name": "Hugo Hardestam & Matilda Lindgren",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392208",
+      "name": "Jacob Berggren & Nathalie Albrigtsen",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413147",
+      "name": "Erik Gelotte & Sofia Söderberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392212",
+      "name": "Joel Lundberg & Pia Andersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "CAN",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392213",
+      "name": "Daniel Johansson & Sofia Lundberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392215",
+      "name": "Arvid Jönsson & Elin Löfgren",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413142",
+      "name": "Johan Åberg & Mariola Karlsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392218",
+      "name": "Conrad Lindström & Cajsa Weinemo",
+      "rarity": "legendary",
+      "collectionId": "sm2026",
+      "club": "BLÅA/DKB",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1413143",
+      "name": "Ragnar Oskarsson & Nathalie Andersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RING",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392216",
+      "name": "William Persson & Cornelia Jönsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BLÅA/BDF",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392222",
+      "name": "Mikael Svensson & Janni Söderberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DFE",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392223",
+      "name": "David Wahlström & Julia Andersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DFE",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392224",
+      "name": "Viktor Edlund & Wilma Edlund",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UMDK",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392229",
+      "name": "Andreas Johansson & Hannah Wickbom",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LSDK/LDT",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392241",
+      "name": "Tobias Ramberg & Lena Magnusson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392236",
+      "name": "Valdemar Selgeryd & Amanda Berglind",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "SSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392235",
+      "name": "Andreas Sundbom & Viktoria Björnsson-Spets",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "NSW",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392232",
+      "name": "André Sandström & Fanny Elfving",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UDI",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392239",
+      "name": "Kim Malmberg & Caroline Bejstam",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UBSS",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392237",
+      "name": "Fabian Rosell & Zarah Rosell",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "JDC",
+      "danceStyle": "Bugg"
+    },
+    {
+      "id": "sm26-1392238",
+      "name": "William Petersson, Isabell Lindgren & Klara Andersson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HVD",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392253",
+      "name": "Gustav Svensén, Hilda Rosell & Lovisa Svensén",
+      "rarity": "epic",
+      "collectionId": "sm2026",
+      "club": "JDC/DKSS",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392233",
+      "name": "Alve Weber, Annie Weber & Helmi Adgård Luoto",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBH",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392246",
+      "name": "William Klasson, Cornelia Klasson & Maja Persson Klahr",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "HVD",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392245",
+      "name": "Axel Törnblad, Emelie Nordeberg & Maja Kvist",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DSW/MÄLAR",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392242",
+      "name": "Hugo Magnusson, Alva Östberg & Ella Östberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "HED/DBB",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392249",
+      "name": "Pontus Nordin, Anna Morgansdotter & Martina Nilsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392259",
+      "name": "Klas Persson, Maria Senkerik & Therese Johansson",
+      "rarity": "legendary",
+      "collectionId": "sm2026",
+      "club": "DKB",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392247",
+      "name": "Peter Mårtensson, Ida Mårtensson & Sofia Wessman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ENA",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392250",
+      "name": "Jimmy Englund, Helén Brunnström & Jenny Johansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKB/ALT/BDF",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392263",
+      "name": "Tomas Blom, Carin Miehling & Helen Eriksson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392243",
+      "name": "Robert Wilhelmsson, Camilla Wilhelmsson & Märith Aronsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Dubbelbugg"
+    },
+    {
+      "id": "sm26-1392254",
+      "name": "David Widell & Sara Holmberg",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKB",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413152",
+      "name": "Henric Stillman & Joanna Stillman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392252",
+      "name": "Jesper Bertilsson & Maria Nilsson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413153",
+      "name": "Henrik Boström & Robin Ivarsson",
+      "rarity": "legendary",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392257",
+      "name": "Axel Engstrand & Emma Linnman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392260",
+      "name": "Pontus Nordin & Anna Morgansdotter",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "RS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392251",
+      "name": "Mikael Säfström & Gabriella Säfström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413154",
+      "name": "Christian Tillman & Linda Tillman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "JSW",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413155",
+      "name": "Robert Johnsson & Jana Sondell",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MÄLAR/UBSS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413156",
+      "name": "Daniel Everborn & Jennie Johansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF/LBS",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413157",
+      "name": "Jimmy Englund & Jenny Johansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "DKB/BDF",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413158",
+      "name": "Olle Wijk & Ann-Catrin Johansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "EBBA",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392282",
+      "name": "Claes Bergström & Ann-Catrin Bergström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392261",
+      "name": "Lars Brunnström & Helén Brunnström",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ALT",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392270",
+      "name": "Roger Sundin & Kristina Sundin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ALT",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1413159",
+      "name": "Daniel Rolin & Golda Einstein",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "BDF",
+      "danceStyle": "Boogie Woogie"
+    },
+    {
+      "id": "sm26-1392277",
+      "name": "Hannes Ardbäck & Selma Lundin",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "ENA",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392289",
+      "name": "Axel Engstrand & Emma Linnman",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "MAR",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392280",
+      "name": "Jan Est & Lena Eff",
+      "rarity": "rare",
+      "collectionId": "sm2026",
+      "club": "SSS",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392283",
+      "name": "Linnea Ståhl & Zandra Lundmark",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "UMDK/ÄDD",
+      "danceStyle": "Lindy Hop"
+    },
+    {
+      "id": "sm26-1392288",
+      "name": "Mattias Plichta & Alexandra Baranava",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBH",
+      "danceStyle": "Rock'n'Roll"
+    },
+    {
+      "id": "sm26-1392285",
+      "name": "Sebastian Brisjö & Elin Johansson",
+      "rarity": "common",
+      "collectionId": "sm2026",
+      "club": "LBH",
+      "danceStyle": "Rock'n'Roll"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import type { BuyPackResponse, CardPoolInfo, ClaimDailyDiamondsResponse, GameState } from "../types/game";
+import type { BuyPackResponse, CardPoolInfo, ClaimDailyDiamondsResponse, GameState, Trade, UserSearchResult } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -26,6 +26,7 @@ async function requestJson<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(await parseErrorMessage(response));
   }
 
+  if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
 
@@ -41,9 +42,65 @@ export async function fetchCardPool(): Promise<CardPoolInfo> {
   return requestJson<CardPoolInfo>("/api/game/pool", { method: "GET" });
 }
 
-export async function buyPack(packId: string): Promise<BuyPackResponse> {
+export async function buyPack(collectionId: string): Promise<BuyPackResponse> {
   return requestJson<BuyPackResponse>("/api/game/buy-pack", {
     method: "POST",
-    body: JSON.stringify({ packId }),
+    body: JSON.stringify({ collectionId }),
   });
+}
+
+export async function fetchMyCardsForTrade(): Promise<string[]> {
+  return requestJson<string[]>("/api/game/cards-for-trade", { method: "GET" });
+}
+
+export async function toggleCardForTrade(cardId: string): Promise<{ forTrade: boolean }> {
+  return requestJson<{ forTrade: boolean }>("/api/game/toggle-card-for-trade", {
+    method: "POST",
+    body: JSON.stringify({ cardId }),
+  });
+}
+
+export async function getUserCardsForTrade(userId: string): Promise<{ ownedCardIds: string[] }> {
+  return requestJson<{ ownedCardIds: string[] }>(`/api/users/${userId}/cards-for-trade`, { method: "GET" });
+}
+
+export async function searchCardTraders(cardId: string): Promise<UserSearchResult[]> {
+  return requestJson<UserSearchResult[]>(`/api/trade/search?cardId=${encodeURIComponent(cardId)}`, { method: "GET" });
+}
+
+export async function searchUsers(q: string): Promise<UserSearchResult[]> {
+  return requestJson<UserSearchResult[]>(`/api/users/search?q=${encodeURIComponent(q)}`, { method: "GET" });
+}
+
+export async function getUserCards(userId: string): Promise<{ ownedCardIds: string[] }> {
+  return requestJson<{ ownedCardIds: string[] }>(`/api/users/${userId}/cards`, { method: "GET" });
+}
+
+export async function fetchMyTrades(): Promise<Trade[]> {
+  return requestJson<Trade[]>("/api/trade", { method: "GET" });
+}
+
+export async function createTrade(payload: {
+  receiverUserId: string;
+  offeredCardIds: string[];
+  offeredDiamonds: number;
+  requestedCardIds: string[];
+  requestedDiamonds: number;
+}): Promise<{ tradeId: string }> {
+  return requestJson<{ tradeId: string }>("/api/trade", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function acceptTrade(tradeId: string): Promise<{ state: GameState }> {
+  return requestJson<{ state: GameState }>(`/api/trade/${tradeId}/accept`, { method: "POST" });
+}
+
+export async function rejectTrade(tradeId: string): Promise<void> {
+  await requestJson<unknown>(`/api/trade/${tradeId}/reject`, { method: "POST" });
+}
+
+export async function cancelTrade(tradeId: string): Promise<void> {
+  await requestJson<unknown>(`/api/trade/${tradeId}/cancel`, { method: "POST" });
 }

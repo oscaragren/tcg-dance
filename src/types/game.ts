@@ -19,3 +19,19 @@ export type BuyPackResponse = {
 };
 
 export type CardPoolInfo = Record<string, { totalCopies: number; copiesRemaining: number }>;
+
+export type UserSearchResult = { id: string; username: string };
+
+export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled";
+
+export type Trade = {
+  id: string;
+  status: TradeStatus;
+  sender: UserSearchResult;
+  receiver: UserSearchResult;
+  offeredCardIds: string[];
+  offeredDiamonds: number;
+  requestedCardIds: string[];
+  requestedDiamonds: number;
+  createdAt: string;
+};
