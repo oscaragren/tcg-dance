@@ -99,7 +99,7 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                   <span className="text-3xl font-bold text-blue-600">
                     {isLoadingState ? "–" : diamonds}
                   </span>
-                  <span className="text-gray-500">◆</span>
+                  <span className="text-blue-600">◆</span>
                 </div>
                 <Button
                   size="sm"

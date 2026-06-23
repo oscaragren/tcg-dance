@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AchievementsSection } from "../../components/web/AchievementsSection";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
-import { fetchGameState, fetchMyCardsForTrade, toggleCardForTrade } from "../../utils/gameApi";
+import { collections } from "../../data/packs";
+import { fetchGameState, fetchMyCardsForTrade } from "../../utils/gameApi";
 
 type RarityFilter = "all" | CardRarity;
+type CollectionFilter = "all" | string;
 
 type CollectionPageProps = {
   userEmail: string | null;
@@ -13,11 +16,10 @@ type CollectionPageProps = {
 
 export function CollectionPage({ userEmail }: CollectionPageProps) {
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
+  const [collectionFilter, setCollectionFilter] = useState<CollectionFilter>("all");
   const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
   const [forTradeIds, setForTradeIds] = useState<Set<string>>(new Set());
-  const [showAllCards, setShowAllCards] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [toggling, setToggling] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,35 +37,6 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
       .finally(() => setIsLoading(false));
   }, [userEmail]);
 
-  async function handleToggleForTrade(cardId: string) {
-    if (toggling) return;
-    setToggling(cardId);
-    // optimistic update
-    setForTradeIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(cardId)) next.delete(cardId); else next.add(cardId);
-      return next;
-    });
-    try {
-      const result = await toggleCardForTrade(cardId);
-      // sync with server truth
-      setForTradeIds((prev) => {
-        const next = new Set(prev);
-        if (result.forTrade) next.add(cardId); else next.delete(cardId);
-        return next;
-      });
-    } catch {
-      // roll back
-      setForTradeIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(cardId)) next.delete(cardId); else next.add(cardId);
-        return next;
-      });
-    } finally {
-      setToggling(null);
-    }
-  }
-
   const ownedCounts = useMemo(
     () =>
       ownedCardIds.reduce<Record<string, number>>((acc, id) => {
@@ -74,16 +47,14 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
   );
 
   const visibleCards = useMemo(() => {
-    const candidateCards = showAllCards
-      ? cards
-      : cards.filter((card) => (ownedCounts[card.id] ?? 0) > 0);
-    const filteredCards =
-      rarityFilter === "all" ? candidateCards : candidateCards.filter((c) => c.rarity === rarityFilter);
-    return [...filteredCards].sort((a, b) => {
+    let candidateCards = cards.filter((card) => (ownedCounts[card.id] ?? 0) > 0);
+    if (rarityFilter !== "all") candidateCards = candidateCards.filter((c) => c.rarity === rarityFilter);
+    if (collectionFilter !== "all") candidateCards = candidateCards.filter((c) => c.collectionId === collectionFilter);
+    return [...candidateCards].sort((a, b) => {
       const d = rarityOrder[a.rarity] - rarityOrder[b.rarity];
       return d !== 0 ? d : a.name.localeCompare(b.name, "sv");
     });
-  }, [ownedCounts, rarityFilter, showAllCards]);
+  }, [ownedCounts, rarityFilter, collectionFilter]);
 
   if (!userEmail) {
     return (
@@ -99,7 +70,10 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
     );
   }
 
-  const forTradeCount = visibleCards.filter((c) => forTradeIds.has(c.id)).length;
+  const forTradeCount = useMemo(
+    () => cards.filter((c) => (ownedCounts[c.id] ?? 0) > 0 && forTradeIds.has(c.id)).length,
+    [ownedCounts, forTradeIds],
+  );
 
   return (
     <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
@@ -108,12 +82,15 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold mb-3">Samling</h1>
-              <p className="text-gray-600">
-                Klicka på <span className="text-purple-600 font-medium">⇄</span> under ett kort för att markera det som tillgängligt för byte.
+              <p className="text-gray-600 mb-3">
+                Dina kort. Kort märkta med <span className="text-purple-600 font-medium">⇄</span> är tillgängliga för byte.
               </p>
+              <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
+                <Link to="/samling/byte">⇄ Markera kort för byte</Link>
+              </Button>
               {forTradeCount > 0 && (
-                <p className="text-sm text-purple-600 mt-1">
-                  {forTradeCount} kort markerade för byte
+                <p className="text-xs text-purple-600 mt-2">
+                  {forTradeCount} {forTradeCount === 1 ? "kort markerat" : "kort markerade"} för byte just nu
                 </p>
               )}
             </div>
@@ -128,27 +105,33 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                   className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
                   <option value="all">Alla</option>
+                  <option value="special">Special</option>
                   <option value="legendary">Legendary</option>
                   <option value="epic">Epic</option>
                   <option value="rare">Rare</option>
                   <option value="common">Common</option>
                 </select>
               </div>
-
-              <label
-                htmlFor="show-all-cards"
-                className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
-              >
-                <input
-                  id="show-all-cards"
-                  type="checkbox"
-                  checked={showAllCards}
-                  onChange={(e) => setShowAllCards(e.target.checked)}
-                />
-                Visa även kort jag inte äger
-              </label>
+              {collections.length > 1 && (
+                <div>
+                  <label htmlFor="collection-filter" className="block text-sm text-gray-600 mb-2">Visa kortpaket</label>
+                  <select
+                    id="collection-filter"
+                    value={collectionFilter}
+                    onChange={(e) => setCollectionFilter(e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="all">Alla paket</option>
+                    {collections.map((c) => (
+                      <option key={c.id} value={c.id}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
+
+          <AchievementsSection />
 
           {visibleCards.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
@@ -158,15 +141,10 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {visibleCards.map((card) => {
                 const count = ownedCounts[card.id] ?? 0;
-                const isOwned = count > 0;
                 const isForTrade = forTradeIds.has(card.id);
-                const isToggling = toggling === card.id;
 
                 return (
-                  <div
-                    key={card.id}
-                    className={`flex flex-col items-center gap-1 ${isOwned ? "" : "opacity-50 grayscale"}`}
-                  >
+                  <div key={card.id} className="flex flex-col items-center gap-1">
                     <div className="relative">
                       <CardPlaceholder
                         rarity={card.rarity}
@@ -174,6 +152,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                         name={card.name}
                         danceStyle={card.danceStyle}
                         designKey={card.designKey}
+                        showCaption
                       />
                       {count > 1 && (
                         <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
@@ -181,25 +160,11 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                         </div>
                       )}
                       {isForTrade && (
-                        <div className="absolute bottom-1.5 left-1.5 z-10 bg-purple-600 text-white text-[9px] font-bold rounded px-1 py-0.5 leading-none pointer-events-none">
+                        <div className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
                           ⇄
                         </div>
                       )}
                     </div>
-
-                    {isOwned && (
-                      <button
-                        onClick={() => void handleToggleForTrade(card.id)}
-                        disabled={isToggling}
-                        className={`w-full text-[10px] font-medium py-1 px-1 rounded transition-colors leading-none ${
-                          isForTrade
-                            ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
-                            : "bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                        } ${isToggling ? "opacity-50" : ""}`}
-                      >
-                        {isForTrade ? "⇄ Till byte" : "⇄ Markera"}
-                      </button>
-                    )}
                   </div>
                 );
               })}

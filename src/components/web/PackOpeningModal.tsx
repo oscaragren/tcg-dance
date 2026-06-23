@@ -17,6 +17,7 @@ const rarityLabel: Record<string, string> = {
   rare: "text-blue-400",
   epic: "text-purple-400",
   legendary: "text-amber-400",
+  special: "text-fuchsia-400",
 };
 
 const rarityGlow: Record<string, string> = {
@@ -24,6 +25,7 @@ const rarityGlow: Record<string, string> = {
   rare: "drop-shadow(0 0 8px rgba(96,165,250,0.65))",
   epic: "drop-shadow(0 0 12px rgba(168,85,247,0.75))",
   legendary: "drop-shadow(0 0 16px rgba(251,191,36,0.9))",
+  special: "drop-shadow(0 0 18px rgba(217,70,239,0.95))",
 };
 
 export function PackOpeningModal({ packLabel, cards, onClose }: PackOpeningModalProps) {
@@ -158,7 +160,7 @@ function FlipCard({
 }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <div style={{ perspective: "800px" }} className="w-32 h-44">
+      <div style={{ perspective: "800px" }} className="w-32 h-40">
         <div
           style={{
             transformStyle: "preserve-3d",

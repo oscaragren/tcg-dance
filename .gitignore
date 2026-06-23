@@ -1,2 +1,10 @@
 data/users.json
 data/player-state.json
+data/tcg.db
+data/tcg.db-wal
+data/tcg.db-shm
+secrets/
+.env
+*.json
+!package.json
+!tsconfig.json

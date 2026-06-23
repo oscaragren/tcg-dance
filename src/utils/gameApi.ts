@@ -1,4 +1,4 @@
-import type { BuyPackResponse, CardPoolInfo, ClaimDailyDiamondsResponse, GameState, Trade, UserSearchResult } from "../types/game";
+import type { Achievement, BuyPackResponse, CardPoolInfo, ClaimAchievementResponse, ClaimDailyDiamondsResponse, GameState, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -64,12 +64,23 @@ export async function getUserCardsForTrade(userId: string): Promise<{ ownedCardI
   return requestJson<{ ownedCardIds: string[] }>(`/api/users/${userId}/cards-for-trade`, { method: "GET" });
 }
 
-export async function searchCardTraders(cardId: string): Promise<UserSearchResult[]> {
-  return requestJson<UserSearchResult[]>(`/api/trade/search?cardId=${encodeURIComponent(cardId)}`, { method: "GET" });
-}
-
 export async function searchUsers(q: string): Promise<UserSearchResult[]> {
   return requestJson<UserSearchResult[]>(`/api/users/search?q=${encodeURIComponent(q)}`, { method: "GET" });
+}
+
+export async function upgradeCards(cardIds: string[]): Promise<UpgradeResponse> {
+  return requestJson<UpgradeResponse>("/api/game/upgrade", {
+    method: "POST",
+    body: JSON.stringify({ cardIds }),
+  });
+}
+
+export async function fetchAchievements(): Promise<Achievement[]> {
+  return requestJson<Achievement[]>("/api/achievements", { method: "GET" });
+}
+
+export async function claimAchievement(achievementId: string): Promise<ClaimAchievementResponse> {
+  return requestJson<ClaimAchievementResponse>(`/api/achievements/${achievementId}/claim`, { method: "POST" });
 }
 
 export async function getUserCards(userId: string): Promise<{ ownedCardIds: string[] }> {

@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:api": "node server/index.mjs",
+    "dev:api": "node --env-file=.env server/index.mjs",
+    "start": "node server/index.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "scrape:vote4dance": "node scripts/scrape-vote4dance-ranking.mjs"
@@ -24,6 +25,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.13.1",
+    "resend": "^6.14.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

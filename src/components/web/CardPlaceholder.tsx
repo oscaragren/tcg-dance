@@ -4,13 +4,15 @@ import { ImageWithFallback } from "../shared/figma/ImageWithFallback";
 import { resolveCardDesignUrl } from "../../data/cardDesignUrls";
 
 interface CardPlaceholderProps {
-  rarity?: "common" | "rare" | "epic" | "legendary";
+  rarity?: "common" | "rare" | "epic" | "legendary" | "special";
   size?: "small" | "medium" | "large";
   name?: string;
   danceStyle?: string;
   designKey?: string;
   /** When false, only the card frame is shown (no name/rarity below). */
   showCaption?: boolean;
+  /** When true, clicking the card does not open the fullscreen lightbox. */
+  disableLightbox?: boolean;
 }
 
 export function CardPlaceholder({
@@ -20,6 +22,7 @@ export function CardPlaceholder({
   danceStyle,
   designKey,
   showCaption = true,
+  disableLightbox = false,
 }: CardPlaceholderProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const titleId = useId();
@@ -53,11 +56,12 @@ export function CardPlaceholder({
     rare: "from-blue-400 to-blue-600",
     epic: "from-purple-400 to-purple-600",
     legendary: "from-amber-400 to-amber-600",
+    special: "from-rose-400 to-fuchsia-600",
   };
 
   const sizes = {
-    small: "w-32 h-44",
-    medium: "w-48 h-64",
+    small: "w-32 h-40",
+    medium: "w-48 h-60",
     large: "w-64 h-80",
   };
 
@@ -72,6 +76,7 @@ export function CardPlaceholder({
     rare: "shadow-blue-500/50",
     epic: "shadow-purple-500/50",
     legendary: "shadow-amber-500/50",
+    special: "shadow-fuchsia-500/50",
   };
 
   const rarityCaption = {
@@ -79,6 +84,7 @@ export function CardPlaceholder({
     rare: "text-blue-600",
     epic: "text-purple-600",
     legendary: "text-amber-700",
+    special: "text-fuchsia-700",
   };
 
   const imageUrl = resolveCardDesignUrl(designKey);
@@ -171,7 +177,7 @@ export function CardPlaceholder({
             {name}
           </div>
           <div
-            className={`w-full max-w-[min(88vw,480px)] aspect-[8/11] shrink-0 rounded-xl bg-gradient-to-br ${rarityColors[rarity]} p-1 shadow-2xl ${rarityGlow[rarity]}`}
+            className={`w-full max-w-[min(88vw,480px)] aspect-[4/5] shrink-0 rounded-xl bg-gradient-to-br ${rarityColors[rarity]} p-1 shadow-2xl ${rarityGlow[rarity]}`}
           >
             {lightboxInner}
           </div>
@@ -181,24 +187,32 @@ export function CardPlaceholder({
       document.body,
     );
 
+  const cardFrame = (
+    <div
+      className={`${sizes[size]} rounded-xl bg-gradient-to-br ${rarityColors[rarity]} p-0.5 shadow-lg ${rarityGlow[rarity]} transition-transform hover:scale-105 cursor-pointer`}
+    >
+      {thumbnailInner}
+    </div>
+  );
+
   return (
     <>
       <div className="inline-flex flex-col items-center">
-        <button
-          type="button"
-          onClick={openLightbox}
-          className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
-          aria-label={`Visa större: ${name}`}
-        >
-          <div
-            className={`${sizes[size]} rounded-xl bg-gradient-to-br ${rarityColors[rarity]} p-0.5 shadow-lg ${rarityGlow[rarity]} transition-transform hover:scale-105 cursor-pointer`}
+        {disableLightbox ? (
+          cardFrame
+        ) : (
+          <button
+            type="button"
+            onClick={openLightbox}
+            className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
+            aria-label={`Visa större: ${name}`}
           >
-            {thumbnailInner}
-          </div>
-        </button>
+            {cardFrame}
+          </button>
+        )}
         {caption}
       </div>
-      {lightbox}
+      {!disableLightbox && lightbox}
     </>
   );
 }

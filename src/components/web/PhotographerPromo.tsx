@@ -1,5 +1,7 @@
-const INSTAGRAM_URL = "https://www.instagram.com/angelicasfotografier"; // TODO: update handle
-const FACEBOOK_URL = "https://www.facebook.com/angelicasfotografier"; // TODO: update handle
+import fotograferBild from "../../../data/angelicas-fotografier.jpg";
+
+const INSTAGRAM_URL = "https://www.instagram.com/angelicasfotografier";
+const FACEBOOK_URL = "https://www.facebook.com/Angel000sFotografier";
 
 export function PhotographerPromo() {
   return (
@@ -10,15 +12,12 @@ export function PhotographerPromo() {
             <div className="grid grid-cols-1 md:grid-cols-2">
 
               {/* Image side */}
-              <div className="relative bg-gradient-to-br from-gray-800 to-gray-950 min-h-64 md:min-h-80 flex items-center justify-center">
-                {/* Replace the div below with an <img> once a photo is available */}
-                <div className="flex flex-col items-center gap-3 text-white/20 select-none">
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-20 h-20">
-                    <path d="M12 15.2A3.2 3.2 0 1 0 12 8.8a3.2 3.2 0 0 0 0 6.4Z" />
-                    <path fillRule="evenodd" d="M9 2 7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3.17L15 2H9Zm3 15a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-sm tracking-wide">Foto kommer snart</span>
-                </div>
+              <div className="relative min-h-72 md:min-h-96">
+                <img
+                  src={fotograferBild}
+                  alt="Angelica fotograferar på dansgolvet"
+                  className="absolute inset-0 h-full w-full object-cover object-top"
+                />
               </div>
 
               {/* Text side */}

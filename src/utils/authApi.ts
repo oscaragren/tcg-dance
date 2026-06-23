@@ -1,5 +1,17 @@
 import type { AuthUser } from "../types/auth";
 
+export const PASSWORD_REQUIREMENTS_MESSAGE =
+  "Lösenordet måste vara minst 8 tecken och innehålla minst en stor bokstav, en liten bokstav och en siffra.";
+
+export function isStrongPassword(password: string): boolean {
+  return (
+    password.length >= 8 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password)
+  );
+}
+
 type ApiAuthResponse = {
   user: AuthUser;
 };
@@ -62,6 +74,20 @@ export async function logoutUser(): Promise<void> {
   if (!response.ok && response.status !== 204) {
     throw new Error(await parseErrorMessage(response));
   }
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await requestJson("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await requestJson("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, newPassword }),
+  });
 }
 
 export async function fetchCurrentUser(): Promise<AuthUser | null> {

@@ -22,7 +22,7 @@ export function Hero() {
           </h1>
 
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Köp kortpaket, byt med andra spelare och bygg en unik samling av svenska bugg- och swingdansare.
+            Köp kortpaket, byt med andra spelare och bygg en unik samling av svenska tävlingsdansare.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-3 mb-16">
@@ -33,8 +33,8 @@ export function Hero() {
             >
               <Link to="/auth?tab=register">Börja samla gratis</Link>
             </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link to="/galleri">Bläddra i galleri</Link>
+            <Button asChild size="lg" variant="outline" className="border-gray-300 text-gray-700 hover:border-gray-400">
+              <Link to="/samling">Visa min samling</Link>
             </Button>
           </div>
 

@@ -90,11 +90,8 @@ export function HeroSection({
 
         {/* ── Welcome panel ── */}
         <div className="relative z-10 flex flex-col justify-center bg-white px-8 py-10 md:px-10 shadow-[-24px_0_48px_rgba(0,0,0,0.35)]">
-          <p className="text-xs font-semibold uppercase tracking-widest text-purple-500 mb-1">
-            Peppelinos Bar
-          </p>
           <h1 className="text-2xl font-bold mb-4 leading-tight">
-            Välkommen,<br />{username}!
+            Välkommen till Peppelinos Bar, {username}!
           </h1>
 
           <div className="flex items-baseline gap-1.5 mb-0.5">

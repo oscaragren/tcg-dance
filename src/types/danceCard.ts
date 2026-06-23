@@ -1,4 +1,4 @@
-export type CardRarity = "legendary" | "epic" | "rare" | "common";
+export type CardRarity = "special" | "legendary" | "epic" | "rare" | "common";
 
 export interface DanceCard {
   id: string;
@@ -9,15 +9,16 @@ export interface DanceCard {
   club?: string;
   /** Dance style, e.g. "Bugg", "Lindy Hop". */
   danceStyle?: string;
-  /** Matches PNG stem under data/designs: firstname_lastname-firstname_lastname */
+  /** Matches image stem under data/designs, e.g. "ID-001" */
   designKey?: string;
   /** Vote4Dance position within its tier (if sourced from Vote4Dance). */
   rankingPosition?: number;
 }
 
 export const rarityOrder: Record<CardRarity, number> = {
-  legendary: 0,
-  epic: 1,
-  rare: 2,
-  common: 3,
+  special: 0,
+  legendary: 1,
+  epic: 2,
+  rare: 3,
+  common: 4,
 };

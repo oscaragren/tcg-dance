@@ -14,7 +14,7 @@ function seededSlice<T>(arr: T[], count: number, seed: number): T[] {
 export function CardCarousel() {
   const row1 = useMemo(() => {
     const picks = seededSlice(
-      cards.filter((c) => c.rarity === "legendary" || c.rarity === "epic"),
+      cards.filter((c) => c.rarity === "legendary" || c.rarity === "epic" || c.rarity === "special"),
       14,
       1,
     );

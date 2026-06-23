@@ -16,6 +16,7 @@ type FeaturedCollectionProps = {
 };
 
 const RARITIES = [
+  { key: "special",   label: "Special",   color: "text-fuchsia-400", zero: "text-red-400" },
   { key: "legendary", label: "Legendary", color: "text-amber-400",  zero: "text-red-400" },
   { key: "epic",      label: "Epic",      color: "text-purple-400", zero: "text-red-400" },
   { key: "rare",      label: "Rare",      color: "text-blue-400",   zero: "text-red-400" },
@@ -99,7 +100,7 @@ export function FeaturedCollection({
                   >
                     <Link to="/auth?tab=register">Registrera dig gratis</Link>
                   </Button>
-                  <Button asChild size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                  <Button asChild size="lg" className="bg-white/10 border border-white/30 text-white hover:bg-white/20">
                     <Link to="/auth?tab=login">Logga in</Link>
                   </Button>
                 </div>

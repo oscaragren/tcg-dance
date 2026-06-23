@@ -1,33 +1,22 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
-import { cardById, cards } from "../../data/cards";
-import type { DanceCard } from "../../data/cards";
+import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
-import type { Trade, UserSearchResult } from "../../types/game";
-import { acceptTrade, cancelTrade, fetchMyTrades, rejectTrade, searchCardTraders } from "../../utils/gameApi";
+import type { Trade } from "../../types/game";
+import { acceptTrade, cancelTrade, fetchMyTrades, rejectTrade } from "../../utils/gameApi";
 
 type Tab = "incoming" | "outgoing" | "history";
 
 type TradePageProps = { currentUser: AuthUser | null };
 
 export function TradePage({ currentUser }: TradePageProps) {
-  const navigate = useNavigate();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [tab, setTab] = useState<Tab>("incoming");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  // Card search
-  const [cardQuery, setCardQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<DanceCard[]>([]);
-  const [selectedCard, setSelectedCard] = useState<DanceCard | null>(null);
-  const [traders, setTraders] = useState<UserSearchResult[]>([]);
-  const [isSearchingTraders, setIsSearchingTraders] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!currentUser) { setIsLoading(false); return; }
@@ -36,50 +25,6 @@ export function TradePage({ currentUser }: TradePageProps) {
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda byten."))
       .finally(() => setIsLoading(false));
   }, [currentUser]);
-
-  // Filter card suggestions from local catalog
-  useEffect(() => {
-    const q = cardQuery.trim().toLowerCase();
-    if (q.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
-    const matches = cards.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8);
-    setSuggestions(matches);
-    setShowSuggestions(matches.length > 0);
-  }, [cardQuery]);
-
-  // When a card is selected, find who has it for trade
-  useEffect(() => {
-    if (!selectedCard || !currentUser) return;
-    setIsSearchingTraders(true);
-    setTraders([]);
-    searchCardTraders(selectedCard.id)
-      .then(setTraders)
-      .catch(() => {})
-      .finally(() => setIsSearchingTraders(false));
-  }, [selectedCard, currentUser]);
-
-  // Close suggestions on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  function selectCard(card: DanceCard) {
-    setSelectedCard(card);
-    setCardQuery(card.name);
-    setShowSuggestions(false);
-  }
-
-  function clearCardSearch() {
-    setSelectedCard(null);
-    setCardQuery("");
-    setSuggestions([]);
-    setTraders([]);
-  }
 
   async function handleAccept(tradeId: string) {
     setActionLoading(tradeId); setError(null);
@@ -143,109 +88,6 @@ export function TradePage({ currentUser }: TradePageProps) {
               <Link to="/byte/ny">Nytt byte</Link>
             </Button>
           </div>
-
-          {/* Card search */}
-          <section className="rounded-2xl border bg-white p-6">
-            <h2 className="text-lg font-semibold mb-1">Sök efter ett kort</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              Hitta vilka spelare som har ett visst kort tillgängligt för byte.
-            </p>
-
-            <div ref={searchRef} className="relative max-w-sm">
-              <input
-                type="text"
-                value={cardQuery}
-                onChange={(e) => { setCardQuery(e.target.value); setSelectedCard(null); setTraders([]); }}
-                onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
-                placeholder="Sök kortnamn..."
-                className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-              />
-              {cardQuery && (
-                <button
-                  onClick={clearCardSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
-                >
-                  ×
-                </button>
-              )}
-
-              {showSuggestions && (
-                <div className="absolute top-full left-0 right-0 mt-1 rounded-md border bg-white shadow-lg z-20 divide-y max-h-64 overflow-y-auto">
-                  {suggestions.map((card) => (
-                    <button
-                      key={card.id}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
-                      onMouseDown={(e) => { e.preventDefault(); selectCard(card); }}
-                    >
-                      <span className={`text-[10px] font-medium uppercase w-16 shrink-0 ${
-                        card.rarity === "legendary" ? "text-amber-600" :
-                        card.rarity === "epic"      ? "text-purple-600" :
-                        card.rarity === "rare"      ? "text-blue-600"   : "text-gray-400"
-                      }`}>{card.rarity}</span>
-                      <span className="flex-1 min-w-0">{card.name}</span>
-                      {card.danceStyle && (
-                        <span className="text-[10px] text-gray-400 shrink-0">{card.danceStyle}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Results */}
-            {selectedCard && (
-              <div className="mt-5">
-                <div className="flex items-center gap-4 mb-4">
-                  <div style={{ width: 56 }}>
-                    <CardPlaceholder
-                      rarity={selectedCard.rarity}
-                      size="small"
-                      name={selectedCard.name}
-                      designKey={selectedCard.designKey}
-                      showCaption={false}
-                    />
-                  </div>
-                  <div>
-                    <div className="font-semibold">{selectedCard.name}</div>
-                    <div className={`text-xs uppercase tracking-wide ${
-                      selectedCard.rarity === "legendary" ? "text-amber-600" :
-                      selectedCard.rarity === "epic"      ? "text-purple-600" :
-                      selectedCard.rarity === "rare"      ? "text-blue-600"   : "text-gray-400"
-                    }`}>{selectedCard.rarity}</div>
-                    {selectedCard.danceStyle && (
-                      <div className="text-xs text-gray-400 mt-0.5">{selectedCard.danceStyle}</div>
-                    )}
-                  </div>
-                </div>
-
-                {isSearchingTraders ? (
-                  <p className="text-sm text-gray-400">Söker...</p>
-                ) : traders.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    Ingen spelare har det här kortet tillgängligt för byte just nu.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-xs text-gray-500 mb-2">
-                      {traders.length} spelare {traders.length === 1 ? "har" : "har"} det tillgängligt:
-                    </p>
-                    {traders.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between rounded-lg border px-4 py-2">
-                        <span className="text-sm font-medium">{user.username}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/byte/ny?anvandare=${user.id}&namn=${encodeURIComponent(user.username)}`)}
-                        >
-                          Starta byte
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
 
           {/* Tabs */}
           <div>

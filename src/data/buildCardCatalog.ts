@@ -10,6 +10,8 @@ export type PackConfig = {
 export type CollectionConfig = {
   id: string;
   label: string;
+  /** Short form used in achievement titles, e.g. "SM26". Falls back to label. */
+  shortLabel?: string;
   description?: string;
   danceStyle?: string;
   /** Pre-built card list — if present, used directly instead of ranking data. */

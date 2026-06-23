@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, "..");
-const dbPath = path.join(workspaceRoot, "data", "tcg.db");
+const dbPath = process.env.DB_PATH ?? path.join(workspaceRoot, "data", "tcg.db");
 
 const db = new Database(dbPath);
 db.pragma("journal_mode = WAL");
@@ -62,6 +62,20 @@ db.exec(`
     rarity           TEXT NOT NULL,
     total_copies     INTEGER NOT NULL,
     copies_remaining INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token      TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL REFERENCES users(id),
+    expires_at TEXT NOT NULL,
+    used       INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS achievement_claims (
+    user_id        TEXT NOT NULL REFERENCES users(id),
+    achievement_id TEXT NOT NULL,
+    claimed_at     TEXT NOT NULL,
+    PRIMARY KEY (user_id, achievement_id)
   );
 `);
 

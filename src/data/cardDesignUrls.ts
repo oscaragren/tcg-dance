@@ -22,7 +22,7 @@ for (const filePath of Object.keys(modules)) {
   }
 }
 
-/** Resolve bundled URL for a design file stem: firstname_lastname-firstname_lastname */
+/** Resolve bundled URL for a design file stem, e.g. "ID-001" */
 export function resolveCardDesignUrl(designKey: string | undefined): string | undefined {
   if (!designKey) {
     return undefined;

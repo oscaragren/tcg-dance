@@ -7,15 +7,24 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import db from "./db.mjs";
 import { loadGameCatalog } from "./gameCatalog.mjs";
+import { sendPasswordResetEmail } from "./mailer.mjs";
+import { buildAchievementDefinitions, computeAchievementProgress } from "./achievements.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.AUTH_API_PORT ?? 4000);
+const PORT = Number(process.env.PORT ?? process.env.AUTH_API_PORT ?? 4000);
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+if (IS_PRODUCTION && !process.env.AUTH_JWT_SECRET) {
+  throw new Error("AUTH_JWT_SECRET must be set in production.");
+}
 const JWT_SECRET = process.env.AUTH_JWT_SECRET ?? "dev-only-secret-change-me";
 const TOKEN_COOKIE_NAME = "tcg_auth_token";
 const tokenMaxAgeMs = 1000 * 60 * 60 * 24 * 7;
+
+app.set("trust proxy", 1);
 
 app.use(
   cors({
@@ -70,7 +79,10 @@ const cardById = new Map(allCards.map((c) => [c.id, c]));
 const collectionsMap = new Map(collections.map((c) => [c.id, c]));
 syncCardPool(allCards, copiesPerRarity);
 
-const rarityBreakdown = ["legendary", "epic", "rare", "common"]
+const achievementDefinitions = buildAchievementDefinitions(allCards, collections);
+const achievementById = new Map(achievementDefinitions.map((a) => [a.id, a]));
+
+const rarityBreakdown = ["special", "legendary", "epic", "rare", "common"]
   .map((r) => `${allCards.filter((c) => c.rarity === r).length} ${r}`)
   .join(", ");
 console.log(`Card pool ready — ${allCards.length} cards (${rarityBreakdown}) across ${collections.length} collection(s).`);
@@ -86,13 +98,13 @@ function setAuthCookie(response, payload) {
   response.cookie(TOKEN_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: IS_PRODUCTION,
     maxAge: tokenMaxAgeMs,
   });
 }
 
 function clearAuthCookie(response) {
-  response.clearCookie(TOKEN_COOKIE_NAME, { httpOnly: true, sameSite: "lax", secure: false });
+  response.clearCookie(TOKEN_COOKIE_NAME, { httpOnly: true, sameSite: "lax", secure: IS_PRODUCTION });
 }
 
 function requireAuth(request, response, next) {
@@ -105,6 +117,18 @@ function requireAuth(request, response, next) {
     clearAuthCookie(response);
     response.status(401).json({ message: "Invalid session" });
   }
+}
+
+const PASSWORD_REQUIREMENTS_MESSAGE =
+  "Lösenordet måste vara minst 8 tecken och innehålla minst en stor bokstav, en liten bokstav och en siffra.";
+
+function isStrongPassword(password) {
+  return (
+    password.length >= 8 &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password)
+  );
 }
 
 // ── Auth routes ───────────────────────────────────────────────────────────────
@@ -120,8 +144,8 @@ app.post("/api/auth/register", async (request, response) => {
     response.status(400).json({ message: "Username, email, and password are required." });
     return;
   }
-  if (password.length < 8) {
-    response.status(400).json({ message: "Password must be at least 8 characters." });
+  if (!isStrongPassword(password)) {
+    response.status(400).json({ message: PASSWORD_REQUIREMENTS_MESSAGE });
     return;
   }
 
@@ -135,6 +159,8 @@ app.post("/api/auth/register", async (request, response) => {
   db.prepare(
     "INSERT INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
   ).run(id, username, email, passwordHash, new Date().toISOString());
+
+  ensurePlayerState(id);
 
   const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
   setAuthCookie(response, { userId: id, email });
@@ -160,6 +186,71 @@ app.post("/api/auth/login", async (request, response) => {
   response.json({ user: publicUser(user) });
 });
 
+app.post("/api/auth/forgot-password", async (request, response) => {
+  try {
+    const email = String(request.body?.email ?? "").trim().toLowerCase();
+    if (!email) { response.status(400).json({ message: "E-post krävs." }); return; }
+
+    const user = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+    // Always respond OK — never reveal whether the email exists
+    if (!user) { response.json({ ok: true }); return; }
+
+    // Invalidate any old tokens for this user
+    db.prepare("DELETE FROM password_reset_tokens WHERE user_id = ?").run(user.id);
+
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 h
+    db.prepare(
+      "INSERT INTO password_reset_tokens (token, user_id, expires_at, used) VALUES (?, ?, ?, 0)",
+    ).run(token, user.id, expiresAt);
+
+    const appUrl = process.env.APP_URL ?? "http://localhost:5173";
+    const resetUrl = `${appUrl}/aterstall-losenord?token=${token}`;
+    await sendPasswordResetEmail(email, resetUrl);
+
+    response.json({ ok: true });
+  } catch (err) {
+    console.error("[forgot-password]", err);
+    response.status(500).json({ message: "Serverfel. Försök igen senare." });
+  }
+});
+
+app.post("/api/auth/reset-password", async (request, response) => {
+  try {
+    const token = String(request.body?.token ?? "").trim();
+    const newPassword = String(request.body?.newPassword ?? "");
+
+    if (!token || !newPassword) {
+      response.status(400).json({ message: "Token och nytt lösenord krävs." }); return;
+    }
+    if (!isStrongPassword(newPassword)) {
+      response.status(400).json({ message: PASSWORD_REQUIREMENTS_MESSAGE }); return;
+    }
+
+    const row = db.prepare(
+      "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0",
+    ).get(token);
+
+    if (!row) {
+      response.status(400).json({ message: "Ogiltig eller redan använd återställningslänk." }); return;
+    }
+    if (new Date(row.expires_at) < new Date()) {
+      response.status(400).json({ message: "Länken har gått ut. Begär en ny återställning." }); return;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    db.transaction(() => {
+      db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(passwordHash, row.user_id);
+      db.prepare("UPDATE password_reset_tokens SET used = 1 WHERE token = ?").run(token);
+    })();
+
+    response.json({ ok: true });
+  } catch (err) {
+    console.error("[reset-password]", err);
+    response.status(500).json({ message: "Serverfel. Försök igen senare." });
+  }
+});
+
 app.post("/api/auth/logout", (_request, response) => {
   clearAuthCookie(response);
   response.status(204).send();
@@ -181,11 +272,13 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const STARTING_DIAMONDS = 500;
+
 function ensurePlayerState(userId) {
   if (!db.prepare("SELECT user_id FROM player_state WHERE user_id = ?").get(userId)) {
     db.prepare(
-      "INSERT INTO player_state (user_id, diamonds, last_daily_claim_date, last_opened_cards) VALUES (?, 0, NULL, '[]')",
-    ).run(userId);
+      "INSERT INTO player_state (user_id, diamonds, last_daily_claim_date, last_opened_cards) VALUES (?, ?, NULL, '[]')",
+    ).run(userId, STARTING_DIAMONDS);
   }
 }
 
@@ -230,6 +323,13 @@ function openPackCards(packConfig, collectionId) {
   }
   return pulled;
 }
+
+const UPGRADE_CARDS_REQUIRED = 10;
+const TIER_UPGRADE_TARGET = { common: "rare", rare: "epic", epic: "legendary" };
+
+const stmtPickCardOfRarity = db.prepare(
+  "SELECT card_id FROM card_pool WHERE collection_id = ? AND rarity = ? AND copies_remaining > 0 ORDER BY RANDOM() LIMIT 1",
+);
 
 // ── Game routes ───────────────────────────────────────────────────────────────
 
@@ -308,6 +408,133 @@ app.post("/api/game/buy-pack", requireAuth, (request, response) => {
   })();
 
   response.json({ pulledCards, state: buildStateResponse(request.auth.userId) });
+});
+
+app.post("/api/game/upgrade", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  const requestedCardIds = Array.isArray(request.body?.cardIds) ? request.body.cardIds.map(String) : [];
+
+  if (requestedCardIds.length !== UPGRADE_CARDS_REQUIRED) {
+    response.status(400).json({ message: `Du måste välja exakt ${UPGRADE_CARDS_REQUIRED} kort.` });
+    return;
+  }
+
+  const requestedCards = requestedCardIds.map((id) => cardById.get(id));
+  if (requestedCards.some((c) => !c)) {
+    response.status(400).json({ message: "Okänt kort." });
+    return;
+  }
+
+  const collectionId = requestedCards[0].collectionId;
+  const rarity = requestedCards[0].rarity;
+  const sameGroup = requestedCards.every((c) => c.collectionId === collectionId && c.rarity === rarity);
+  if (!sameGroup) {
+    response.status(400).json({ message: "Alla kort måste ha samma raritet och tillhöra samma kortpaket." });
+    return;
+  }
+
+  const targetRarity = TIER_UPGRADE_TARGET[rarity];
+  if (!targetRarity) {
+    response.status(400).json({ message: "Den rariteten kan inte uppgraderas." });
+    return;
+  }
+
+  const requestedCounts = new Map();
+  for (const id of requestedCardIds) requestedCounts.set(id, (requestedCounts.get(id) ?? 0) + 1);
+
+  const ownedRows = db.prepare("SELECT id, card_id FROM owned_cards WHERE user_id = ?").all(userId);
+  const ownedRowsByCard = new Map();
+  for (const row of ownedRows) {
+    if (!ownedRowsByCard.has(row.card_id)) ownedRowsByCard.set(row.card_id, []);
+    ownedRowsByCard.get(row.card_id).push(row.id);
+  }
+
+  const rowsToDelete = [];
+  for (const [cardId, count] of requestedCounts) {
+    const rows = ownedRowsByCard.get(cardId) ?? [];
+    if (rows.length < count) {
+      response.status(400).json({ message: "Du äger inte alla valda kort." });
+      return;
+    }
+    rowsToDelete.push(...rows.slice(0, count).map((rowId) => ({ id: rowId, card_id: cardId })));
+  }
+
+  const targetCardId = stmtPickCardOfRarity.get(collectionId, targetRarity)?.card_id;
+  if (!targetCardId) {
+    response.status(400).json({ message: "Inga kort kvar att uppgradera till just nu." });
+    return;
+  }
+
+  const upgradedCard = db.transaction(() => {
+    const stmtDeleteOwned = db.prepare("DELETE FROM owned_cards WHERE id = ?");
+    const stmtReturnToPool = db.prepare("UPDATE card_pool SET copies_remaining = copies_remaining + 1 WHERE card_id = ?");
+    for (const row of rowsToDelete) {
+      stmtDeleteOwned.run(row.id);
+      stmtReturnToPool.run(row.card_id);
+    }
+
+    db.prepare("UPDATE card_pool SET copies_remaining = copies_remaining - 1 WHERE card_id = ?").run(targetCardId);
+    db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)").run(userId, targetCardId);
+
+    return cardById.get(targetCardId);
+  })();
+
+  response.json({ upgradedCard, state: buildStateResponse(userId) });
+});
+
+// ── Achievements ──────────────────────────────────────────────────────────────
+
+function buildAchievementsResponse(userId) {
+  const ownedCardIdSet = new Set(
+    db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?").all(userId).map((r) => r.card_id),
+  );
+  const claimedIds = new Set(
+    db.prepare("SELECT achievement_id FROM achievement_claims WHERE user_id = ?").all(userId).map((r) => r.achievement_id),
+  );
+
+  return achievementDefinitions.map((definition) => {
+    const { progress, target, complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards);
+    return {
+      id: definition.id,
+      title: definition.title,
+      description: definition.description,
+      reward: definition.reward,
+      progress,
+      target,
+      complete,
+      claimed: claimedIds.has(definition.id),
+    };
+  });
+}
+
+app.get("/api/achievements", requireAuth, (request, response) => {
+  response.json(buildAchievementsResponse(request.auth.userId));
+});
+
+app.post("/api/achievements/:id/claim", requireAuth, (request, response) => {
+  const definition = achievementById.get(request.params.id);
+  if (!definition) { response.status(404).json({ message: "Okänd prestation." }); return; }
+
+  const userId = request.auth.userId;
+  if (db.prepare("SELECT 1 FROM achievement_claims WHERE user_id = ? AND achievement_id = ?").get(userId, definition.id)) {
+    response.status(400).json({ message: "Prestationen är redan inlöst." }); return;
+  }
+
+  const ownedCardIdSet = new Set(
+    db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?").all(userId).map((r) => r.card_id),
+  );
+  const { complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards);
+  if (!complete) { response.status(400).json({ message: "Prestationen är inte klar än." }); return; }
+
+  ensurePlayerState(userId);
+  db.transaction(() => {
+    db.prepare(
+      "INSERT INTO achievement_claims (user_id, achievement_id, claimed_at) VALUES (?, ?, ?)",
+    ).run(userId, definition.id, new Date().toISOString());
+    db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(definition.reward, userId);
+  })();
+
+  response.json({ diamondsAwarded: definition.reward, achievements: buildAchievementsResponse(userId), state: buildStateResponse(userId) });
 });
 
 // ── Trade helpers ─────────────────────────────────────────────────────────────
@@ -391,21 +618,6 @@ app.get("/api/users/:userId/cards-for-trade", requireAuth, (request, response) =
     WHERE cft.user_id = ?
   `).all(request.params.userId).map((r) => r.card_id);
   response.json({ ownedCardIds: cardIds });
-});
-
-app.get("/api/trade/search", requireAuth, (request, response) => {
-  const cardId = String(request.query.cardId ?? "").trim();
-  if (!cardId) { response.json([]); return; }
-
-  const users = db.prepare(`
-    SELECT DISTINCT u.id, u.username
-    FROM cards_for_trade cft
-    JOIN users u ON u.id = cft.user_id
-    JOIN owned_cards oc ON oc.user_id = cft.user_id AND oc.card_id = cft.card_id
-    WHERE cft.card_id = ? AND cft.user_id != ?
-    LIMIT 20
-  `).all(cardId, request.auth.userId);
-  response.json(users);
 });
 
 // ── Trade routes ──────────────────────────────────────────────────────────────
@@ -547,6 +759,31 @@ app.post("/api/trade/:id/cancel", requireAuth, (request, response) => {
   if (row.status !== "pending") { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
   db.prepare("UPDATE trades SET status = 'cancelled' WHERE id = ?").run(row.id);
   response.status(204).send();
+});
+
+// ── Trade history cleanup ───────────────────────────────────────────────────────
+
+const TRADE_HISTORY_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 dagar
+const TRADE_CLEANUP_INTERVAL_MS = 1000 * 60 * 60 * 24; // varje dygn
+
+function clearOldTradeHistory() {
+  const cutoff = new Date(Date.now() - TRADE_HISTORY_MAX_AGE_MS).toISOString();
+  db.prepare(
+    "DELETE FROM trades WHERE status != 'pending' AND created_at < ?",
+  ).run(cutoff);
+}
+
+clearOldTradeHistory();
+setInterval(clearOldTradeHistory, TRADE_CLEANUP_INTERVAL_MS);
+
+// ── Static frontend (production) ────────────────────────────────────────────────
+// Serve the built SPA. Registered after all /api routes so API 404s aren't
+// swallowed by the catch-all fallback. The regex matches any path NOT under /api/.
+
+const distPath = path.join(__dirname, "..", "dist");
+app.use(express.static(distPath));
+app.get(/^(?!\/api\/).*/, (_request, response) => {
+  response.sendFile(path.join(distPath, "index.html"));
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
