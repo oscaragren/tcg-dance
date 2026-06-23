@@ -15,7 +15,7 @@ A trading card game built around competitive bugg (swing dance) couples from the
 
 ```
 ├── data/
-│   ├── tcg.db                      # SQLite database (created on first server start)
+│   ├── tcg.db                      # SQLite database (created on first server start; gitignored)
 │   ├── game-content.json           # Pack configs, rarity chances, prices, daily diamond reward
 │   ├── vote4dance-ranking.json     # Latest scraped V4D ranking snapshot
 │   ├── designs/                    # Card artwork PNGs (firstname_lastname-firstname_lastname)
@@ -43,7 +43,7 @@ A trading card game built around competitive bugg (swing dance) couples from the
     ├── components/
     │   ├── game/TradingCard.tsx    # Full FIFA-style card component (not yet used in live UI)
     │   ├── web/                    # Page-level components (Hero, Header, Footer, …)
-    │   └── shared/ui/              # shadcn/ui component library
+    │   └── shared/ui/              # shadcn/ui primitives in use (badge, button, card, input, tabs)
     │
     ├── data/
     │   ├── cards.ts                # Card catalog (built from ranking JSON at bundle time)
@@ -143,3 +143,41 @@ npm run build
 ```
 
 Output goes to `dist/`. The ranking JSON is bundled at build time, so rebuild after scraping.
+
+## Deployment
+
+In production the app runs as a **single Node process**: the Express server in `server/index.mjs` serves both the JSON API (`/api/*`) and the built frontend from `dist/` (with an SPA fallback for non-`/api` routes). The frontend calls the API via relative paths, so everything is same-origin — no CORS or cross-host cookie setup needed.
+
+### Production scripts
+
+```bash
+npm run build   # tsc + vite build → dist/
+npm run start   # node server/index.mjs (serves dist/ + API)
+```
+
+`npm run start` reads configuration from real environment variables (no `--env-file`).
+
+### Environment variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `PORT` | host-injected | Port to listen on (falls back to `AUTH_API_PORT`, then `4000`) |
+| `NODE_ENV` | yes | Set to `production` to enable secure cookies and the JWT-secret guard |
+| `AUTH_JWT_SECRET` | yes (prod) | Signing secret for session JWTs; the server refuses to boot in production without it. Generate with `openssl rand -hex 32` |
+| `DB_PATH` | recommended | Absolute path to the SQLite file (e.g. a mounted volume at `/data/tcg.db`). Defaults to `data/tcg.db` |
+| `APP_URL` | yes | Public base URL, used to build password-reset email links |
+| `AUTH_CORS_ORIGIN` | optional | Allowed CORS origin; set to the public URL. Mostly moot under same-origin serving |
+| `RESEND_API_KEY` | for email | Resend API key for password-reset emails |
+| `MAIL_FROM` | for email | Verified sender address (see note below) |
+
+The server runs behind a reverse proxy (`trust proxy` is enabled) so secure cookies work correctly over HTTPS.
+
+### Persistent database
+
+`data/tcg.db` (and its `-wal` / `-shm` files) are **gitignored** — they are not shipped with the repo. In production, point `DB_PATH` at a persistent volume so user data survives redeploys. The schema is created automatically on first start.
+
+### Railway
+
+The repo deploys cleanly on Railway from GitHub. Nixpacks auto-detects the Node project and runs `npm run build` then `npm run start`. Attach a **Volume** mounted at `/data`, set `DB_PATH=/data/tcg.db`, and configure the environment variables above. Watch the logs for `Card pool ready — …` and `Server listening on …` to confirm a clean boot.
+
+> **Email caveat:** Resend's default `onboarding@resend.dev` sender only delivers to the Resend account owner's own verified address. Forgot-password emails to other users will silently fail until you verify a custom sending domain in Resend and set `MAIL_FROM` to use it.
