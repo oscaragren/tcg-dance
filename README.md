@@ -8,7 +8,8 @@ A trading card game built around competitive bugg (swing dance) couples from the
 - **Card collection** — browse owned cards, filter by rarity, toggle to see all cards
 - **Diamond wallet** — earn 150 diamonds per day; spend them on packs
 - **Pack shop** — three pack tiers (Bronspack, Silverpack, Guldpack) with different card counts, rarity odds, and prices
-- **Gallery** — public view of all available cards, sortable by ranking or name
+- **Trading** — mark cards for trade and exchange cards/diamonds with other players
+- **Achievements** — claim diamond rewards for collection milestones
 - **Card designs** — a subset of top couples have custom photo artwork; all others render with a rarity-coloured gradient frame
 
 ## Project structure
@@ -18,9 +19,8 @@ A trading card game built around competitive bugg (swing dance) couples from the
 │   ├── tcg.db                      # SQLite database (created on first server start; gitignored)
 │   ├── game-content.json           # Pack configs, rarity chances, prices, daily diamond reward
 │   ├── vote4dance-ranking.json     # Latest scraped V4D ranking snapshot
-│   ├── designs/                    # Card artwork PNGs (firstname_lastname-firstname_lastname)
-│   ├── users.json                  # Legacy — migrated to DB on first run, no longer written
-│   └── player-state.json           # Legacy — migrated to DB on first run, no longer written
+│   ├── designs/                    # Card artwork JPGs (ID-keyed), bundled at build time
+│   └── carousel/                   # Hero carousel images
 │
 ├── scripts/
 │   └── scrape-vote4dance-ranking.mjs   # Fetches the latest ranking from Vote4Dance
@@ -32,16 +32,15 @@ A trading card game built around competitive bugg (swing dance) couples from the
 │
 └── src/
     ├── apps/
-    │   ├── card/App.tsx            # Standalone card viewer app (dev/design use)
     │   └── web/                    # Main web app
     │       ├── App.tsx             # Root: session state, routing
     │       ├── AuthPage.tsx        # Register / login form
     │       ├── LoggedInHomePage.tsx # Diamond wallet, daily claim, pack shop, last opened
     │       ├── CollectionPage.tsx  # Owned card grid with rarity filter
-    │       └── GalleryPage.tsx     # All cards, public, sortable/filterable
+    │       ├── TradePage.tsx       # Trade overview, new trades, mark-for-trade
+    │       └── UpgradePage.tsx     # Combine 10 cards into a higher rarity
     │
     ├── components/
-    │   ├── game/TradingCard.tsx    # Full FIFA-style card component (not yet used in live UI)
     │   ├── web/                    # Page-level components (Hero, Header, Footer, …)
     │   └── shared/ui/              # shadcn/ui primitives in use (badge, button, card, input, tabs)
     │

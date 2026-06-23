@@ -5,6 +5,10 @@ data/tcg.db-wal
 data/tcg.db-shm
 secrets/
 .env
+.DS_Store
+**/.DS_Store
+__pycache__/
+*.pyc
 *.json
 !package.json
 !tsconfig.json
