@@ -18,7 +18,7 @@
         "cardCount": 5,
         "price": 100,
         "rarityChances": {
-          "special": 0.0,
+          "special": 0,
           "legendary": 0.05,
           "epic": 0.15,
           "rare": 0.3,
@@ -972,15 +972,6 @@
           "danceStyle": "Boogie Woogie Vuxen"
         },
         {
-          "id": "sm26-188",
-          "name": "Andreas Sundbom & Viktoria Björnsson-Spets",
-          "rarity": "common",
-          "collectionId": "sm2026",
-          "designKey": "ID-188",
-          "club": "NSW",
-          "danceStyle": "Boogie Woogie Vuxen"
-        },
-        {
           "id": "sm26-300",
           "name": "Amanda Stenman & Lina Stenman",
           "rarity": "common",
@@ -1714,7 +1705,7 @@
           "name": "Henrik Boström & Robin Ivarsson",
           "rarity": "legendary",
           "collectionId": "sm2026",
-          "designKey": "ID-003",
+          "designKey": "ID-005",
           "club": "RS",
           "danceStyle": "Boogie Woogie Senior"
         },

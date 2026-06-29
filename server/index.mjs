@@ -24,6 +24,11 @@ const JWT_SECRET = process.env.AUTH_JWT_SECRET ?? "dev-only-secret-change-me";
 const TOKEN_COOKIE_NAME = "tcg_auth_token";
 const tokenMaxAgeMs = 1000 * 60 * 60 * 24 * 7;
 
+// Admin panel: gated by a single shared password (separate from user accounts).
+const ADMIN_TOKEN_COOKIE_NAME = "tcg_admin_token";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+const adminTokenMaxAgeMs = 1000 * 60 * 60 * 24; // 1 day
+
 app.set("trust proxy", 1);
 
 app.use(
@@ -116,6 +121,33 @@ function requireAuth(request, response, next) {
   } catch {
     clearAuthCookie(response);
     response.status(401).json({ message: "Invalid session" });
+  }
+}
+
+function setAdminCookie(response) {
+  const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: "1d" });
+  response.cookie(ADMIN_TOKEN_COOKIE_NAME, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: IS_PRODUCTION,
+    maxAge: adminTokenMaxAgeMs,
+  });
+}
+
+function clearAdminCookie(response) {
+  response.clearCookie(ADMIN_TOKEN_COOKIE_NAME, { httpOnly: true, sameSite: "lax", secure: IS_PRODUCTION });
+}
+
+function requireAdmin(request, response, next) {
+  const token = request.cookies[ADMIN_TOKEN_COOKIE_NAME];
+  if (!token) { response.status(401).json({ message: "Inte inloggad som admin." }); return; }
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    if (!payload.admin) throw new Error("not admin");
+    next();
+  } catch {
+    clearAdminCookie(response);
+    response.status(401).json({ message: "Ogiltig admin-session." });
   }
 }
 
@@ -299,15 +331,30 @@ function buildStateResponse(userId) {
   };
 }
 
-const stmtPickAnyCard = db.prepare(
-  "SELECT card_id FROM card_pool WHERE collection_id = ? AND copies_remaining > 0 ORDER BY RANDOM() LIMIT 1",
+// Special cards are not obtainable from packs.
+const stmtSumAvailableCopies = db.prepare(
+  "SELECT COALESCE(SUM(copies_remaining), 0) AS total FROM card_pool WHERE collection_id = ? AND rarity != 'special' AND copies_remaining > 0",
+);
+const stmtPickWeightedCard = db.prepare(
+  `SELECT card_id FROM (
+     SELECT card_id, SUM(copies_remaining) OVER (ORDER BY card_id) AS cum
+     FROM card_pool
+     WHERE collection_id = ? AND rarity != 'special' AND copies_remaining > 0
+   ) WHERE cum > ? ORDER BY cum LIMIT 1`,
 );
 const stmtDecrementCard = db.prepare(
   "UPDATE card_pool SET copies_remaining = copies_remaining - 1 WHERE card_id = ?",
 );
 
+// Draw one card weighted by how many copies are still in the pool, so every
+// physical copy is equally likely. The odds of a rarity therefore equal that
+// rarity's remaining copies divided by all remaining (non-special) copies —
+// e.g. at a full pool, legendary = 25 / (25 + 120 + 550 + 19300).
 const drawCardTx = db.transaction((collectionId) => {
-  const row = stmtPickAnyCard.get(collectionId);
+  const { total } = stmtSumAvailableCopies.get(collectionId);
+  if (total <= 0) return null;
+  const pick = Math.floor(Math.random() * total);
+  const row = stmtPickWeightedCard.get(collectionId, pick);
   if (!row) return null;
   stmtDecrementCard.run(row.card_id);
   return row.card_id;
@@ -324,7 +371,8 @@ function openPackCards(packConfig, collectionId) {
   return pulled;
 }
 
-const UPGRADE_CARDS_REQUIRED = 10;
+// Cards required to upgrade, keyed by the source rarity being combined.
+const UPGRADE_CARDS_REQUIRED = { common: 20, rare: 15, epic: 10 };
 const TIER_UPGRADE_TARGET = { common: "rare", rare: "epic", epic: "legendary" };
 
 const stmtPickCardOfRarity = db.prepare(
@@ -356,6 +404,37 @@ app.get("/api/game/collections", (_request, response) => {
   response.json(collections);
 });
 
+// Leaderboard — players ranked by total cards owned (all copies of common,
+// rare, epic, legendary). Ties are broken by who has more legendaries, then
+// epics, then rares, then commons. Special cards are not counted.
+const LEADERBOARD_RARITIES = ["common", "rare", "epic", "legendary"];
+
+app.get("/api/leaderboard", requireAuth, (_request, response) => {
+  const users = db.prepare("SELECT id, username FROM users").all();
+  const ownedStmt = db.prepare("SELECT card_id FROM owned_cards WHERE user_id = ?");
+
+  const entries = users.map((u) => {
+    const counts = { common: 0, rare: 0, epic: 0, legendary: 0 };
+    for (const row of ownedStmt.all(u.id)) {
+      const card = cardById.get(row.card_id);
+      if (card && counts[card.rarity] !== undefined) counts[card.rarity] += 1;
+    }
+    const total = LEADERBOARD_RARITIES.reduce((sum, r) => sum + counts[r], 0);
+    return { userId: u.id, username: u.username, total, ...counts };
+  });
+
+  entries.sort((a, b) =>
+    b.total - a.total ||
+    b.legendary - a.legendary ||
+    b.epic - a.epic ||
+    b.rare - a.rare ||
+    b.common - a.common ||
+    a.username.localeCompare(b.username, "sv"),
+  );
+
+  response.json(entries.slice(0, 100).map((e, i) => ({ rank: i + 1, ...e })));
+});
+
 app.post("/api/game/claim-daily-diamonds", requireAuth, (request, response) => {
   ensurePlayerState(request.auth.userId);
   const state = db
@@ -374,6 +453,8 @@ app.post("/api/game/claim-daily-diamonds", requireAuth, (request, response) => {
   response.json({ diamondsAwarded: dailyDiamonds, state: buildStateResponse(request.auth.userId) });
 });
 
+const ALLOWED_PACK_QUANTITIES = [1, 5, 10];
+
 app.post("/api/game/buy-pack", requireAuth, (request, response) => {
   const collectionId = String(request.body?.collectionId ?? "").trim();
   if (!collectionId) {
@@ -387,22 +468,32 @@ app.post("/api/game/buy-pack", requireAuth, (request, response) => {
     return;
   }
 
+  const quantity = Math.floor(Number(request.body?.quantity ?? 1));
+  if (!ALLOWED_PACK_QUANTITIES.includes(quantity)) {
+    response.status(400).json({ message: "Ogiltigt antal pack." });
+    return;
+  }
+  const totalPrice = collection.pack.price * quantity;
+
   ensurePlayerState(request.auth.userId);
   const state = db
     .prepare("SELECT diamonds FROM player_state WHERE user_id = ?")
     .get(request.auth.userId);
 
-  if (state.diamonds < collection.pack.price) {
+  if (state.diamonds < totalPrice) {
     response.status(400).json({ message: "Inte tillräckligt med diamanter." });
     return;
   }
 
-  const pulledCards = openPackCards(collection.pack, collectionId);
+  const pulledCards = [];
+  for (let i = 0; i < quantity; i++) {
+    pulledCards.push(...openPackCards(collection.pack, collectionId));
+  }
 
   db.transaction(() => {
     db.prepare(
       "UPDATE player_state SET diamonds = diamonds - ?, last_opened_cards = ? WHERE user_id = ?",
-    ).run(collection.pack.price, JSON.stringify(pulledCards), request.auth.userId);
+    ).run(totalPrice, JSON.stringify(pulledCards), request.auth.userId);
     const stmtInsertCard = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
     for (const card of pulledCards) stmtInsertCard.run(request.auth.userId, card.id);
   })();
@@ -414,8 +505,8 @@ app.post("/api/game/upgrade", requireAuth, (request, response) => {
   const userId = request.auth.userId;
   const requestedCardIds = Array.isArray(request.body?.cardIds) ? request.body.cardIds.map(String) : [];
 
-  if (requestedCardIds.length !== UPGRADE_CARDS_REQUIRED) {
-    response.status(400).json({ message: `Du måste välja exakt ${UPGRADE_CARDS_REQUIRED} kort.` });
+  if (requestedCardIds.length === 0) {
+    response.status(400).json({ message: "Du måste välja kort att uppgradera." });
     return;
   }
 
@@ -436,6 +527,12 @@ app.post("/api/game/upgrade", requireAuth, (request, response) => {
   const targetRarity = TIER_UPGRADE_TARGET[rarity];
   if (!targetRarity) {
     response.status(400).json({ message: "Den rariteten kan inte uppgraderas." });
+    return;
+  }
+
+  const requiredCount = UPGRADE_CARDS_REQUIRED[rarity];
+  if (requestedCardIds.length !== requiredCount) {
+    response.status(400).json({ message: `Du måste välja exakt ${requiredCount} kort.` });
     return;
   }
 
@@ -539,6 +636,12 @@ app.post("/api/achievements/:id/claim", requireAuth, (request, response) => {
 
 // ── Trade helpers ─────────────────────────────────────────────────────────────
 
+function tallyIds(ids) {
+  const counts = new Map();
+  for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
+  return counts;
+}
+
 function buildTrade(row) {
   return {
     id: row.id,
@@ -582,42 +685,55 @@ app.get("/api/users/:userId/cards", requireAuth, (request, response) => {
 
 // ── Cards-for-trade routes ────────────────────────────────────────────────────
 
+function ownedCountMap(userId) {
+  const rows = db.prepare("SELECT card_id, COUNT(*) AS n FROM owned_cards WHERE user_id = ? GROUP BY card_id").all(userId);
+  return new Map(rows.map((r) => [r.card_id, r.n]));
+}
+
+// Marked-for-trade cards for the current user, each capped at how many copies
+// they still own.
 app.get("/api/game/cards-for-trade", requireAuth, (request, response) => {
-  const cardIds = db
-    .prepare("SELECT card_id FROM cards_for_trade WHERE user_id = ?")
-    .all(request.auth.userId)
-    .map((r) => r.card_id);
-  response.json(cardIds);
+  const owned = ownedCountMap(request.auth.userId);
+  const rows = db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(request.auth.userId);
+  const result = rows
+    .map((r) => ({ cardId: r.card_id, quantity: Math.min(r.quantity, owned.get(r.card_id) ?? 0) }))
+    .filter((r) => r.quantity > 0);
+  response.json(result);
 });
 
-app.post("/api/game/toggle-card-for-trade", requireAuth, (request, response) => {
+// Replace the user's entire marked-for-trade set with the provided quantities.
+app.post("/api/game/cards-for-trade", requireAuth, (request, response) => {
   const userId = request.auth.userId;
-  const cardId = String(request.body?.cardId ?? "").trim();
-  if (!cardId) { response.status(400).json({ message: "cardId krävs." }); return; }
+  const items = Array.isArray(request.body?.items) ? request.body.items : [];
+  const owned = ownedCountMap(userId);
 
-  if (!db.prepare("SELECT 1 FROM owned_cards WHERE user_id = ? AND card_id = ?").get(userId, cardId)) {
-    response.status(400).json({ message: "Du äger inte det kortet." }); return;
+  const clean = [];
+  for (const item of items) {
+    const cardId = String(item?.cardId ?? "").trim();
+    const ownedCount = owned.get(cardId) ?? 0;
+    if (!cardId || ownedCount <= 0) continue;
+    const quantity = Math.max(0, Math.min(ownedCount, Math.floor(Number(item?.quantity ?? 0))));
+    if (quantity > 0) clean.push({ cardId, quantity });
   }
 
-  const exists = db.prepare("SELECT 1 FROM cards_for_trade WHERE user_id = ? AND card_id = ?").get(userId, cardId);
-  if (exists) {
-    db.prepare("DELETE FROM cards_for_trade WHERE user_id = ? AND card_id = ?").run(userId, cardId);
-    response.json({ forTrade: false });
-  } else {
-    db.prepare("INSERT INTO cards_for_trade (user_id, card_id) VALUES (?, ?)").run(userId, cardId);
-    response.json({ forTrade: true });
-  }
+  db.transaction(() => {
+    db.prepare("DELETE FROM cards_for_trade WHERE user_id = ?").run(userId);
+    const ins = db.prepare("INSERT INTO cards_for_trade (user_id, card_id, quantity) VALUES (?, ?, ?)");
+    for (const c of clean) ins.run(userId, c.cardId, c.quantity);
+  })();
+
+  response.json(clean);
 });
 
 app.get("/api/users/:userId/cards-for-trade", requireAuth, (request, response) => {
-  // Only return cards that are both marked for trade AND still owned
-  const cardIds = db.prepare(`
-    SELECT cft.card_id
-    FROM cards_for_trade cft
-    JOIN owned_cards oc ON oc.user_id = cft.user_id AND oc.card_id = cft.card_id
-    WHERE cft.user_id = ?
-  `).all(request.params.userId).map((r) => r.card_id);
-  response.json({ ownedCardIds: cardIds });
+  // Only return cards that are both marked for trade AND still owned, capped at
+  // the owned count.
+  const owned = ownedCountMap(request.params.userId);
+  const rows = db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(request.params.userId);
+  const cards = rows
+    .map((r) => ({ cardId: r.card_id, quantity: Math.min(r.quantity, owned.get(r.card_id) ?? 0) }))
+    .filter((r) => r.quantity > 0);
+  response.json({ cards });
 });
 
 // ── Trade routes ──────────────────────────────────────────────────────────────
@@ -644,9 +760,20 @@ app.post("/api/trade", requireAuth, (request, response) => {
     response.status(400).json({ message: "Du måste begära minst ett kort eller diamanter." }); return;
   }
 
-  for (const cardId of offeredCardIds) {
-    if (!db.prepare("SELECT 1 FROM owned_cards WHERE user_id = ? AND card_id = ?").get(senderId, cardId)) {
+  const stmtCountOwned = db.prepare("SELECT COUNT(*) AS n FROM owned_cards WHERE user_id = ? AND card_id = ?");
+  for (const [cardId, need] of tallyIds(offeredCardIds)) {
+    if (stmtCountOwned.get(senderId, cardId).n < need) {
       response.status(400).json({ message: "Du äger inte alla erbjudna kort." }); return;
+    }
+  }
+  // Requested cards must be marked for trade by the receiver, in sufficient quantity.
+  const receiverMarked = new Map(
+    db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(receiverUserId).map((r) => [r.card_id, r.quantity]),
+  );
+  for (const [cardId, need] of tallyIds(requestedCardIds)) {
+    const available = Math.min(receiverMarked.get(cardId) ?? 0, stmtCountOwned.get(receiverUserId, cardId).n);
+    if (available < need) {
+      response.status(400).json({ message: "Mottagaren erbjuder inte så många av ett begärt kort." }); return;
     }
   }
 
@@ -693,12 +820,13 @@ app.post("/api/trade/:id/accept", requireAuth, (request, response) => {
 
   try {
     db.transaction(() => {
-      for (const cardId of offeredCardIds) {
-        if (!db.prepare("SELECT 1 FROM owned_cards WHERE user_id = ? AND card_id = ?").get(senderId, cardId))
+      const stmtCountOwned = db.prepare("SELECT COUNT(*) AS n FROM owned_cards WHERE user_id = ? AND card_id = ?");
+      for (const [cardId, need] of tallyIds(offeredCardIds)) {
+        if (stmtCountOwned.get(senderId, cardId).n < need)
           throw new Error("Avsändaren äger inte längre alla erbjudna kort.");
       }
-      for (const cardId of requestedCardIds) {
-        if (!db.prepare("SELECT 1 FROM owned_cards WHERE user_id = ? AND card_id = ?").get(userId, cardId))
+      for (const [cardId, need] of tallyIds(requestedCardIds)) {
+        if (stmtCountOwned.get(userId, cardId).n < need)
           throw new Error("Du äger inte längre alla begärda kort.");
       }
       if (row.offered_diamonds > 0) {
@@ -775,6 +903,106 @@ function clearOldTradeHistory() {
 
 clearOldTradeHistory();
 setInterval(clearOldTradeHistory, TRADE_CLEANUP_INTERVAL_MS);
+
+// ── Admin routes ──────────────────────────────────────────────────────────────
+
+app.post("/api/admin/login", (request, response) => {
+  if (!ADMIN_PASSWORD) {
+    response.status(503).json({ message: "Admin är inte konfigurerad på servern." });
+    return;
+  }
+  const password = String(request.body?.password ?? "");
+  if (password !== ADMIN_PASSWORD) {
+    response.status(401).json({ message: "Fel lösenord." });
+    return;
+  }
+  setAdminCookie(response);
+  response.json({ ok: true });
+});
+
+app.post("/api/admin/logout", (_request, response) => {
+  clearAdminCookie(response);
+  response.status(204).send();
+});
+
+app.get("/api/admin/me", requireAdmin, (_request, response) => {
+  response.json({ ok: true });
+});
+
+// card_pool can retain rows from earlier catalog versions; scope admin views to
+// the cards currently in the live catalog so the numbers stay meaningful.
+function livePoolRows() {
+  return db
+    .prepare("SELECT card_id, collection_id, rarity, total_copies, copies_remaining FROM card_pool")
+    .all()
+    .filter((r) => cardById.has(r.card_id));
+}
+
+app.get("/api/admin/overview", requireAdmin, (_request, response) => {
+  const userCount = db.prepare("SELECT COUNT(*) AS n FROM users").get().n;
+  const byRarity = {};
+  let totalCards = 0;
+  let totalRemaining = 0;
+  for (const r of livePoolRows()) {
+    const stat = byRarity[r.rarity] ?? { total: 0, remaining: 0, bought: 0 };
+    stat.total += r.total_copies;
+    stat.remaining += r.copies_remaining;
+    stat.bought += r.total_copies - r.copies_remaining;
+    byRarity[r.rarity] = stat;
+    totalCards += r.total_copies;
+    totalRemaining += r.copies_remaining;
+  }
+  const totalOwned = db.prepare("SELECT COUNT(*) AS n FROM owned_cards").get().n;
+  response.json({
+    userCount,
+    totalOwnedCards: totalOwned,
+    pool: { byRarity, totalCards, totalRemaining, totalBought: totalCards - totalRemaining },
+  });
+});
+
+app.get("/api/admin/users", requireAdmin, (_request, response) => {
+  const rows = db.prepare(`
+    SELECT u.id, u.username, u.email, u.created_at,
+           COALESCE(ps.diamonds, 0) AS diamonds,
+           (SELECT COUNT(*) FROM owned_cards oc WHERE oc.user_id = u.id) AS total_cards,
+           (SELECT COUNT(DISTINCT oc.card_id) FROM owned_cards oc WHERE oc.user_id = u.id) AS unique_cards
+    FROM users u
+    LEFT JOIN player_state ps ON ps.user_id = u.id
+    ORDER BY u.created_at ASC
+  `).all();
+  response.json(rows.map((r) => ({
+    id: r.id,
+    username: r.username,
+    email: r.email,
+    createdAt: r.created_at,
+    diamonds: r.diamonds,
+    totalCards: r.total_cards,
+    uniqueCards: r.unique_cards,
+  })));
+});
+
+app.get("/api/admin/users/:id/cards", requireAdmin, (request, response) => {
+  const user = db.prepare("SELECT id, username, email FROM users WHERE id = ?").get(request.params.id);
+  if (!user) { response.status(404).json({ message: "Användaren hittades inte." }); return; }
+  const rows = db
+    .prepare("SELECT card_id, COUNT(*) AS count FROM owned_cards WHERE user_id = ? GROUP BY card_id")
+    .all(request.params.id);
+  response.json({
+    user: { id: user.id, username: user.username, email: user.email },
+    cards: rows.map((r) => ({ cardId: r.card_id, count: r.count })),
+  });
+});
+
+app.get("/api/admin/pool", requireAdmin, (_request, response) => {
+  response.json(livePoolRows().map((r) => ({
+    cardId: r.card_id,
+    collectionId: r.collection_id,
+    rarity: r.rarity,
+    total: r.total_copies,
+    remaining: r.copies_remaining,
+    bought: r.total_copies - r.copies_remaining,
+  })));
+});
 
 // ── Static frontend (production) ────────────────────────────────────────────────
 // Serve the built SPA. Registered after all /api routes so API 404s aren't

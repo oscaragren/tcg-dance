@@ -10,6 +10,12 @@ import { fetchGameState, fetchMyCardsForTrade } from "../../utils/gameApi";
 type RarityFilter = "all" | CardRarity;
 type CollectionFilter = "all" | string;
 
+// A couple may represent more than one club, written "UBSS / MÄLAR". Split on
+// "/" so the card shows up when filtering by either club individually.
+function splitClubs(club?: string): string[] {
+  return (club ?? "").split("/").map((s) => s.trim()).filter(Boolean);
+}
+
 type CollectionPageProps = {
   userEmail: string | null;
 };
@@ -17,6 +23,8 @@ type CollectionPageProps = {
 export function CollectionPage({ userEmail }: CollectionPageProps) {
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
   const [collectionFilter, setCollectionFilter] = useState<CollectionFilter>("all");
+  const [danceStyleFilter, setDanceStyleFilter] = useState<string>("all");
+  const [clubFilter, setClubFilter] = useState<string>("all");
   const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
   const [forTradeIds, setForTradeIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +39,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
     Promise.all([fetchGameState(), fetchMyCardsForTrade()])
       .then(([state, forTrade]) => {
         setOwnedCardIds(state.ownedCardIds);
-        setForTradeIds(new Set(forTrade));
+        setForTradeIds(new Set(forTrade.map((c) => c.cardId)));
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda samlingen."))
       .finally(() => setIsLoading(false));
@@ -46,15 +54,33 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
     [ownedCardIds],
   );
 
+  // Distinct dance styles / clubs across owned cards — drives the filter dropdowns.
+  const ownedCards = useMemo(
+    () => cards.filter((card) => (ownedCounts[card.id] ?? 0) > 0),
+    [ownedCounts],
+  );
+
+  const danceStyleOptions = useMemo(
+    () => Array.from(new Set(ownedCards.map((c) => c.danceStyle).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "sv")),
+    [ownedCards],
+  );
+
+  const clubOptions = useMemo(
+    () => Array.from(new Set(ownedCards.flatMap((c) => splitClubs(c.club)))).sort((a, b) => a.localeCompare(b, "sv")),
+    [ownedCards],
+  );
+
   const visibleCards = useMemo(() => {
-    let candidateCards = cards.filter((card) => (ownedCounts[card.id] ?? 0) > 0);
+    let candidateCards = ownedCards;
     if (rarityFilter !== "all") candidateCards = candidateCards.filter((c) => c.rarity === rarityFilter);
     if (collectionFilter !== "all") candidateCards = candidateCards.filter((c) => c.collectionId === collectionFilter);
+    if (danceStyleFilter !== "all") candidateCards = candidateCards.filter((c) => c.danceStyle === danceStyleFilter);
+    if (clubFilter !== "all") candidateCards = candidateCards.filter((c) => splitClubs(c.club).includes(clubFilter));
     return [...candidateCards].sort((a, b) => {
       const d = rarityOrder[a.rarity] - rarityOrder[b.rarity];
       return d !== 0 ? d : a.name.localeCompare(b.name, "sv");
     });
-  }, [ownedCounts, rarityFilter, collectionFilter]);
+  }, [ownedCards, rarityFilter, collectionFilter, danceStyleFilter, clubFilter]);
 
   if (!userEmail) {
     return (
@@ -124,6 +150,38 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                     <option value="all">Alla paket</option>
                     {collections.map((c) => (
                       <option key={c.id} value={c.id}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {danceStyleOptions.length > 1 && (
+                <div>
+                  <label htmlFor="dancestyle-filter" className="block text-sm text-gray-600 mb-2">Visa dansstil</label>
+                  <select
+                    id="dancestyle-filter"
+                    value={danceStyleFilter}
+                    onChange={(e) => setDanceStyleFilter(e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="all">Alla dansstilar</option>
+                    {danceStyleOptions.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {clubOptions.length > 1 && (
+                <div>
+                  <label htmlFor="club-filter" className="block text-sm text-gray-600 mb-2">Visa förening</label>
+                  <select
+                    id="club-filter"
+                    value={clubFilter}
+                    onChange={(e) => setClubFilter(e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="all">Alla föreningar</option>
+                    {clubOptions.map((c) => (
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>

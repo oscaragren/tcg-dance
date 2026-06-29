@@ -40,21 +40,24 @@ export function HandelPage({ currentUser }: HandelPageProps) {
     }
   }
 
-  async function handleBuyPack(collectionId: string) {
+  async function handleBuyPack(collectionId: string, quantity: number) {
     if (buyingPack) return;
     setBuyingPack(collectionId);
     setError(null);
     try {
-      const result = await buyPack(collectionId);
+      const result = await buyPack(collectionId, quantity);
       setGameState(result.state);
       const col = collections.find((c) => c.id === collectionId);
-      setOpenedPack({ label: col?.pack.label ?? "Pack", cards: result.pulledCards });
+      const label = col?.pack.label ?? "Pack";
+      setOpenedPack({ label: quantity > 1 ? `${quantity} × ${label}` : label, cards: result.pulledCards });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunde inte köpa pack.");
     } finally {
       setBuyingPack(null);
     }
   }
+
+  const PACK_QUANTITIES = [1, 5, 10];
 
   if (!currentUser) {
     return (
@@ -142,19 +145,31 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                       </div>
 
                       <div className="text-sm text-gray-500">
-                        {pack.cardCount} kort per pack
+                        {pack.cardCount} kort per pack · {pack.price} ◆ per pack
                       </div>
 
-                      <div className="mt-auto flex items-center justify-between gap-4">
-                        <div className="text-2xl font-bold text-blue-600">{pack.price} ◆</div>
-                        <Button
-                          onClick={() => void handleBuyPack(collection.id)}
-                          disabled={!canAfford || isLoadingState || !!buyingPack}
-                          variant={canAfford ? "default" : "outline"}
-                          className={canAfford ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" : ""}
-                        >
-                          {isBuying ? "Köper..." : canAfford ? "Köp pack" : "Inte tillräckligt"}
-                        </Button>
+                      <div className="mt-auto space-y-2">
+                        {!canAfford ? (
+                          <p className="text-sm text-gray-400">Inte tillräckligt med diamanter.</p>
+                        ) : null}
+                        <div className="grid grid-cols-3 gap-2">
+                          {PACK_QUANTITIES.map((qty) => {
+                            const totalCost = pack.price * qty;
+                            const canAffordQty = diamonds >= totalCost;
+                            return (
+                              <Button
+                                key={qty}
+                                onClick={() => void handleBuyPack(collection.id, qty)}
+                                disabled={!canAffordQty || isLoadingState || !!buyingPack}
+                                variant={canAffordQty ? "default" : "outline"}
+                                className={`flex-col h-auto py-2 ${canAffordQty ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" : ""}`}
+                              >
+                                <span className="font-semibold">{isBuying ? "..." : `Köp ${qty}`}</span>
+                                <span className="text-[11px] opacity-80">{totalCost} ◆</span>
+                              </Button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>

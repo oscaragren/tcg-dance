@@ -166,6 +166,7 @@ npm run start   # node server/index.mjs (serves dist/ + API)
 | `DB_PATH` | recommended | Absolute path to the SQLite file (e.g. a mounted volume at `/data/tcg.db`). Defaults to `data/tcg.db` |
 | `APP_URL` | yes | Public base URL, used to build password-reset email links |
 | `AUTH_CORS_ORIGIN` | optional | Allowed CORS origin; set to the public URL. Mostly moot under same-origin serving |
+| `ADMIN_PASSWORD` | for `/admin` | Shared password for the admin panel at `/admin`. If unset, admin login is disabled |
 | `RESEND_API_KEY` | for email | Resend API key for password-reset emails |
 | `MAIL_FROM` | for email | Verified sender address (see note below) |
 

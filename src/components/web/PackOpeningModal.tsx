@@ -99,7 +99,7 @@ export function PackOpeningModal({ packLabel, cards, onClose }: PackOpeningModal
       role="dialog"
       aria-modal="true"
     >
-      <div className="flex flex-col items-center gap-8 max-w-3xl w-full">
+      <div className="flex flex-col items-center gap-8 max-w-3xl w-full max-h-full overflow-y-auto py-2">
         <div className="text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">{packLabel} öppnat!</h2>
           <p className="text-white/40 mt-1 text-sm">
@@ -111,7 +111,7 @@ export function PackOpeningModal({ packLabel, cards, onClose }: PackOpeningModal
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-5">
+        <div className="flex flex-wrap justify-center gap-4 sm:gap-5">
           {cards.map((card, i) => (
             <FlipCard
               key={`${card.id}-${i}`}

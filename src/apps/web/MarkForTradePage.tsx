@@ -4,7 +4,7 @@ import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
-import { fetchGameState, fetchMyCardsForTrade, toggleCardForTrade } from "../../utils/gameApi";
+import { fetchGameState, fetchMyCardsForTrade, saveCardsForTrade } from "../../utils/gameApi";
 
 type RarityFilter = "all" | CardRarity;
 
@@ -12,13 +12,24 @@ type MarkForTradePageProps = {
   currentUser: AuthUser | null;
 };
 
+// Stable string key for a quantity map, so we can tell whether the draft differs
+// from what was last saved.
+function normalize(quantities: Record<string, number>): string {
+  return Object.entries(quantities)
+    .filter(([, q]) => q > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([id, q]) => `${id}:${q}`)
+    .join(",");
+}
+
 export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
   const navigate = useNavigate();
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
   const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
-  const [forTradeIds, setForTradeIds] = useState<Set<string>>(new Set());
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [savedKey, setSavedKey] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  const [toggling, setToggling] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,39 +41,14 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
     Promise.all([fetchGameState(), fetchMyCardsForTrade()])
       .then(([state, forTrade]) => {
         setOwnedCardIds(state.ownedCardIds);
-        setForTradeIds(new Set(forTrade));
+        const initial: Record<string, number> = {};
+        for (const item of forTrade) initial[item.cardId] = item.quantity;
+        setQuantities(initial);
+        setSavedKey(normalize(initial));
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda samlingen."))
       .finally(() => setIsLoading(false));
   }, [currentUser]);
-
-  async function handleToggle(cardId: string) {
-    if (toggling) return;
-    setToggling(cardId);
-    // optimistic update
-    setForTradeIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(cardId)) next.delete(cardId); else next.add(cardId);
-      return next;
-    });
-    try {
-      const result = await toggleCardForTrade(cardId);
-      setForTradeIds((prev) => {
-        const next = new Set(prev);
-        if (result.forTrade) next.add(cardId); else next.delete(cardId);
-        return next;
-      });
-    } catch {
-      // roll back
-      setForTradeIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(cardId)) next.delete(cardId); else next.add(cardId);
-        return next;
-      });
-    } finally {
-      setToggling(null);
-    }
-  }
 
   const ownedCounts = useMemo(
     () =>
@@ -82,12 +68,47 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
     });
   }, [ownedCounts, rarityFilter]);
 
-  // Count only owned cards that are marked — avoids inflating the number with
-  // stale IDs for cards the user no longer owns.
+  function setQuantity(cardId: string, next: number) {
+    const max = ownedCounts[cardId] ?? 0;
+    const clamped = Math.max(0, Math.min(max, next));
+    setQuantities((prev) => {
+      const updated = { ...prev };
+      if (clamped <= 0) delete updated[cardId];
+      else updated[cardId] = clamped;
+      return updated;
+    });
+  }
+
   const markedCount = useMemo(
-    () => cards.filter((c) => (ownedCounts[c.id] ?? 0) > 0 && forTradeIds.has(c.id)).length,
-    [ownedCounts, forTradeIds],
+    () => cards.filter((c) => (ownedCounts[c.id] ?? 0) > 0 && (quantities[c.id] ?? 0) > 0).length,
+    [ownedCounts, quantities],
   );
+  const totalCopies = useMemo(
+    () => Object.values(quantities).reduce((sum, q) => sum + q, 0),
+    [quantities],
+  );
+
+  const isDirty = normalize(quantities) !== savedKey;
+
+  async function handleSave() {
+    if (isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      const items = Object.entries(quantities)
+        .filter(([, q]) => q > 0)
+        .map(([cardId, quantity]) => ({ cardId, quantity }));
+      const saved = await saveCardsForTrade(items);
+      const next: Record<string, number> = {};
+      for (const item of saved) next[item.cardId] = item.quantity;
+      setQuantities(next);
+      setSavedKey(normalize(next));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Kunde inte spara.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   if (!currentUser) {
     return (
@@ -124,33 +145,45 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">Markera för byte</h1>
                 <p className="text-gray-500 text-sm">
-                  Tryck på ett kort för att markera eller avmarkera det som tillgängligt för byte.
+                  Välj hur många kopior av varje kort du vill göra tillgängliga för byte, och tryck Spara.
                 </p>
               </div>
               {markedCount > 0 && (
                 <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 text-sm font-medium rounded-full px-4 py-1.5 shrink-0">
                   <span className="text-purple-500">⇄</span>
-                  {markedCount} {markedCount === 1 ? "kort markerat" : "kort markerade"}
+                  {totalCopies} {totalCopies === 1 ? "kopia" : "kopior"} ({markedCount} {markedCount === 1 ? "kort" : "kort"})
                 </div>
               )}
             </div>
           </div>
 
-          {/* Filter */}
-          <div className="mb-6 flex items-center gap-3">
-            <label className="text-sm text-gray-600 shrink-0">Visa rarity</label>
-            <select
-              value={rarityFilter}
-              onChange={(e) => setRarityFilter(e.target.value as RarityFilter)}
-              className="h-9 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-            >
-              <option value="all">Alla</option>
-              <option value="special">Special</option>
-              <option value="legendary">Legendary</option>
-              <option value="epic">Epic</option>
-              <option value="rare">Rare</option>
-              <option value="common">Common</option>
-            </select>
+          {/* Filter + save bar */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-600 shrink-0">Visa rarity</label>
+              <select
+                value={rarityFilter}
+                onChange={(e) => setRarityFilter(e.target.value as RarityFilter)}
+                className="h-9 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+              >
+                <option value="all">Alla</option>
+                <option value="special">Special</option>
+                <option value="legendary">Legendary</option>
+                <option value="epic">Epic</option>
+                <option value="rare">Rare</option>
+                <option value="common">Common</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              {!isDirty && !isLoading && <span className="text-xs text-gray-400">Sparat</span>}
+              <Button
+                onClick={() => void handleSave()}
+                disabled={!isDirty || isSaving}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                {isSaving ? "Sparar..." : "Spara"}
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -164,19 +197,12 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {ownedCards.map((card) => {
-                const count = ownedCounts[card.id] ?? 0;
-                const isForTrade = forTradeIds.has(card.id);
-                const isToggling = toggling === card.id;
+                const owned = ownedCounts[card.id] ?? 0;
+                const qty = quantities[card.id] ?? 0;
+                const isForTrade = qty > 0;
 
                 return (
-                  <div
-                    key={card.id}
-                    onClick={() => { if (!isToggling) void handleToggle(card.id); }}
-                    className={`relative flex flex-col items-center cursor-pointer select-none rounded-xl transition-all duration-150 ${
-                      isToggling ? "opacity-50" : "hover:scale-[1.03]"
-                    }`}
-                  >
-                    {/* Card thumbnail */}
+                  <div key={card.id} className="relative flex flex-col items-center gap-2">
                     <div className={`relative rounded-xl transition-all duration-150 ${
                       isForTrade ? "ring-2 ring-purple-500 ring-offset-2" : ""
                     }`}>
@@ -187,25 +213,53 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
                         danceStyle={card.danceStyle}
                         designKey={card.designKey}
                         showCaption
+                        disableLightbox
                       />
-
-                      {/* Duplicate count */}
-                      {count > 1 && (
+                      {owned > 1 && (
                         <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
-                          ×{count}
+                          ×{owned}
                         </div>
                       )}
-
-                      {/* Click interceptor — prevents CardPlaceholder's lightbox from opening */}
-                      <div className="absolute inset-0 z-20 rounded-xl" />
-
-                      {/* Trade status badge */}
                       {isForTrade && (
-                        <div className="absolute top-1.5 left-1.5 z-30 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
+                        <div className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
                           ⇄
                         </div>
                       )}
                     </div>
+
+                    {/* Quantity control */}
+                    {owned === 1 ? (
+                      <button
+                        onClick={() => setQuantity(card.id, qty > 0 ? 0 : 1)}
+                        className={`text-xs font-medium rounded-full px-3 py-1 transition-colors ${
+                          isForTrade
+                            ? "bg-purple-600 text-white hover:bg-purple-700"
+                            : "border border-gray-300 text-gray-600 hover:border-gray-400"
+                        }`}
+                      >
+                        {isForTrade ? "Markerad" : "Markera"}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setQuantity(card.id, qty - 1)}
+                          disabled={qty <= 0}
+                          className="w-7 h-7 rounded-full border border-gray-300 text-gray-700 leading-none disabled:opacity-40 hover:border-gray-400"
+                          aria-label="Minska"
+                        >
+                          −
+                        </button>
+                        <span className="text-sm font-medium tabular-nums w-10 text-center">{qty}/{owned}</span>
+                        <button
+                          onClick={() => setQuantity(card.id, qty + 1)}
+                          disabled={qty >= owned}
+                          className="w-7 h-7 rounded-full border border-gray-300 text-gray-700 leading-none disabled:opacity-40 hover:border-gray-400"
+                          aria-label="Öka"
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}

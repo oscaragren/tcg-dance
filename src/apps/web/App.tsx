@@ -17,6 +17,8 @@ import { MarkForTradePage } from "./MarkForTradePage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
 import { PrivacyPage } from "./PrivacyPage";
 import { UpgradePage } from "./UpgradePage";
+import { TopplistaPage } from "./TopplistaPage";
+import { AdminPage } from "./AdminPage";
 import { collections } from "../../data/packs";
 
 const featuredCollection = collections[collections.length - 1];
@@ -82,11 +84,13 @@ export default function App() {
         <Route path="/samling/byte" element={<MarkForTradePage currentUser={currentUser} />} />
         <Route path="/handel"   element={<HandelPage currentUser={currentUser} />} />
         <Route path="/uppgradering" element={<UpgradePage currentUser={currentUser} />} />
+        <Route path="/topplista" element={<TopplistaPage currentUser={currentUser} />} />
         <Route path="/byte"     element={<TradePage currentUser={currentUser} />} />
         <Route path="/byte/ny"  element={<NewTradePage currentUser={currentUser} />} />
         <Route path="/auth"                  element={<AuthPage onLogin={handleLogin} />} />
         <Route path="/aterstall-losenord"   element={<ResetPasswordPage />} />
         <Route path="/integritetspolicy"    element={<PrivacyPage />} />
+        <Route path="/admin"                 element={<AdminPage />} />
       </Routes>
       <Footer />
     </div>

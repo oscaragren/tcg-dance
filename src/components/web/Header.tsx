@@ -33,6 +33,7 @@ export function Header({ username, onLogout }: HeaderProps) {
                 <Link to="/handel"  className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Handel</Link>
                 <Link to="/byte"    className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Byte</Link>
                 <Link to="/uppgradering" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Uppgradering</Link>
+                <Link to="/topplista" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Topplista</Link>
               </nav>
             </div>
 
@@ -97,6 +98,7 @@ export function Header({ username, onLogout }: HeaderProps) {
                 { to: "/handel",  label: "Handel" },
                 { to: "/byte",    label: "Byte" },
                 { to: "/uppgradering", label: "Uppgradering" },
+                { to: "/topplista", label: "Topplista" },
               ].map(({ to, label }) => (
                 <Link
                   key={to}

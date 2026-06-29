@@ -33,7 +33,29 @@ export const upgradeTierTarget: Record<CardRarity, CardRarity | null> = {
   special: null,
 };
 
+/** Cards required to upgrade, keyed by the source rarity being combined. */
+export const upgradeCardsRequired: Record<CardRarity, number | null> = {
+  common: 20,
+  rare: 15,
+  epic: 10,
+  legendary: null,
+  special: null,
+};
+
 export type UserSearchResult = { id: string; username: string };
+
+export type CardForTrade = { cardId: string; quantity: number };
+
+export type LeaderboardEntry = {
+  rank: number;
+  userId: string;
+  username: string;
+  total: number;
+  legendary: number;
+  epic: number;
+  rare: number;
+  common: number;
+};
 
 export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled";
 

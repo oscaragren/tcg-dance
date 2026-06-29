@@ -33,7 +33,9 @@ export function AchievementsSection() {
 
   if (isLoading) return null;
 
-  const claimableCount = achievements.filter((a) => a.complete && !a.claimed).length;
+  // Hide achievements the user has already finished and claimed ("inlöst").
+  const visibleAchievements = achievements.filter((a) => !a.claimed);
+  const claimableCount = visibleAchievements.filter((a) => a.complete).length;
 
   return (
     <section className="rounded-2xl border bg-white mb-10 overflow-hidden">
@@ -58,8 +60,11 @@ export function AchievementsSection() {
 
           {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
+          {visibleAchievements.length === 0 ? (
+            <p className="text-sm text-gray-400">Inga prestationer kvar — du har löst in alla du klarat.</p>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {achievements.map((a) => {
+            {visibleAchievements.map((a) => {
               const pct = Math.min(100, Math.round((a.progress / a.target) * 100));
               return (
                 <div key={a.id} className="rounded-lg border px-4 py-3">
@@ -96,6 +101,7 @@ export function AchievementsSection() {
               );
             })}
           </div>
+          )}
         </div>
       )}
     </section>

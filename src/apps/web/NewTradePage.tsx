@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
-import type { UserSearchResult } from "../../types/game";
+import type { CardForTrade, UserSearchResult } from "../../types/game";
 import { createTrade, fetchGameState, getUserCardsForTrade, searchUsers } from "../../utils/gameApi";
 
 type NewTradePageProps = { currentUser: AuthUser | null };
+
+type PickerEntry = { cardId: string; max: number };
+
+function expand(counts: Record<string, number>): string[] {
+  return Object.entries(counts).flatMap(([cardId, n]) => Array.from({ length: n }, () => cardId));
+}
 
 export function NewTradePage({ currentUser }: NewTradePageProps) {
   const navigate = useNavigate();
@@ -20,11 +26,11 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
 
   const [myCardIds, setMyCardIds] = useState<string[]>([]);
   const [myDiamonds, setMyDiamonds] = useState(0);
-  const [theirCardIds, setTheirCardIds] = useState<string[]>([]);
+  const [theirCards, setTheirCards] = useState<CardForTrade[]>([]);
 
-  const [offeredCardIds, setOfferedCardIds] = useState<Set<string>>(new Set());
+  const [offeredCounts, setOfferedCounts] = useState<Record<string, number>>({});
   const [offeredDiamonds, setOfferedDiamonds] = useState(0);
-  const [requestedCardIds, setRequestedCardIds] = useState<Set<string>>(new Set());
+  const [requestedCounts, setRequestedCounts] = useState<Record<string, number>>({});
   const [requestedDiamonds, setRequestedDiamonds] = useState(0);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,7 +57,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
     if (!selectedUser) return;
     // Only load cards the other user has marked as available for trade
     getUserCardsForTrade(selectedUser.id)
-      .then((res) => setTheirCardIds(res.ownedCardIds))
+      .then((res) => setTheirCards(res.cards))
       .catch(() => {});
   }, [selectedUser]);
 
@@ -67,21 +73,34 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  function toggleOffered(cardId: string) {
-    setOfferedCardIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(cardId)) next.delete(cardId);
-      else next.add(cardId);
-      return next;
-    });
-  }
+  const myOwnedCounts = useMemo(
+    () => myCardIds.reduce<Record<string, number>>((acc, id) => { acc[id] = (acc[id] ?? 0) + 1; return acc; }, {}),
+    [myCardIds],
+  );
 
-  function toggleRequested(cardId: string) {
-    setRequestedCardIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(cardId)) next.delete(cardId);
-      else next.add(cardId);
-      return next;
+  const myEntries: PickerEntry[] = useMemo(
+    () =>
+      Object.entries(myOwnedCounts)
+        .map(([cardId, max]) => ({ cardId, max }))
+        .sort((a, b) => (cardById(a.cardId)?.name ?? "").localeCompare(cardById(b.cardId)?.name ?? "", "sv")),
+    [myOwnedCounts],
+  );
+
+  const theirEntries: PickerEntry[] = useMemo(
+    () =>
+      theirCards
+        .map((c) => ({ cardId: c.cardId, max: c.quantity }))
+        .sort((a, b) => (cardById(a.cardId)?.name ?? "").localeCompare(cardById(b.cardId)?.name ?? "", "sv")),
+    [theirCards],
+  );
+
+  function adjust(setter: React.Dispatch<React.SetStateAction<Record<string, number>>>, cardId: string, next: number, max: number) {
+    const clamped = Math.max(0, Math.min(max, next));
+    setter((prev) => {
+      const updated = { ...prev };
+      if (clamped <= 0) delete updated[cardId];
+      else updated[cardId] = clamped;
+      return updated;
     });
   }
 
@@ -92,9 +111,9 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
     try {
       await createTrade({
         receiverUserId: selectedUser.id,
-        offeredCardIds: Array.from(offeredCardIds),
+        offeredCardIds: expand(offeredCounts),
         offeredDiamonds,
-        requestedCardIds: Array.from(requestedCardIds),
+        requestedCardIds: expand(requestedCounts),
         requestedDiamonds,
       });
       navigate("/byte");
@@ -121,14 +140,14 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
     );
   }
 
-  const myUniqueCardIds = Array.from(new Set(myCardIds));
-  const theirUniqueCardIds = Array.from(new Set(theirCardIds));
+  const offeredTotal = Object.values(offeredCounts).reduce((s, n) => s + n, 0);
+  const requestedTotal = Object.values(requestedCounts).reduce((s, n) => s + n, 0);
 
   const canSubmit =
     !isSubmitting &&
     selectedUser !== null &&
-    (offeredCardIds.size > 0 || offeredDiamonds > 0) &&
-    (requestedCardIds.size > 0 || requestedDiamonds > 0);
+    (offeredTotal > 0 || offeredDiamonds > 0) &&
+    (requestedTotal > 0 || requestedDiamonds > 0);
 
   return (
     <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
@@ -149,8 +168,8 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                   variant="outline"
                   onClick={() => {
                     setSelectedUser(null);
-                    setTheirCardIds([]);
-                    setRequestedCardIds(new Set());
+                    setTheirCards([]);
+                    setRequestedCounts({});
                   }}
                 >
                   Byt spelare
@@ -195,10 +214,10 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <CardPickerPanel
                   title="Ditt erbjudande"
-                  hint="Klicka på kort du vill erbjuda."
-                  cardIds={myUniqueCardIds}
-                  selected={offeredCardIds}
-                  onToggle={toggleOffered}
+                  hint="Välj kort och antal du vill erbjuda."
+                  entries={myEntries}
+                  selected={offeredCounts}
+                  onAdjust={(cardId, next, max) => adjust(setOfferedCounts, cardId, next, max)}
                   emptyMessage="Du har inga kort."
                   diamondLabel={`Diamanter att erbjuda (du har ${myDiamonds})`}
                   diamondValue={offeredDiamonds}
@@ -207,11 +226,11 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                 />
                 <CardPickerPanel
                   title="Du begär"
-                  hint={`Klicka på kort du vill ha från ${selectedUser.username}.`}
-                  cardIds={theirUniqueCardIds}
-                  selected={requestedCardIds}
-                  onToggle={toggleRequested}
-                  emptyMessage={`${selectedUser.username} har inga kort.`}
+                  hint={`Välj kort och antal du vill ha från ${selectedUser.username}.`}
+                  entries={theirEntries}
+                  selected={requestedCounts}
+                  onAdjust={(cardId, next, max) => adjust(setRequestedCounts, cardId, next, max)}
+                  emptyMessage={`${selectedUser.username} har inga kort markerade för byte.`}
                   diamondLabel="Diamanter att begära"
                   diamondValue={requestedDiamonds}
                   onDiamondsChange={setRequestedDiamonds}
@@ -243,9 +262,9 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
 function CardPickerPanel({
   title,
   hint,
-  cardIds,
+  entries,
   selected,
-  onToggle,
+  onAdjust,
   emptyMessage,
   diamondLabel,
   diamondValue,
@@ -254,9 +273,9 @@ function CardPickerPanel({
 }: {
   title: string;
   hint: string;
-  cardIds: string[];
-  selected: Set<string>;
-  onToggle: (id: string) => void;
+  entries: PickerEntry[];
+  selected: Record<string, number>;
+  onAdjust: (cardId: string, next: number, max: number) => void;
   emptyMessage: string;
   diamondLabel: string;
   diamondValue: number;
@@ -285,20 +304,20 @@ function CardPickerPanel({
         />
       </div>
 
-      {cardIds.length === 0 ? (
+      {entries.length === 0 ? (
         <p className="text-sm text-gray-400">{emptyMessage}</p>
       ) : (
-        <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-96">
-          {cardIds.map((cardId) => {
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-96">
+          {entries.map(({ cardId, max }) => {
             const card = cardById(cardId);
             if (!card) return null;
-            const isSelected = selected.has(cardId);
+            const qty = selected[cardId] ?? 0;
+            const isSelected = qty > 0;
             return (
               <div
                 key={cardId}
-                onClick={() => onToggle(cardId)}
-                className={`cursor-pointer rounded-lg p-1 transition-all select-none ${
-                  isSelected ? "ring-2 ring-purple-500 bg-purple-50" : "hover:bg-gray-50"
+                className={`rounded-lg p-1 flex flex-col items-center gap-1.5 transition-all ${
+                  isSelected ? "ring-2 ring-purple-500 bg-purple-50" : ""
                 }`}
               >
                 <CardPlaceholder
@@ -307,7 +326,38 @@ function CardPickerPanel({
                   name={card.name}
                   designKey={card.designKey}
                   showCaption
+                  disableLightbox
                 />
+                {max === 1 ? (
+                  <button
+                    onClick={() => onAdjust(cardId, isSelected ? 0 : 1, max)}
+                    className={`text-xs font-medium rounded-full px-3 py-0.5 transition-colors ${
+                      isSelected ? "bg-purple-600 text-white" : "border border-gray-300 text-gray-600 hover:border-gray-400"
+                    }`}
+                  >
+                    {isSelected ? "Vald" : "Välj"}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => onAdjust(cardId, qty - 1, max)}
+                      disabled={qty <= 0}
+                      className="w-6 h-6 rounded-full border border-gray-300 text-gray-700 leading-none text-sm disabled:opacity-40"
+                      aria-label="Minska"
+                    >
+                      −
+                    </button>
+                    <span className="text-xs font-medium tabular-nums w-8 text-center">{qty}/{max}</span>
+                    <button
+                      onClick={() => onAdjust(cardId, qty + 1, max)}
+                      disabled={qty >= max}
+                      className="w-6 h-6 rounded-full border border-gray-300 text-gray-700 leading-none text-sm disabled:opacity-40"
+                      aria-label="Öka"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -316,4 +366,3 @@ function CardPickerPanel({
     </section>
   );
 }
-

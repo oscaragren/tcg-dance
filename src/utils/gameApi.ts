@@ -1,4 +1,4 @@
-import type { Achievement, BuyPackResponse, CardPoolInfo, ClaimAchievementResponse, ClaimDailyDiamondsResponse, GameState, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
+import type { Achievement, BuyPackResponse, CardForTrade, CardPoolInfo, ClaimAchievementResponse, ClaimDailyDiamondsResponse, GameState, LeaderboardEntry, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -42,26 +42,26 @@ export async function fetchCardPool(): Promise<CardPoolInfo> {
   return requestJson<CardPoolInfo>("/api/game/pool", { method: "GET" });
 }
 
-export async function buyPack(collectionId: string): Promise<BuyPackResponse> {
+export async function buyPack(collectionId: string, quantity = 1): Promise<BuyPackResponse> {
   return requestJson<BuyPackResponse>("/api/game/buy-pack", {
     method: "POST",
-    body: JSON.stringify({ collectionId }),
+    body: JSON.stringify({ collectionId, quantity }),
   });
 }
 
-export async function fetchMyCardsForTrade(): Promise<string[]> {
-  return requestJson<string[]>("/api/game/cards-for-trade", { method: "GET" });
+export async function fetchMyCardsForTrade(): Promise<CardForTrade[]> {
+  return requestJson<CardForTrade[]>("/api/game/cards-for-trade", { method: "GET" });
 }
 
-export async function toggleCardForTrade(cardId: string): Promise<{ forTrade: boolean }> {
-  return requestJson<{ forTrade: boolean }>("/api/game/toggle-card-for-trade", {
+export async function saveCardsForTrade(items: CardForTrade[]): Promise<CardForTrade[]> {
+  return requestJson<CardForTrade[]>("/api/game/cards-for-trade", {
     method: "POST",
-    body: JSON.stringify({ cardId }),
+    body: JSON.stringify({ items }),
   });
 }
 
-export async function getUserCardsForTrade(userId: string): Promise<{ ownedCardIds: string[] }> {
-  return requestJson<{ ownedCardIds: string[] }>(`/api/users/${userId}/cards-for-trade`, { method: "GET" });
+export async function getUserCardsForTrade(userId: string): Promise<{ cards: CardForTrade[] }> {
+  return requestJson<{ cards: CardForTrade[] }>(`/api/users/${userId}/cards-for-trade`, { method: "GET" });
 }
 
 export async function searchUsers(q: string): Promise<UserSearchResult[]> {
@@ -73,6 +73,10 @@ export async function upgradeCards(cardIds: string[]): Promise<UpgradeResponse> 
     method: "POST",
     body: JSON.stringify({ cardIds }),
   });
+}
+
+export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
+  return requestJson<LeaderboardEntry[]>("/api/leaderboard", { method: "GET" });
 }
 
 export async function fetchAchievements(): Promise<Achievement[]> {

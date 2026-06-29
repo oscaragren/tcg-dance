@@ -53,6 +53,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS cards_for_trade (
     user_id TEXT NOT NULL REFERENCES users(id),
     card_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY (user_id, card_id)
   );
 
@@ -85,6 +86,14 @@ const hasCollectionId =
 if (!hasCollectionId) {
   db.exec("ALTER TABLE card_pool ADD COLUMN collection_id TEXT NOT NULL DEFAULT 'sm2026'");
   console.log("Migrated card_pool: added collection_id column.");
+}
+
+// Add quantity column to cards_for_trade if upgrading from an older schema
+const hasTradeQuantity =
+  db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('cards_for_trade') WHERE name='quantity'").get().n > 0;
+if (!hasTradeQuantity) {
+  db.exec("ALTER TABLE cards_for_trade ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1");
+  console.log("Migrated cards_for_trade: added quantity column.");
 }
 
 // One-time migration from JSON files

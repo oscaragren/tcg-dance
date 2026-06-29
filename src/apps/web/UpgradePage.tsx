@@ -7,12 +7,11 @@ import { cards } from "../../data/cards";
 import { collections } from "../../data/packs";
 import type { AuthUser } from "../../types/auth";
 import type { CardRarity, DanceCard } from "../../types/danceCard";
-import { upgradeTierTarget, type CardPoolInfo, type GameState } from "../../types/game";
+import { upgradeCardsRequired, upgradeTierTarget, type CardPoolInfo, type GameState } from "../../types/game";
 import { fetchCardPool, fetchGameState, upgradeCards } from "../../utils/gameApi";
 
 type UpgradePageProps = { currentUser: AuthUser | null };
 
-const UPGRADE_CARDS_REQUIRED = 10;
 const RARITY_LABEL: Record<CardRarity, string> = {
   common: "Common", rare: "Rare", epic: "Epic", legendary: "Legendary", special: "Special",
 };
@@ -90,7 +89,7 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
           collectionId={pickerGroup.collectionId}
           rarity={pickerGroup.rarity}
           ownedCardIds={gameState?.ownedCardIds ?? []}
-          requiredCount={UPGRADE_CARDS_REQUIRED}
+          requiredCount={upgradeCardsRequired[pickerGroup.rarity] ?? 0}
           isSubmitting={isSubmitting}
           onConfirm={handleConfirmUpgrade}
           onClose={() => setPickerGroup(null)}
@@ -106,7 +105,8 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
           <div>
             <h1 className="text-4xl md:text-5xl font-bold mb-3">Uppgradering</h1>
             <p className="text-gray-600">
-              Välj {UPGRADE_CARDS_REQUIRED} kort av samma raritet och kortpaket för att byta dem mot ett slumpmässigt kort en nivå högre.
+              Kombinera kort av samma raritet och kortpaket till ett slumpmässigt kort en nivå högre.
+              Antalet kort som krävs beror på rariteten: {upgradeCardsRequired.common} common, {upgradeCardsRequired.rare} rare, {upgradeCardsRequired.epic} epic.
             </p>
           </div>
 
@@ -123,9 +123,10 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
                     {(["common", "rare", "epic"] as CardRarity[]).map((rarity) => {
                       const targetRarity = upgradeTierTarget[rarity];
                       if (!targetRarity) return null;
+                      const required = upgradeCardsRequired[rarity] ?? 0;
                       const owned = ownedCountFor(collection.id, rarity);
                       const hasStock = targetTierHasStock(collection.id, targetRarity);
-                      const canUpgrade = owned >= UPGRADE_CARDS_REQUIRED && hasStock;
+                      const canUpgrade = owned >= required && hasStock;
 
                       return (
                         <div key={rarity} className="rounded-lg border px-4 py-3">
@@ -133,7 +134,7 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
                             {RARITY_LABEL[rarity]} → {RARITY_LABEL[targetRarity]}
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
-                            {Math.min(owned, UPGRADE_CARDS_REQUIRED)}/{UPGRADE_CARDS_REQUIRED} kort
+                            {Math.min(owned, required)}/{required} kort
                           </div>
                           <Button
                             size="sm"

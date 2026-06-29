@@ -1,3 +1,10 @@
+// Achievement diamond rewards are scaled down to ~10% of their nominal value
+// so that achievements top up a player's wallet without dwarfing pack prices.
+const REWARD_SCALE = 0.1;
+function scaleReward(reward) {
+  return Math.max(1, Math.round(reward * REWARD_SCALE));
+}
+
 const GLOBAL_MILESTONES = [
   { target: 10, reward: 50 },
   { target: 25, reward: 125 },
@@ -36,7 +43,7 @@ export function buildAchievementDefinitions(allCards, collections) {
       title: `Samlare: ${target} unika kort`,
       description: `Samla ${target} unika kort.`,
       target,
-      reward,
+      reward: scaleReward(reward),
     });
   }
 
@@ -45,7 +52,7 @@ export function buildAchievementDefinitions(allCards, collections) {
     title: "Fullständig samling",
     description: `Samla alla ${totalUnique} unika kort.`,
     target: totalUnique,
-    reward: 1000000,
+    reward: scaleReward(1000000),
   });
 
   for (const collection of collections) {
@@ -63,7 +70,7 @@ export function buildAchievementDefinitions(allCards, collections) {
         description: `Samla ${target} unika kort från ${collection.label}.`,
         collectionId: collection.id,
         target,
-        reward,
+        reward: scaleReward(reward),
       });
     }
 
@@ -73,7 +80,7 @@ export function buildAchievementDefinitions(allCards, collections) {
       description: `Samla alla ${collectionTotal} kort i ${collection.label}.`,
       collectionId: collection.id,
       target: collectionTotal,
-      reward: 5000,
+      reward: scaleReward(5000),
     });
 
     for (const [rarity, config] of Object.entries(RARITY_MILESTONES)) {
@@ -89,7 +96,7 @@ export function buildAchievementDefinitions(allCards, collections) {
           collectionId: collection.id,
           rarity,
           target,
-          reward,
+          reward: scaleReward(reward),
         });
       }
 
@@ -100,7 +107,7 @@ export function buildAchievementDefinitions(allCards, collections) {
         collectionId: collection.id,
         rarity,
         target: rarityTotal,
-        reward: config.allReward,
+        reward: scaleReward(config.allReward),
       });
     }
   }
