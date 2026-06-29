@@ -11,6 +11,10 @@ __pycache__/
 *.pyc
 *.json
 !package.json
+!package-lock.json
 !tsconfig.json
+!tsconfig.node.json
+!data/game-content.json
+!data/vote4dance-ranking.json
 node_modules/
 dist/
