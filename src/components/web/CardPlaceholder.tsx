@@ -13,6 +13,12 @@ interface CardPlaceholderProps {
   showCaption?: boolean;
   /** When true, clicking the card does not open the fullscreen lightbox. */
   disableLightbox?: boolean;
+  /**
+   * Hide the artwork and show a locked silhouette instead. Used by the "Se alla"
+   * view on Samling: unowned cards reveal their name and dance style but the
+   * design stays secret until the card is actually owned.
+   */
+  hideDesign?: boolean;
 }
 
 export function CardPlaceholder({
@@ -23,6 +29,7 @@ export function CardPlaceholder({
   designKey,
   showCaption = true,
   disableLightbox = false,
+  hideDesign = false,
 }: CardPlaceholderProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const titleId = useId();
@@ -87,11 +94,13 @@ export function CardPlaceholder({
     special: "text-fuchsia-700",
   };
 
-  const imageUrl = resolveCardDesignUrl(designKey);
+  const imageUrl = hideDesign ? undefined : resolveCardDesignUrl(designKey);
+  const isLocked = hideDesign;
+  const lightboxDisabled = disableLightbox || isLocked;
 
   const caption = showCaption ? (
     <div className={`${captionWidths[size]} text-center mt-1.5 space-y-0.5`}>
-      <div className={`text-[10px] uppercase tracking-wider font-semibold ${rarityCaption[rarity]}`}>{rarity}</div>
+      <div className={`text-[10px] uppercase tracking-wider font-semibold ${isLocked ? "text-gray-400" : rarityCaption[rarity]}`}>{rarity}</div>
       <div className="text-xs text-gray-900 leading-snug font-medium">{name}</div>
       {danceStyle && (
         <div className="text-[10px] text-gray-400 leading-tight">{danceStyle}</div>
@@ -99,7 +108,18 @@ export function CardPlaceholder({
     </div>
   ) : null;
 
-  const thumbnailInner = imageUrl ? (
+  const lockedInner = (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[10px] bg-gray-800">
+      <span className="text-3xl text-white/25 select-none" aria-hidden>
+        ?
+      </span>
+      <span className="px-2 text-center text-[9px] uppercase tracking-wider text-white/30">
+        Saknas
+      </span>
+    </div>
+  );
+
+  const thumbnailInner = isLocked ? lockedInner : imageUrl ? (
     <div className="relative h-full w-full overflow-hidden rounded-[10px] bg-gray-900">
       <ImageWithFallback
         src={imageUrl}
@@ -189,7 +209,11 @@ export function CardPlaceholder({
 
   const cardFrame = (
     <div
-      className={`${sizes[size]} rounded-xl bg-gradient-to-br ${rarityColors[rarity]} p-0.5 shadow-lg ${rarityGlow[rarity]} transition-transform hover:scale-105 cursor-pointer`}
+      className={
+        isLocked
+          ? `${sizes[size]} rounded-xl bg-gradient-to-br from-gray-300 to-gray-400 p-0.5 opacity-70`
+          : `${sizes[size]} rounded-xl bg-gradient-to-br ${rarityColors[rarity]} p-0.5 shadow-lg ${rarityGlow[rarity]} transition-transform hover:scale-105 cursor-pointer`
+      }
     >
       {thumbnailInner}
     </div>
@@ -198,7 +222,7 @@ export function CardPlaceholder({
   return (
     <>
       <div className="inline-flex flex-col items-center">
-        {disableLightbox ? (
+        {lightboxDisabled ? (
           cardFrame
         ) : (
           <button
@@ -212,7 +236,7 @@ export function CardPlaceholder({
         )}
         {caption}
       </div>
-      {!disableLightbox && lightbox}
+      {!lightboxDisabled && lightbox}
     </>
   );
 }

@@ -27,7 +27,31 @@ async function requestJson<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  const payload = (await response.json()) as T;
+  broadcastDiamonds(payload);
+  return payload;
+}
+
+/**
+ * Every endpoint that moves diamonds returns the fresh GameState (either as the
+ * body itself or under `state`). Sniffing that here means the header balance
+ * updates after a purchase, chest, upgrade, achievement or trade without each
+ * call site having to remember to tell it.
+ */
+export const DIAMONDS_EVENT = "tcg:diamonds";
+
+function broadcastDiamonds(payload: unknown) {
+  if (typeof window === "undefined" || !payload || typeof payload !== "object") return;
+
+  const record = payload as Record<string, unknown>;
+  const state = (record.state ?? record) as Record<string, unknown> | undefined;
+  const diamonds = state?.diamonds;
+
+  // Only a real GameState carries both of these; guards against a stray
+  // `diamonds` field on some other payload.
+  if (typeof diamonds !== "number" || !Array.isArray(state?.ownedCardIds)) return;
+
+  window.dispatchEvent(new CustomEvent<number>(DIAMONDS_EVENT, { detail: diamonds }));
 }
 
 export async function fetchGameState(): Promise<GameState> {

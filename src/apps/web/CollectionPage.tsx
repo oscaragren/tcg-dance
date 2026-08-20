@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AchievementsSection } from "../../components/web/AchievementsSection";
 import { ChestsSection } from "../../components/web/ChestsSection";
+import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
@@ -26,6 +27,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
   const [collectionFilter, setCollectionFilter] = useState<CollectionFilter>("all");
   const [danceStyleFilter, setDanceStyleFilter] = useState<string>("all");
   const [clubFilter, setClubFilter] = useState<string>("all");
+  const [showAll, setShowAll] = useState(false);
   const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
   const [forTradeIds, setForTradeIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -63,18 +65,22 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
     [ownedCounts],
   );
 
+  // In "Se alla" mode the dropdowns need to cover the whole catalog, not just
+  // what the user happens to own.
+  const filterableCards = showAll ? cards : ownedCards;
+
   const danceStyleOptions = useMemo(
-    () => Array.from(new Set(ownedCards.map((c) => c.danceStyle).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "sv")),
-    [ownedCards],
+    () => Array.from(new Set(filterableCards.map((c) => c.danceStyle).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "sv")),
+    [filterableCards],
   );
 
   const clubOptions = useMemo(
-    () => Array.from(new Set(ownedCards.flatMap((c) => splitClubs(c.club)))).sort((a, b) => a.localeCompare(b, "sv")),
-    [ownedCards],
+    () => Array.from(new Set(filterableCards.flatMap((c) => splitClubs(c.club)))).sort((a, b) => a.localeCompare(b, "sv")),
+    [filterableCards],
   );
 
   const visibleCards = useMemo(() => {
-    let candidateCards = ownedCards;
+    let candidateCards = showAll ? cards : ownedCards;
     if (rarityFilter !== "all") candidateCards = candidateCards.filter((c) => c.rarity === rarityFilter);
     if (collectionFilter !== "all") candidateCards = candidateCards.filter((c) => c.collectionId === collectionFilter);
     if (danceStyleFilter !== "all") candidateCards = candidateCards.filter((c) => c.danceStyle === danceStyleFilter);
@@ -83,7 +89,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
       const d = rarityOrder[a.rarity] - rarityOrder[b.rarity];
       return d !== 0 ? d : a.name.localeCompare(b.name, "sv");
     });
-  }, [ownedCards, rarityFilter, collectionFilter, danceStyleFilter, clubFilter]);
+  }, [ownedCards, showAll, rarityFilter, collectionFilter, danceStyleFilter, clubFilter]);
 
   if (!userEmail) {
     return (
@@ -114,9 +120,24 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
               <p className="text-gray-600 mb-3">
                 Dina kort. Kort märkta med <span className="text-purple-600 font-medium">⇄</span> är tillgängliga för byte.
               </p>
-              <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
-                <Link to="/samling/byte">⇄ Markera kort för byte</Link>
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
+                  <Link to="/samling/byte">⇄ Markera kort för byte</Link>
+                </Button>
+                <Button
+                  size="sm"
+                  variant={showAll ? "default" : "outline"}
+                  onClick={() => setShowAll((v) => !v)}
+                  className={showAll ? "bg-gray-900 hover:bg-gray-800 text-white" : ""}
+                >
+                  {showAll ? "Visa bara mina kort" : "Se alla kort"}
+                </Button>
+              </div>
+              {showAll && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Kort du inte äger visas utan design — bara namn och dansstil.
+                </p>
+              )}
               {forTradeCount > 0 && (
                 <p className="text-xs text-purple-600 mt-2">
                   {forTradeCount} {forTradeCount === 1 ? "kort markerat" : "kort markerade"} för byte just nu
@@ -192,19 +213,28 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
             </div>
           </div>
 
+          <SmCollectionDisclaimer className="mb-6" />
+
           <ChestsSection onCollected={loadCollection} />
 
           <AchievementsSection />
 
           {visibleCards.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
-              {isLoading ? "Laddar samling..." : "Du har inga kort i den här kategorin ännu."}
+              {isLoading
+                ? "Laddar samling..."
+                : showAll
+                  ? "Inga kort matchar filtren."
+                  : "Du har inga kort i den här kategorin ännu."}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {visibleCards.map((card) => {
                 const count = ownedCounts[card.id] ?? 0;
                 const isForTrade = forTradeIds.has(card.id);
+                // The design is a reward for owning the card, so unowned cards
+                // in "Se alla" mode show only their text details.
+                const isOwned = count > 0;
 
                 return (
                   <div key={card.id} className="flex flex-col items-center gap-1">
@@ -216,6 +246,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                         danceStyle={card.danceStyle}
                         designKey={card.designKey}
                         showCaption
+                        hideDesign={!isOwned}
                       />
                       {count > 1 && (
                         <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">

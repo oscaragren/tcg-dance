@@ -82,13 +82,19 @@ function CardSearchTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Match on couple name, dance style or club, so "bugg" surfaces every bugg
+  // card and not just the ones with "bugg" in the name.
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q.length < 2) return [];
     return cards
-      .filter((c) => c.name.toLowerCase().includes(q))
+      .filter((c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.danceStyle ?? "").toLowerCase().includes(q) ||
+        (c.club ?? "").toLowerCase().includes(q),
+      )
       .sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity] || a.name.localeCompare(b.name, "sv"))
-      .slice(0, 12);
+      .slice(0, 20);
   }, [query]);
 
   useEffect(() => {
@@ -105,14 +111,14 @@ function CardSearchTab() {
     <div className="space-y-6">
       <section className="rounded-2xl border bg-white p-6">
         <label htmlFor="card-search" className="block text-sm text-gray-600 mb-2">
-          Sök efter ett kort
+          Sök efter ett kort — på namn, dansstil eller förening
         </label>
         <input
           id="card-search"
           type="text"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setSelectedCard(null); }}
-          placeholder="Skriv ett namn, t.ex. Fabian..."
+          placeholder="Namn, dansstil eller förening..."
           className="w-full max-w-sm h-10 rounded-md border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
         />
 
@@ -124,7 +130,14 @@ function CardSearchTab() {
                 onClick={() => setSelectedCard(card)}
                 className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-3"
               >
-                <span className="truncate">{card.name}</span>
+                <span className="min-w-0">
+                  <span className="truncate block">{card.name}</span>
+                  {(card.danceStyle || card.club) && (
+                    <span className="block text-[11px] text-gray-400 truncate">
+                      {[card.danceStyle, card.club].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </span>
                 <span className="text-[11px] uppercase tracking-wider text-gray-400 shrink-0">{card.rarity}</span>
               </button>
             ))}

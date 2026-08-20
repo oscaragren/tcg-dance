@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
+import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
 import { collections, dailyDiamonds } from "../../data/packs";
 import type { AuthUser } from "../../types/auth";
 import type { DanceCard } from "../../types/danceCard";
@@ -202,6 +203,8 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                 );
               })}
             </div>
+
+            <SmCollectionDisclaimer />
 
             {/* Chests — cheap, slow-burn rewards. Bought here, opened in Samling. */}
             {chests && (

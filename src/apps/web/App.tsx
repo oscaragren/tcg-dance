@@ -6,7 +6,7 @@ import { FeaturedCollection } from "../../components/web/FeaturedCollection";
 import { HowItWorks } from "../../components/web/HowItWorks";
 import { Footer } from "../../components/web/Footer";
 import { fetchCurrentUser, logoutUser } from "../../utils/authApi";
-import { fetchIncomingTradeCount } from "../../utils/gameApi";
+import { DIAMONDS_EVENT, fetchGameState, fetchIncomingTradeCount } from "../../utils/gameApi";
 import type { AuthUser } from "../../types/auth";
 import { AuthPage } from "./AuthPage";
 import { CollectionPage } from "./CollectionPage";
@@ -50,7 +50,28 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [pendingTradeCount, setPendingTradeCount] = useState(0);
+  const [diamonds, setDiamonds] = useState<number | null>(null);
   const location = useLocation();
+
+  // Header diamond balance. Seeded on login and on each navigation; kept live
+  // in between by the DIAMONDS_EVENT any diamond-moving request emits.
+  useEffect(() => {
+    if (!currentUser) { setDiamonds(null); return; }
+
+    let cancelled = false;
+    fetchGameState()
+      .then((state) => { if (!cancelled) setDiamonds(state.diamonds); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentUser, location.pathname]);
+
+  useEffect(() => {
+    function onDiamonds(event: Event) {
+      setDiamonds((event as CustomEvent<number>).detail);
+    }
+    window.addEventListener(DIAMONDS_EVENT, onDiamonds);
+    return () => window.removeEventListener(DIAMONDS_EVENT, onDiamonds);
+  }, []);
 
   // Keep the "Byte" badge fresh: refresh on every navigation (so it clears as
   // soon as an offer is handled) and on a slow timer while the tab is open.
@@ -95,6 +116,7 @@ export default function App() {
     }
     setCurrentUser(null);
     setPendingTradeCount(0);
+    setDiamonds(null);
   }
 
   if (isAuthLoading) {
@@ -107,6 +129,7 @@ export default function App() {
         username={currentUser?.username ?? null}
         onLogout={handleLogout}
         pendingTradeCount={pendingTradeCount}
+        diamonds={diamonds}
       />
       <Routes>
         <Route path="/"         element={<HomePage currentUser={currentUser} />} />

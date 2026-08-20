@@ -8,7 +8,22 @@ type HeaderProps = {
   onLogout: () => void;
   /** Incoming trade offers waiting on the user — drives the red dot on "Byte". */
   pendingTradeCount?: number;
+  /** Diamond balance shown next to the username. null while still loading. */
+  diamonds?: number | null;
 };
+
+/** Diamond balance pill shown beside the username. */
+function DiamondBalance({ diamonds }: { diamonds: number | null }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-sm font-semibold tabular-nums text-blue-700"
+      title="Dina diamanter"
+    >
+      {diamonds === null ? "–" : diamonds.toLocaleString("sv-SE")}
+      <span className="text-blue-400">◆</span>
+    </span>
+  );
+}
 
 /** Small red count badge, used to flag pending trade offers on the Byte link. */
 function NotificationDot({ count }: { count: number }) {
@@ -22,7 +37,7 @@ function NotificationDot({ count }: { count: number }) {
   );
 }
 
-export function Header({ username, onLogout, pendingTradeCount = 0 }: HeaderProps) {
+export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = null }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   function closeMobile() { setMobileOpen(false); }
@@ -58,9 +73,12 @@ export function Header({ username, onLogout, pendingTradeCount = 0 }: HeaderProp
             <div className="hidden md:flex items-center gap-3">
               {username ? (
                 <>
-                  <div className="flex items-center text-sm text-gray-700">
-                    <User className="w-4 h-4 mr-2" />
-                    {username}
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <span className="flex items-center">
+                      <User className="w-4 h-4 mr-2" />
+                      {username}
+                    </span>
+                    <DiamondBalance diamonds={diamonds} />
                   </div>
                   <Button
                     variant="outline"
@@ -133,6 +151,7 @@ export function Header({ username, onLogout, pendingTradeCount = 0 }: HeaderProp
                   <>
                     <div className="px-4 py-2 text-sm text-gray-500 flex items-center gap-2">
                       <User className="w-4 h-4" /> {username}
+                      <DiamondBalance diamonds={diamonds} />
                     </div>
                     <button
                       onClick={() => { onLogout(); closeMobile(); }}
