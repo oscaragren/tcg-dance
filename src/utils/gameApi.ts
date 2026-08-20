@@ -1,4 +1,4 @@
-import type { Achievement, BuyPackResponse, CardForTrade, CardPoolInfo, ClaimAchievementResponse, ClaimDailyDiamondsResponse, GameState, LeaderboardEntry, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
+import type { Achievement, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -118,4 +118,42 @@ export async function rejectTrade(tradeId: string): Promise<void> {
 
 export async function cancelTrade(tradeId: string): Promise<void> {
   await requestJson<unknown>(`/api/trade/${tradeId}/cancel`, { method: "POST" });
+}
+
+export async function getPlayerProfile(userId: string): Promise<PlayerProfile> {
+  return requestJson<PlayerProfile>(`/api/users/${userId}/profile`, { method: "GET" });
+}
+
+export async function findTradersForCard(cardId: string): Promise<{ cardId: string; traders: MarketTraderForCard[] }> {
+  return requestJson<{ cardId: string; traders: MarketTraderForCard[] }>(
+    `/api/market/card/${encodeURIComponent(cardId)}`,
+    { method: "GET" },
+  );
+}
+
+export async function fetchMarketTraders(): Promise<{ traders: MarketTrader[] }> {
+  return requestJson<{ traders: MarketTrader[] }>("/api/market/traders", { method: "GET" });
+}
+
+export async function fetchIncomingTradeCount(): Promise<{ count: number }> {
+  return requestJson<{ count: number }>("/api/trade/incoming-count", { method: "GET" });
+}
+
+export async function fetchChests(): Promise<ChestsResponse> {
+  return requestJson<ChestsResponse>("/api/game/chests", { method: "GET" });
+}
+
+export async function buyChest(type: ChestType): Promise<ChestsMutationResponse> {
+  return requestJson<ChestsMutationResponse>("/api/game/chests/buy", {
+    method: "POST",
+    body: JSON.stringify({ type }),
+  });
+}
+
+export async function buyChestSlot(): Promise<ChestsMutationResponse> {
+  return requestJson<ChestsMutationResponse>("/api/game/chests/buy-slot", { method: "POST" });
+}
+
+export async function collectChest(chestId: string): Promise<CollectChestResponse> {
+  return requestJson<CollectChestResponse>(`/api/game/chests/${chestId}/collect`, { method: "POST" });
 }

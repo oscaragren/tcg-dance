@@ -6,7 +6,8 @@ import { collections, dailyDiamonds } from "../../data/packs";
 import type { AuthUser } from "../../types/auth";
 import type { DanceCard } from "../../types/danceCard";
 import type { GameState } from "../../types/game";
-import { buyPack, claimDailyDiamonds, fetchGameState } from "../../utils/gameApi";
+import type { ChestsResponse, ChestType } from "../../types/game";
+import { buyChest, buyPack, claimDailyDiamonds, fetchChests, fetchGameState } from "../../utils/gameApi";
 
 type HandelPageProps = { currentUser: AuthUser | null };
 
@@ -17,6 +18,9 @@ export function HandelPage({ currentUser }: HandelPageProps) {
   const [buyingPack, setBuyingPack] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openedPack, setOpenedPack] = useState<{ label: string; cards: DanceCard[] } | null>(null);
+  const [chests, setChests] = useState<ChestsResponse | null>(null);
+  const [buyingChest, setBuyingChest] = useState<ChestType | null>(null);
+  const [chestNotice, setChestNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -25,6 +29,28 @@ export function HandelPage({ currentUser }: HandelPageProps) {
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda speldata."))
       .finally(() => setIsLoadingState(false));
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    fetchChests().then(setChests).catch(() => {});
+  }, [currentUser]);
+
+  async function handleBuyChest(type: ChestType, label: string) {
+    if (buyingChest) return;
+    setBuyingChest(type);
+    setError(null);
+    setChestNotice(null);
+    try {
+      const result = await buyChest(type);
+      setChests(result);
+      setGameState(result.state);
+      setChestNotice(`${label} köpt! Den låses upp i Samling när tiden gått ut.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte köpa kistan.");
+    } finally {
+      setBuyingChest(null);
+    }
+  }
 
   async function handleClaimDailyDiamonds() {
     if (isClaiming) return;
@@ -177,9 +203,77 @@ export function HandelPage({ currentUser }: HandelPageProps) {
               })}
             </div>
 
+            {/* Chests — cheap, slow-burn rewards. Bought here, opened in Samling. */}
+            {chests && (
+              <section className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+                  <div>
+                    <h2 className="text-2xl font-bold">Kistor</h2>
+                    <p className="text-sm text-gray-600">
+                      Köp en kista, vänta ut klockan och hämta diamanter (och kanske ett kort) i{" "}
+                      <Link to="/samling" className="text-purple-600 hover:underline">Samling</Link>.
+                    </p>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {chests.chests.length} / {chests.slots} kistplatser upptagna
+                  </div>
+                </div>
+
+                {chestNotice && <p className="text-sm text-green-600">{chestNotice}</p>}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {chests.types.map((chest) => {
+                    const canAfford = diamonds >= chest.price;
+                    const slotsFull = chests.chests.length >= chests.slots;
+                    return (
+                      <div key={chest.id} className="rounded-2xl border bg-white overflow-hidden flex flex-col">
+                        <div className={`h-2 bg-gradient-to-r ${CHEST_ACCENT[chest.id]}`} />
+                        <div className="p-5 flex flex-col gap-3 flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="text-3xl" aria-hidden>{CHEST_EMOJI[chest.id]}</span>
+                            <div>
+                              <div className="font-bold">{chest.label}</div>
+                              <div className="text-xs text-gray-500">{chest.price} ◆</div>
+                            </div>
+                          </div>
+                          <ul className="text-xs text-gray-500 space-y-1">
+                            <li>{chest.diamondMin}–{chest.diamondMax} ◆</li>
+                            <li>Chans på kort</li>
+                            <li>Låses upp efter {chest.waitHours} tim</li>
+                          </ul>
+                          <Button
+                            onClick={() => void handleBuyChest(chest.id, chest.label)}
+                            disabled={!canAfford || slotsFull || !!buyingChest || isLoadingState}
+                            variant={canAfford && !slotsFull ? "default" : "outline"}
+                            className={`mt-auto ${canAfford && !slotsFull ? "bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white" : ""}`}
+                          >
+                            {buyingChest === chest.id
+                              ? "Köper..."
+                              : slotsFull
+                                ? "Inga lediga platser"
+                                : canAfford
+                                  ? `Köp för ${chest.price} ◆`
+                                  : "För få diamanter"}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
           </div>
         </div>
       </main>
     </>
   );
 }
+
+const CHEST_EMOJI: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇" };
+
+const CHEST_ACCENT: Record<string, string> = {
+  bronze: "from-amber-700 to-amber-500",
+  silver: "from-gray-400 to-gray-300",
+  gold: "from-yellow-500 to-amber-300",
+};

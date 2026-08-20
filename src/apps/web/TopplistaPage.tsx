@@ -45,7 +45,8 @@ export function TopplistaPage({ currentUser }: TopplistaPageProps) {
           <div className="mb-8">
             <h1 className="text-4xl md:text-5xl font-bold mb-3">Topplista</h1>
             <p className="text-gray-600">
-              Spelare rankade efter totalt antal kort. Vid lika resultat avgör flest legendary, sedan epic, rare och common.
+              Spelare rankade efter flest legendary. Vid lika antal avgör epic, sedan rare och common.
+              Klicka på en spelare för att se hela samlingen.
             </p>
           </div>
 
@@ -64,25 +65,28 @@ export function TopplistaPage({ currentUser }: TopplistaPageProps) {
               {entries.map((entry) => {
                 const isMe = entry.userId === currentUser.id;
                 return (
-                  <li
-                    key={entry.userId}
-                    className={`flex items-center gap-4 px-5 py-3 ${isMe ? "bg-purple-50" : ""}`}
-                  >
-                    <span className="w-8 shrink-0 text-center text-lg font-bold text-gray-500">
-                      {MEDALS[entry.rank] ?? entry.rank}
-                    </span>
-                    <span className={`min-w-0 flex-1 ${isMe ? "font-semibold text-purple-700" : "text-gray-900"}`}>
-                      <span className="truncate block">
-                        {entry.username}
-                        {isMe && <span className="ml-2 text-xs text-purple-500">(du)</span>}
+                  <li key={entry.userId} className={isMe ? "bg-purple-50" : ""}>
+                    <Link
+                      to={`/spelare/${entry.userId}`}
+                      className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-gray-50"
+                    >
+                      <span className="w-8 shrink-0 text-center text-lg font-bold text-gray-500">
+                        {MEDALS[entry.rank] ?? entry.rank}
                       </span>
-                      <span className="text-[11px] text-gray-400">
-                        {entry.legendary}L · {entry.epic}E · {entry.rare}R · {entry.common}C
+                      <span className={`min-w-0 flex-1 ${isMe ? "font-semibold text-purple-700" : "text-gray-900"}`}>
+                        <span className="truncate block">
+                          {entry.username}
+                          {isMe && <span className="ml-2 text-xs text-purple-500">(du)</span>}
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          {entry.legendary}L · {entry.epic}E · {entry.rare}R · {entry.common}C
+                        </span>
                       </span>
-                    </span>
-                    <span className="shrink-0 text-sm font-semibold text-gray-700">
-                      {entry.total} kort
-                    </span>
+                      <span className="shrink-0 text-right">
+                        <span className="block text-sm font-semibold text-gray-700">{entry.total} kort</span>
+                        <span className="block text-[11px] text-gray-400">Visa samling →</span>
+                      </span>
+                    </Link>
                   </li>
                 );
               })}

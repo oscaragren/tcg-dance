@@ -6,9 +6,23 @@ import { Button } from "../shared/ui/button";
 type HeaderProps = {
   username: string | null;
   onLogout: () => void;
+  /** Incoming trade offers waiting on the user — drives the red dot on "Byte". */
+  pendingTradeCount?: number;
 };
 
-export function Header({ username, onLogout }: HeaderProps) {
+/** Small red count badge, used to flag pending trade offers on the Byte link. */
+function NotificationDot({ count }: { count: number }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none"
+      aria-label={`${count} nya bytesförfrågningar`}
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
+export function Header({ username, onLogout, pendingTradeCount = 0 }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   function closeMobile() { setMobileOpen(false); }
@@ -31,7 +45,10 @@ export function Header({ username, onLogout }: HeaderProps) {
               <nav className="hidden md:flex items-center gap-6">
                 <Link to="/samling" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Samling</Link>
                 <Link to="/handel"  className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Handel</Link>
-                <Link to="/byte"    className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Byte</Link>
+                <Link to="/byte"    className="relative flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                  Byte
+                  {pendingTradeCount > 0 && <NotificationDot count={pendingTradeCount} />}
+                </Link>
                 <Link to="/uppgradering" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Uppgradering</Link>
                 <Link to="/topplista" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Topplista</Link>
               </nav>
@@ -94,19 +111,20 @@ export function Header({ username, onLogout }: HeaderProps) {
           <div className="fixed top-[73px] left-0 right-0 z-40 bg-white border-b shadow-lg md:hidden">
             <nav className="container mx-auto px-6 py-4 flex flex-col gap-1">
               {[
-                { to: "/samling", label: "Samling" },
+                { to: "/samling", label: "Samling" } as { to: string; label: string; badge?: number },
                 { to: "/handel",  label: "Handel" },
-                { to: "/byte",    label: "Byte" },
+                { to: "/byte",    label: "Byte", badge: pendingTradeCount },
                 { to: "/uppgradering", label: "Uppgradering" },
                 { to: "/topplista", label: "Topplista" },
-              ].map(({ to, label }) => (
+              ].map(({ to, label, badge }) => (
                 <Link
                   key={to}
                   to={to}
                   onClick={closeMobile}
-                  className="rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   {label}
+                  {!!badge && badge > 0 && <NotificationDot count={badge} />}
                 </Link>
               ))}
 

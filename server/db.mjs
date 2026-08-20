@@ -78,6 +78,25 @@ db.exec(`
     claimed_at     TEXT NOT NULL,
     PRIMARY KEY (user_id, achievement_id)
   );
+
+  -- Chests bought in Handel and stored (unopened) in Samling until their timer
+  -- runs out. The row is deleted the moment its contents are collected.
+  CREATE TABLE IF NOT EXISTS chests (
+    id        TEXT PRIMARY KEY,
+    user_id   TEXT NOT NULL REFERENCES users(id),
+    type      TEXT NOT NULL,
+    bought_at TEXT NOT NULL,
+    ready_at  TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_chests_user ON chests(user_id);
+
+  -- How many chests a user may store at once: 1 by default, up to 4 by buying
+  -- extra slots with diamonds.
+  CREATE TABLE IF NOT EXISTS chest_slots (
+    user_id TEXT PRIMARY KEY REFERENCES users(id),
+    slots   INTEGER NOT NULL DEFAULT 1
+  );
 `);
 
 // Add collection_id column if upgrading from an older schema

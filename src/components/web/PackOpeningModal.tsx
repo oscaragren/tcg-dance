@@ -122,24 +122,26 @@ export function PackOpeningModal({ packLabel, cards, onClose }: PackOpeningModal
           ))}
         </div>
 
-        <div className="transition-all duration-300">
+        <div className="w-full flex justify-center px-2 transition-all duration-300">
           {allRevealed ? (
             <Button
               size="lg"
               onClick={onClose}
-              className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-10"
+              className="h-12 w-full max-w-xs rounded-full bg-white px-8 text-base font-bold text-gray-900 shadow-lg shadow-black/40 hover:bg-gray-100 sm:w-auto sm:min-w-[14rem]"
             >
               Stäng
             </Button>
           ) : (
+            /* Solid high-contrast pill. The old outlined version (white text on
+               a translucent border) was hard to read against the dark backdrop,
+               especially on phones. */
             <Button
               size="lg"
               onClick={handleRevealAll}
               disabled={isAutoRevealing}
-              variant="outline"
-              className="border-white/30 text-white hover:bg-white/10 font-semibold px-10"
+              className="h-12 w-full max-w-xs rounded-full bg-white px-8 text-base font-bold tracking-wide text-gray-900 shadow-lg shadow-black/40 ring-2 ring-white/70 hover:bg-gray-100 disabled:opacity-70 sm:w-auto sm:min-w-[16rem]"
             >
-              {isAutoRevealing ? "Vänder..." : "Vänd alla"}
+              {isAutoRevealing ? "Vänder..." : "Vänd alla kort"}
             </Button>
           )}
         </div>

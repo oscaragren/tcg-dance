@@ -82,11 +82,16 @@ export function TradePage({ currentUser }: TradePageProps) {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold mb-2">Byte</h1>
-              <p className="text-gray-600">Byt kort med andra spelare.</p>
+              <p className="text-gray-600">Byt kort med andra spelare. Leta i bytesmarknaden efter ett kort du saknar.</p>
             </div>
-            <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-              <Link to="/byte/ny">Nytt byte</Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link to="/byte/marknad">Bytesmarknad</Link>
+              </Button>
+              <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <Link to="/byte/ny">Nytt byte</Link>
+              </Button>
+            </div>
           </div>
 
           {/* Tabs */}

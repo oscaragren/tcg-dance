@@ -57,6 +57,59 @@ export type LeaderboardEntry = {
   common: number;
 };
 
+export type PlayerProfile = {
+  user: UserSearchResult;
+  ownedCardIds: string[];
+  cardsForTrade: CardForTrade[];
+  isSelf: boolean;
+};
+
+export type MarketTraderForCard = { userId: string; username: string; quantity: number };
+
+export type MarketTrader = {
+  userId: string;
+  username: string;
+  cards: CardForTrade[];
+  totalCards: number;
+};
+
+export type ChestType = "bronze" | "silver" | "gold";
+
+export type ChestTypeConfig = {
+  id: ChestType;
+  label: string;
+  price: number;
+  waitHours: number;
+  diamondMin: number;
+  diamondMax: number;
+};
+
+export type Chest = {
+  id: string;
+  type: ChestType;
+  label: string;
+  boughtAt: string;
+  readyAt: string;
+  ready: boolean;
+};
+
+export type ChestsResponse = {
+  chests: Chest[];
+  slots: number;
+  maxSlots: number;
+  nextSlotPrice: number | null;
+  types: ChestTypeConfig[];
+};
+
+export type ChestsMutationResponse = ChestsResponse & { state: GameState };
+
+export type CollectChestResponse = ChestsMutationResponse & {
+  chestType: ChestType;
+  chestLabel: string;
+  diamondsAwarded: number;
+  cards: DanceCard[];
+};
+
 export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled";
 
 export type Achievement = {

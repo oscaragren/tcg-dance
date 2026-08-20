@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AchievementsSection } from "../../components/web/AchievementsSection";
+import { ChestsSection } from "../../components/web/ChestsSection";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
@@ -30,7 +31,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadCollection = useCallback(() => {
     if (!userEmail) { setOwnedCardIds([]); setForTradeIds(new Set()); return; }
 
     setIsLoading(true);
@@ -44,6 +45,8 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda samlingen."))
       .finally(() => setIsLoading(false));
   }, [userEmail]);
+
+  useEffect(() => { loadCollection(); }, [loadCollection]);
 
   const ownedCounts = useMemo(
     () =>
@@ -188,6 +191,8 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
               )}
             </div>
           </div>
+
+          <ChestsSection onCollected={loadCollection} />
 
           <AchievementsSection />
 

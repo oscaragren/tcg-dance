@@ -404,9 +404,11 @@ app.get("/api/game/collections", (_request, response) => {
   response.json(collections);
 });
 
-// Leaderboard — players ranked by total cards owned (all copies of common,
-// rare, epic, legendary). Ties are broken by who has more legendaries, then
-// epics, then rares, then commons. Special cards are not counted.
+// Leaderboard — players ranked strictly by rarity tier: most legendaries wins,
+// and only on a tie do we look one tier down (epic, then rare, then common).
+// Total card count is never used for ranking, only shown for context: a player
+// with 2 legendaries beats a player with 1 legendary and 200 other cards.
+// Special cards are not counted.
 const LEADERBOARD_RARITIES = ["common", "rare", "epic", "legendary"];
 
 app.get("/api/leaderboard", requireAuth, (_request, response) => {
@@ -424,7 +426,6 @@ app.get("/api/leaderboard", requireAuth, (_request, response) => {
   });
 
   entries.sort((a, b) =>
-    b.total - a.total ||
     b.legendary - a.legendary ||
     b.epic - a.epic ||
     b.rare - a.rare ||
@@ -683,6 +684,36 @@ app.get("/api/users/:userId/cards", requireAuth, (request, response) => {
   response.json({ ownedCardIds });
 });
 
+// Public profile for another player: their username plus the cards they own and
+// the ones they have marked for trade. Backs the "view a player's collection"
+// page reachable from the leaderboard.
+app.get("/api/users/:userId/profile", requireAuth, (request, response) => {
+  const user = db.prepare("SELECT id, username FROM users WHERE id = ?").get(request.params.userId);
+  if (!user) {
+    response.status(404).json({ message: "Spelaren hittades inte." });
+    return;
+  }
+
+  const ownedCardIds = db
+    .prepare("SELECT card_id FROM owned_cards WHERE user_id = ?")
+    .all(user.id)
+    .map((r) => r.card_id);
+
+  const owned = ownedCountMap(user.id);
+  const cardsForTrade = db
+    .prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?")
+    .all(user.id)
+    .map((r) => ({ cardId: r.card_id, quantity: Math.min(r.quantity, owned.get(r.card_id) ?? 0) }))
+    .filter((r) => r.quantity > 0);
+
+  response.json({
+    user: { id: user.id, username: user.username },
+    ownedCardIds,
+    cardsForTrade,
+    isSelf: user.id === request.auth.userId,
+  });
+});
+
 // ── Cards-for-trade routes ────────────────────────────────────────────────────
 
 function ownedCountMap(userId) {
@@ -734,6 +765,80 @@ app.get("/api/users/:userId/cards-for-trade", requireAuth, (request, response) =
     .map((r) => ({ cardId: r.card_id, quantity: Math.min(r.quantity, owned.get(r.card_id) ?? 0) }))
     .filter((r) => r.quantity > 0);
   response.json({ cards });
+});
+
+const RARITY_SORT = { special: 0, legendary: 1, epic: 2, rare: 3, common: 4 };
+
+// ── Trade market routes ───────────────────────────────────────────────────────
+// Two ways to find a trade besides searching for a username: search for a
+// specific card and see who offers it, or browse every player's shelf.
+
+// Every marked-for-trade row in the game, capped at what the owner still owns.
+// Shared by both market endpoints so the "still owned" rule lives in one place.
+function liveMarketRows() {
+  const rows = db
+    .prepare(
+      `SELECT f.user_id, f.card_id, f.quantity, u.username,
+              (SELECT COUNT(*) FROM owned_cards o WHERE o.user_id = f.user_id AND o.card_id = f.card_id) AS owned
+       FROM cards_for_trade f
+       JOIN users u ON u.id = f.user_id`,
+    )
+    .all();
+
+  return rows
+    .map((r) => ({
+      userId: r.user_id,
+      username: r.username,
+      cardId: r.card_id,
+      quantity: Math.min(r.quantity, r.owned),
+    }))
+    .filter((r) => r.quantity > 0 && cardById.has(r.cardId));
+}
+
+// Which players offer a given card. Excludes the caller — you cannot trade with
+// yourself.
+app.get("/api/market/card/:cardId", requireAuth, (request, response) => {
+  const cardId = String(request.params.cardId);
+  if (!cardById.has(cardId)) {
+    response.status(404).json({ message: "Okänt kort." });
+    return;
+  }
+
+  const traders = liveMarketRows()
+    .filter((r) => r.cardId === cardId && r.userId !== request.auth.userId)
+    .map((r) => ({ userId: r.userId, username: r.username, quantity: r.quantity }))
+    .sort((a, b) => b.quantity - a.quantity || a.username.localeCompare(b.username, "sv"));
+
+  response.json({ cardId, traders });
+});
+
+// Every player with at least one card up for trade, so the market can be
+// browsed without knowing who or what to look for.
+app.get("/api/market/traders", requireAuth, (request, response) => {
+  const byUser = new Map();
+  for (const row of liveMarketRows()) {
+    if (row.userId === request.auth.userId) continue;
+    if (!byUser.has(row.userId)) {
+      byUser.set(row.userId, { userId: row.userId, username: row.username, cards: [] });
+    }
+    byUser.get(row.userId).cards.push({ cardId: row.cardId, quantity: row.quantity });
+  }
+
+  const traders = Array.from(byUser.values()).map((t) => ({
+    ...t,
+    cards: t.cards.sort((a, b) => {
+      const ca = cardById.get(a.cardId);
+      const cb = cardById.get(b.cardId);
+      return (
+        (RARITY_SORT[ca?.rarity] ?? 99) - (RARITY_SORT[cb?.rarity] ?? 99) ||
+        (ca?.name ?? "").localeCompare(cb?.name ?? "", "sv")
+      );
+    }),
+    totalCards: t.cards.reduce((sum, c) => sum + c.quantity, 0),
+  }));
+
+  traders.sort((a, b) => b.totalCards - a.totalCards || a.username.localeCompare(b.username, "sv"));
+  response.json({ traders });
 });
 
 // ── Trade routes ──────────────────────────────────────────────────────────────
@@ -804,6 +909,14 @@ app.get("/api/trade", requireAuth, (request, response) => {
     ORDER BY t.created_at DESC
   `).all(userId, userId);
   response.json(rows.map(buildTrade));
+});
+
+// Cheap poll for the "Byte" nav badge — how many trades are waiting on me.
+app.get("/api/trade/incoming-count", requireAuth, (request, response) => {
+  const { n } = db
+    .prepare("SELECT COUNT(*) AS n FROM trades WHERE receiver_user_id = ? AND status = 'pending'")
+    .get(request.auth.userId);
+  response.json({ count: n });
 });
 
 app.post("/api/trade/:id/accept", requireAuth, (request, response) => {
@@ -887,6 +1000,239 @@ app.post("/api/trade/:id/cancel", requireAuth, (request, response) => {
   if (row.status !== "pending") { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
   db.prepare("UPDATE trades SET status = 'cancelled' WHERE id = ?").run(row.id);
   response.status(204).send();
+});
+
+// ── Chests ────────────────────────────────────────────────────────────────────
+// Chests are bought in Handel, stored (locked) in Samling, and pay out diamonds
+// plus a chance at cards once their timer runs out. Contents are rolled at
+// collect time, not at purchase time, so a chest can never promise a card the
+// pool has since run out of.
+
+const HOUR_MS = 1000 * 60 * 60;
+
+const CHEST_TYPES = {
+  bronze: {
+    id: "bronze",
+    label: "Bronskista",
+    price: 10,
+    waitMs: 1 * HOUR_MS,
+    diamonds: { min: 15, max: 30, step: 5 },
+    // Each roll is independent.
+    cardRolls: [
+      { rarity: "common", chance: 0.25 },
+      { rarity: "rare", chance: 0.001 },
+    ],
+  },
+  silver: {
+    id: "silver",
+    label: "Silverkista",
+    price: 25,
+    waitMs: 5 * HOUR_MS,
+    diamonds: { min: 50, max: 100, step: 5 },
+    cardRolls: [
+      { rarity: "common", chance: 0.25 },
+      { rarity: "common", chance: 0.25 },
+      { rarity: "rare", chance: 0.01 },
+    ],
+  },
+  gold: {
+    id: "gold",
+    label: "Guldkista",
+    price: 50,
+    waitMs: 12 * HOUR_MS,
+    diamonds: { min: 100, max: 300, step: 5 },
+    cardRolls: [
+      { rarity: "common", chance: 0.25 },
+      { rarity: "common", chance: 0.25 },
+      { rarity: "common", chance: 0.25 },
+      { rarity: "rare", chance: 0.025 },
+      { rarity: "epic", chance: 0.0001 },
+    ],
+  },
+};
+
+// Price of the *next* slot, indexed by how many slots you already have.
+// Everyone starts with 1; four is the ceiling.
+const CHEST_SLOT_PRICES = { 1: 5000, 2: 50000, 3: 500000 };
+const MAX_CHEST_SLOTS = 4;
+
+function chestSlotsFor(userId) {
+  const row = db.prepare("SELECT slots FROM chest_slots WHERE user_id = ?").get(userId);
+  return row?.slots ?? 1;
+}
+
+function rollDiamonds({ min, max, step }) {
+  const steps = Math.floor((max - min) / step) + 1;
+  return min + Math.floor(Math.random() * steps) * step;
+}
+
+// Draw a random card of a given rarity out of the shared pool and remove that
+// copy, so cards won from chests really do leave circulation. Returns null when
+// the pool has none of that rarity left.
+const drawCardOfRarityTx = db.transaction((rarity) => {
+  const row = db
+    .prepare("SELECT card_id FROM card_pool WHERE rarity = ? AND copies_remaining > 0 ORDER BY RANDOM() LIMIT 1")
+    .get(rarity);
+  if (!row) return null;
+  stmtDecrementCard.run(row.card_id);
+  return row.card_id;
+});
+
+function publicChest(row) {
+  const config = CHEST_TYPES[row.type];
+  return {
+    id: row.id,
+    type: row.type,
+    label: config?.label ?? row.type,
+    boughtAt: row.bought_at,
+    readyAt: row.ready_at,
+    ready: Date.parse(row.ready_at) <= Date.now(),
+  };
+}
+
+function buildChestsResponse(userId) {
+  const rows = db
+    .prepare("SELECT * FROM chests WHERE user_id = ? ORDER BY ready_at ASC")
+    .all(userId);
+  const slots = chestSlotsFor(userId);
+  return {
+    chests: rows.map(publicChest),
+    slots,
+    maxSlots: MAX_CHEST_SLOTS,
+    nextSlotPrice: slots >= MAX_CHEST_SLOTS ? null : CHEST_SLOT_PRICES[slots] ?? null,
+    types: Object.values(CHEST_TYPES).map((c) => ({
+      id: c.id,
+      label: c.label,
+      price: c.price,
+      waitHours: c.waitMs / HOUR_MS,
+      diamondMin: c.diamonds.min,
+      diamondMax: c.diamonds.max,
+    })),
+  };
+}
+
+app.get("/api/game/chests", requireAuth, (request, response) => {
+  response.json(buildChestsResponse(request.auth.userId));
+});
+
+app.post("/api/game/chests/buy", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  const config = CHEST_TYPES[String(request.body?.type ?? "")];
+  if (!config) {
+    response.status(400).json({ message: "Okänd kista." });
+    return;
+  }
+
+  ensurePlayerState(userId);
+
+  try {
+    db.transaction(() => {
+      const held = db.prepare("SELECT COUNT(*) AS n FROM chests WHERE user_id = ?").get(userId).n;
+      if (held >= chestSlotsFor(userId)) {
+        throw new Error("Alla dina kistplatser är upptagna. Öppna en kista eller köp en plats till.");
+      }
+
+      const { diamonds } = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(userId);
+      if (diamonds < config.price) throw new Error("Inte tillräckligt med diamanter.");
+
+      const now = Date.now();
+      db.prepare("UPDATE player_state SET diamonds = diamonds - ? WHERE user_id = ?").run(config.price, userId);
+      db.prepare("INSERT INTO chests (id, user_id, type, bought_at, ready_at) VALUES (?, ?, ?, ?, ?)").run(
+        crypto.randomUUID(),
+        userId,
+        config.id,
+        new Date(now).toISOString(),
+        new Date(now + config.waitMs).toISOString(),
+      );
+    })();
+  } catch (err) {
+    response.status(400).json({ message: err.message });
+    return;
+  }
+
+  response.status(201).json({ ...buildChestsResponse(userId), state: buildStateResponse(userId) });
+});
+
+app.post("/api/game/chests/buy-slot", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  ensurePlayerState(userId);
+
+  try {
+    db.transaction(() => {
+      const slots = chestSlotsFor(userId);
+      if (slots >= MAX_CHEST_SLOTS) throw new Error("Du har redan max antal kistplatser.");
+      const price = CHEST_SLOT_PRICES[slots];
+      if (!price) throw new Error("Ingen fler kistplats att köpa.");
+
+      const { diamonds } = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(userId);
+      if (diamonds < price) throw new Error("Inte tillräckligt med diamanter.");
+
+      db.prepare("UPDATE player_state SET diamonds = diamonds - ? WHERE user_id = ?").run(price, userId);
+      db.prepare(
+        "INSERT INTO chest_slots (user_id, slots) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET slots = ?",
+      ).run(userId, slots + 1, slots + 1);
+    })();
+  } catch (err) {
+    response.status(400).json({ message: err.message });
+    return;
+  }
+
+  response.json({ ...buildChestsResponse(userId), state: buildStateResponse(userId) });
+});
+
+app.post("/api/game/chests/:id/collect", requireAuth, (request, response) => {
+  const userId = request.auth.userId;
+  const chest = db.prepare("SELECT * FROM chests WHERE id = ?").get(request.params.id);
+
+  if (!chest || chest.user_id !== userId) {
+    response.status(404).json({ message: "Kistan hittades inte." });
+    return;
+  }
+  if (Date.parse(chest.ready_at) > Date.now()) {
+    response.status(400).json({ message: "Kistan är inte redo att öppnas än." });
+    return;
+  }
+
+  const config = CHEST_TYPES[chest.type];
+  if (!config) {
+    response.status(400).json({ message: "Okänd kista." });
+    return;
+  }
+
+  const diamondsAwarded = rollDiamonds(config.diamonds);
+  let wonCardIds = [];
+
+  try {
+    // One transaction so a concurrent double-submit can't pay out twice or
+    // burn pool copies for a chest that was already opened.
+    db.transaction(() => {
+      const info = db.prepare("DELETE FROM chests WHERE id = ? AND user_id = ?").run(chest.id, userId);
+      if (info.changes === 0) throw new Error("Kistan är redan öppnad.");
+
+      wonCardIds = [];
+      for (const roll of config.cardRolls) {
+        if (Math.random() >= roll.chance) continue;
+        const cardId = drawCardOfRarityTx(roll.rarity);
+        if (cardId) wonCardIds.push(cardId);
+      }
+
+      db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(diamondsAwarded, userId);
+      const stmtInsertCard = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
+      for (const cardId of wonCardIds) stmtInsertCard.run(userId, cardId);
+    })();
+  } catch (err) {
+    response.status(409).json({ message: err.message });
+    return;
+  }
+
+  response.json({
+    chestType: chest.type,
+    chestLabel: config.label,
+    diamondsAwarded,
+    cards: wonCardIds.map((id) => cardById.get(id)).filter(Boolean),
+    ...buildChestsResponse(userId),
+    state: buildStateResponse(userId),
+  });
 });
 
 // ── Trade history cleanup ───────────────────────────────────────────────────────
