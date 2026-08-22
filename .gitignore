@@ -16,5 +16,15 @@ __pycache__/
 !tsconfig.node.json
 !data/game-content.json
 !data/vote4dance-ranking.json
+!src/data/cardDesignManifest.json
 node_modules/
 dist/
+
+# Card artwork: raw exports and generated WebP builds are kept locally
+# (and backed up to R2, see README > Card artwork storage) but never
+# committed — see scripts/publish-card-art.mjs.
+data/designs/
+data/card-art-source/
+data/card-art-optimized/
+data/*.tar.gz
+.fuse_hidden*

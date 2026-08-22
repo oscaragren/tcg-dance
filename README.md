@@ -19,7 +19,7 @@ A trading card game built around competitive bugg (swing dance) couples from the
 │   ├── tcg.db                      # SQLite database (created on first server start; gitignored)
 │   ├── game-content.json           # Pack configs, rarity chances, prices, daily diamond reward
 │   ├── vote4dance-ranking.json     # Latest scraped V4D ranking snapshot
-│   ├── designs/                    # Card artwork JPGs (ID-keyed), bundled at build time
+│   ├── designs/                    # (legacy, gitignored) raw source exports — see Card artwork storage
 │   └── carousel/                   # Hero carousel images
 │
 ├── scripts/
@@ -143,6 +143,35 @@ npm run build
 
 Output goes to `dist/`. The ranking JSON is bundled at build time, so rebuild after scraping.
 
+## Card artwork storage
+
+Card art is **not** bundled into the app or committed to git as source images. Earlier it was — 220 JPEGs (~46MB) tracked directly in git, replaced repeatedly during design iteration — which bloated `.git` to nearly 1GB before this was fixed. It doesn't scale to adding more collections the same size, so instead:
+
+- Raw exports live in `data/designs/` (legacy) / `data/card-art-source/<collection>/` (going forward) — gitignored, kept locally only.
+- `scripts/publish-card-art.mjs` resizes them (max 960px wide — about 2x the largest on-screen size), converts to WebP, and writes optimized output to `data/card-art-optimized/<collection>/` (also gitignored — it's regenerable).
+- The same script updates `src/data/cardDesignManifest.json` — a small, git-tracked JSON file mapping each card's `designKey` (e.g. `"ID-001"`) to a relative path (e.g. `"sm2026/ID-001.webp"`).
+- `--upload` pushes the optimized files to an S3-compatible bucket (Cloudflare R2 recommended — zero egress fees) and `src/data/cardDesignUrls.ts` resolves each `designKey` to `VITE_CARD_ART_BASE_URL + relativePath` at runtime.
+
+### Adding a new collection's artwork
+
+```bash
+# 1. Drop raw JPG/PNG exports into data/card-art-source/<collection>/,
+#    named after each card's designKey (e.g. ID-001.jpg) exactly as it
+#    appears in data/game-content.json.
+
+# 2. Resize/convert and update the manifest:
+npm run publish-card-art -- --collection sm2027 --src data/card-art-source/sm2027
+
+# 3. Once happy with the output, upload it (requires R2_* env vars, see .env.example):
+npm run publish-card-art -- --collection sm2027 --src data/card-art-source/sm2027 --upload
+```
+
+Re-run without `--upload` as many times as you like while tuning image quality — nothing gets published until you add that flag.
+
+### One-time cleanup still pending
+
+The sm2026 collection's raw JPEGs are still tracked in `.git` history from before this change (even though `git rm --cached` stopped tracking them going forward). That history bloat only goes away with a deliberate rewrite (`git filter-repo` or BFG) followed by a force-push — worth doing before it compounds further, but not something to run casually since it requires everyone with a clone to re-clone afterward.
+
 ## Deployment
 
 In production the app runs as a **single Node process**: the Express server in `server/index.mjs` serves both the JSON API (`/api/*`) and the built frontend from `dist/` (with an SPA fallback for non-`/api` routes). The frontend calls the API via relative paths, so everything is same-origin — no CORS or cross-host cookie setup needed.
@@ -169,6 +198,8 @@ npm run start   # node server/index.mjs (serves dist/ + API)
 | `ADMIN_PASSWORD` | for `/admin` | Shared password for the admin panel at `/admin`. If unset, admin login is disabled |
 | `RESEND_API_KEY` | for email | Resend API key for password-reset emails |
 | `MAIL_FROM` | for email | Verified sender address (see note below) |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | for `publish-card-art --upload` | Credentials for the S3-compatible bucket that stores card artwork. Not needed at app runtime — only by that one script. |
+| `VITE_CARD_ART_BASE_URL` | yes (build time) | Public base URL card art is served from, e.g. `https://pub-xxxx.r2.dev/card-art`. Baked into the client bundle at build time. |
 
 The server runs behind a reverse proxy (`trust proxy` is enabled) so secure cookies work correctly over HTTPS.
 
