@@ -190,7 +190,7 @@ npm run start   # node server/index.mjs (serves dist/ + API)
 | Variable | Required | Purpose |
 |---|---|---|
 | `PORT` | host-injected | Port to listen on (falls back to `AUTH_API_PORT`, then `4000`) |
-| `NODE_ENV` | yes | Set to `production` to enable secure cookies and the JWT-secret guard |
+| `NODE_ENV` | no — do not set | `npm run start` now sets this to `production` itself. Do **not** also set it as a platform env var: on Railway/Nixpacks, `NODE_ENV=production` present during `npm install`/`npm run build` can make npm skip devDependencies (vite, typescript, tailwindcss) and fail the build with e.g. `vite: not found`. |
 | `AUTH_JWT_SECRET` | yes (prod) | Signing secret for session JWTs; the server refuses to boot in production without it. Generate with `openssl rand -hex 32` |
 | `DB_PATH` | recommended | Absolute path to the SQLite file (e.g. a mounted volume at `/data/tcg.db`). Defaults to `data/tcg.db` |
 | `APP_URL` | yes | Public base URL, used to build password-reset email links |

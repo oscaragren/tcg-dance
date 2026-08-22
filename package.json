@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "node --env-file=.env server/index.mjs",
-    "start": "node server/index.mjs",
+    "start": "NODE_ENV=production node server/index.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "scrape:vote4dance": "node scripts/scrape-vote4dance-ranking.mjs",
