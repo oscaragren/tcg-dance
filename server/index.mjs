@@ -116,7 +116,16 @@ function requireAuth(request, response, next) {
   const token = request.cookies[TOKEN_COOKIE_NAME];
   if (!token) { response.status(401).json({ message: "Not authenticated" }); return; }
   try {
-    request.auth = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET);
+    // The JWT alone doesn't prove the account still exists — a session issued
+    // before an admin deletion stays cryptographically valid for up to 7 days.
+    // Without this check, every route that touches player_state (e.g.
+    // ensurePlayerState) throws a raw FOREIGN KEY SqliteError once the user
+    // row is gone, which Express turns into a stack-trace-leaking 500.
+    if (!db.prepare("SELECT 1 FROM users WHERE id = ?").get(payload.userId)) {
+      throw new Error("Account no longer exists");
+    }
+    request.auth = payload;
     next();
   } catch {
     clearAuthCookie(response);
@@ -1348,6 +1357,38 @@ app.get("/api/admin/pool", requireAdmin, (_request, response) => {
     remaining: r.copies_remaining,
     bought: r.total_copies - r.copies_remaining,
   })));
+});
+
+// Deletes a player entirely: their account, diamonds, owned cards, chests,
+// trade listings, pending trades (as either party), achievement claims and
+// password-reset tokens. Owned cards are handed back to card_pool.copies_remaining
+// (same convention as the upgrade route) so they go back into circulation for
+// other players rather than vanishing from the pool's accounting. Only this
+// user's own rows are touched — trades are deleted outright rather than
+// completed, so nothing is transferred to or taken from the other party.
+app.delete("/api/admin/users/:id", requireAdmin, (request, response) => {
+  const userId = request.params.id;
+  const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+  if (!user) { response.status(404).json({ message: "Användaren hittades inte." }); return; }
+
+  db.transaction(() => {
+    const stmtReturnToPool = db.prepare("UPDATE card_pool SET copies_remaining = copies_remaining + 1 WHERE card_id = ?");
+    for (const row of db.prepare("SELECT card_id FROM owned_cards WHERE user_id = ?").all(userId)) {
+      stmtReturnToPool.run(row.card_id);
+    }
+
+    db.prepare("DELETE FROM owned_cards WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM cards_for_trade WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM chests WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM chest_slots WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM achievement_claims WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM password_reset_tokens WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM trades WHERE sender_user_id = ? OR receiver_user_id = ?").run(userId, userId);
+    db.prepare("DELETE FROM player_state WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+  })();
+
+  response.status(204).send();
 });
 
 // ── Static frontend (production) ────────────────────────────────────────────────

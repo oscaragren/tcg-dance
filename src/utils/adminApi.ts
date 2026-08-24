@@ -86,3 +86,7 @@ export async function fetchAdminUserCards(userId: string): Promise<AdminUserCard
 export async function fetchAdminPool(): Promise<AdminPoolEntry[]> {
   return adminRequest<AdminPoolEntry[]>("/api/admin/pool", { method: "GET" });
 }
+
+export async function deleteAdminUser(userId: string): Promise<void> {
+  await adminRequest<unknown>(`/api/admin/users/${userId}`, { method: "DELETE" });
+}

@@ -5,6 +5,7 @@ import {
   adminLogin,
   adminLogout,
   adminMe,
+  deleteAdminUser,
   fetchAdminOverview,
   fetchAdminPool,
   fetchAdminUserCards,
@@ -93,6 +94,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUserCards | null>(null);
   const [loadingUser, setLoadingUser] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchAdminOverview(), fetchAdminUsers(), fetchAdminPool()])
@@ -113,6 +116,22 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       setError(e instanceof Error ? e.message : "Kunde inte ladda användarens samling.");
     } finally {
       setLoadingUser(false);
+    }
+  }
+
+  async function confirmDeleteUser() {
+    if (!userToDelete) return;
+    setDeleting(true);
+    try {
+      await deleteAdminUser(userToDelete.id);
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setOverview((prev) => (prev ? { ...prev, userCount: prev.userCount - 1 } : prev));
+      if (selectedUser?.user.id === userToDelete.id) setSelectedUser(null);
+      setUserToDelete(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Kunde inte radera användaren.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -184,6 +203,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <th className="text-right px-4 py-2">Unika</th>
                     <th className="text-right px-4 py-2">Totalt</th>
                     <th className="px-4 py-2"></th>
+                    <th className="px-4 py-2"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -200,6 +220,14 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           className="text-purple-600 hover:text-purple-800 text-xs font-medium underline"
                         >
                           Visa samling
+                        </button>
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <button
+                          onClick={() => setUserToDelete(u)}
+                          className="text-red-600 hover:text-red-800 text-xs font-medium underline"
+                        >
+                          Radera
                         </button>
                       </td>
                     </tr>
@@ -272,6 +300,36 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     ))}
                 </ul>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete-user confirmation */}
+      {userToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => (deleting ? null : setUserToDelete(null))}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-lg">Radera {userToDelete.username}?</h3>
+            <p className="text-sm text-gray-500">
+              Kontot, alla kort, kistor och pågående byten raderas permanent. Detta kan inte ångras.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setUserToDelete(null)} disabled={deleting}>
+                Avbryt
+              </Button>
+              <Button
+                onClick={() => void confirmDeleteUser()}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {deleting ? "Raderar..." : "Radera"}
+              </Button>
             </div>
           </div>
         </div>
