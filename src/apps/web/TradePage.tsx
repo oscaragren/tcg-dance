@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
-import { TradeMarket } from "../../components/web/TradeMarket";
+import { TradeMarket, UnownedDot } from "../../components/web/TradeMarket";
 import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
 import type { Trade } from "../../types/game";
-import { acceptTrade, cancelTrade, fetchMyTrades, rejectTrade } from "../../utils/gameApi";
+import { acceptTrade, cancelTrade, fetchGameState, fetchMyTrades, rejectTrade } from "../../utils/gameApi";
 
 type Tab = "incoming" | "outgoing" | "history";
 
@@ -19,6 +19,7 @@ export function TradePage({ currentUser }: TradePageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!currentUser) { setIsLoading(false); return; }
@@ -27,6 +28,20 @@ export function TradePage({ currentUser }: TradePageProps) {
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda byten."))
       .finally(() => setIsLoading(false));
   }, [currentUser]);
+
+  // Same red-dot rule as the market: a card coming your way that you don't own
+  // yet is worth spotting before you decide on an offer. Refetched after an
+  // accept, since accepting is exactly what makes those cards yours.
+  useEffect(() => {
+    if (!currentUser) { setOwnedCardIds([]); return; }
+    let cancelled = false;
+    fetchGameState()
+      .then((state) => { if (!cancelled) setOwnedCardIds(state.ownedCardIds); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentUser, trades]);
+
+  const ownedSet = useMemo(() => new Set(ownedCardIds), [ownedCardIds]);
 
   async function handleAccept(tradeId: string) {
     setActionLoading(tradeId); setError(null);
@@ -88,6 +103,12 @@ export function TradePage({ currentUser }: TradePageProps) {
   const history  = trades.filter((t) => t.status !== "pending");
   const tabTrades = tab === "incoming" ? incoming : tab === "outgoing" ? outgoing : history;
 
+  // The cards you would receive from a trade: what they offer on an incoming
+  // one, what you asked for on an outgoing one.
+  const incomingCardIds = (trade: Trade) =>
+    trade.receiver.id === myId ? trade.offeredCardIds : trade.requestedCardIds;
+  const tabHasMissing = tabTrades.some((t) => incomingCardIds(t).some((id) => !ownedSet.has(id)));
+
   return (
     <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
@@ -128,6 +149,13 @@ export function TradePage({ currentUser }: TradePageProps) {
               ))}
             </div>
 
+            {tabHasMissing && (
+              <p className="mb-4 flex items-center gap-2 text-xs text-gray-500">
+                <UnownedDot label="Röd prick" />
+                Röd prick = ett kort du inte äger ännu.
+              </p>
+            )}
+
             {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
             {isLoading ? (
@@ -145,6 +173,7 @@ export function TradePage({ currentUser }: TradePageProps) {
                     key={trade.id}
                     trade={trade}
                     myId={myId}
+                    ownedSet={ownedSet}
                     actionLoading={actionLoading}
                     onAccept={handleAccept}
                     onReject={handleReject}
@@ -184,8 +213,8 @@ const STATUS_LABEL: Record<Trade["status"], string> = {
   countered: "Motbud lämnat",
 };
 
-function TradeCard({ trade, myId, actionLoading, onAccept, onReject, onCancel, onCounter }: {
-  trade: Trade; myId: string; actionLoading: string | null;
+function TradeCard({ trade, myId, ownedSet, actionLoading, onAccept, onReject, onCancel, onCounter }: {
+  trade: Trade; myId: string; ownedSet: Set<string>; actionLoading: string | null;
   onAccept: (id: string) => void; onReject: (id: string) => void; onCancel: (id: string) => void;
   onCounter: (trade: Trade) => void;
 }) {
@@ -208,10 +237,13 @@ function TradeCard({ trade, myId, actionLoading, onAccept, onReject, onCancel, o
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_32px_1fr] gap-4 items-start">
+        {/* Always the side coming to you, so this is where the red dot belongs. */}
         <TradeSide
           cardIds={isIncoming ? trade.offeredCardIds  : trade.requestedCardIds}
           diamonds={isIncoming ? trade.offeredDiamonds : trade.requestedDiamonds}
           label={isIncoming ? `${otherUser.username} erbjuder` : "Du begär"}
+          ownedSet={ownedSet}
+          markMissing
         />
         <div className="text-xl text-gray-300 text-center pt-6 hidden md:block">⇄</div>
         <TradeSide
@@ -242,7 +274,14 @@ function TradeCard({ trade, myId, actionLoading, onAccept, onReject, onCancel, o
   );
 }
 
-function TradeSide({ cardIds, diamonds, label }: { cardIds: string[]; diamonds: number; label: string }) {
+function TradeSide({ cardIds, diamonds, label, ownedSet, markMissing = false }: {
+  cardIds: string[];
+  diamonds: number;
+  label: string;
+  ownedSet?: Set<string>;
+  /** Ring + dot every card on this side that the viewer does not own. */
+  markMissing?: boolean;
+}) {
   return (
     <div>
       <div className="text-xs font-medium text-gray-500 mb-2">{label}</div>
@@ -252,14 +291,25 @@ function TradeSide({ cardIds, diamonds, label }: { cardIds: string[]; diamonds: 
         <div className="space-y-2">
           {cardIds.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {cardIds.map((cardId) => {
+              {cardIds.map((cardId, index) => {
                 const card = cardById(cardId);
+                const isMissing = markMissing && !(ownedSet?.has(cardId) ?? true);
                 return card ? (
-                  <div key={cardId} style={{ width: 64 }}>
-                    <CardPlaceholder rarity={card.rarity} size="small" name={card.name} designKey={card.designKey} showCaption />
+                  // The same card can legitimately appear twice in one offer, so
+                  // the index is part of the key.
+                  <div key={`${cardId}-${index}`} style={{ width: 64 }}>
+                    <div className={`relative rounded-lg ${isMissing ? "ring-2 ring-red-500 ring-offset-2" : ""}`}>
+                      <CardPlaceholder rarity={card.rarity} size="small" name={card.name} designKey={card.designKey} showCaption />
+                      {isMissing && (
+                        <div
+                          title="Du äger inte det här kortet"
+                          className="absolute top-1 left-1 z-10 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white pointer-events-none"
+                        />
+                      )}
+                    </div>
                   </div>
                 ) : (
-                  <div key={cardId} className="w-16 h-20 bg-gray-100 rounded text-[10px] text-gray-400 flex items-center justify-center px-1 text-center">
+                  <div key={`${cardId}-${index}`} className="w-16 h-20 bg-gray-100 rounded text-[10px] text-gray-400 flex items-center justify-center px-1 text-center">
                     {cardId}
                   </div>
                 );
