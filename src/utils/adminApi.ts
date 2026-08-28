@@ -24,9 +24,57 @@ export type AdminUser = {
   uniqueCards: number;
 };
 
-export type AdminUserCards = {
-  user: { id: string; username: string; email: string };
-  cards: { cardId: string; count: number }[];
+/** One trade from the inspected player's point of view. */
+export type AdminUserTrade = {
+  id: string;
+  status: string;
+  createdAt: string;
+  direction: "sent" | "received";
+  counterparty: { id: string; username: string };
+  givesCardIds: string[];
+  givesDiamonds: number;
+  getsCardIds: string[];
+  getsDiamonds: number;
+  givesValue: number;
+  getsValue: number;
+  /** Positive when this player came out ahead. */
+  netValue: number;
+  ratio: number | null;
+  isCounter: boolean;
+  flags: AdminTradeFlag[];
+};
+
+export type AdminUserDetail = {
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    createdAt: string;
+  };
+  state: {
+    diamonds: number;
+    lastDailyClaimDate: string | null;
+    canClaimDailyDiamonds: boolean;
+  };
+  totals: {
+    totalCards: number;
+    uniqueCards: number;
+    markedForTrade: number;
+    chests: number;
+    chestSlots: number;
+    achievementsClaimed: number;
+    achievementsTotal: number;
+    trades: number;
+    tradesAccepted: number;
+  };
+  rarityCounts: Record<string, number>;
+  cards: { cardId: string; count: number; markedForTrade: number }[];
+  chests: { id: string; type: string; label: string; boughtAt: string; readyAt: string; ready: boolean }[];
+  achievements: { id: string; title: string; reward: number | null; claimedAt: string }[];
+  trades: AdminUserTrade[];
+  partners: { id: string; username: string; acceptedTrades: number; netValue: number; flaggedTrades: number }[];
 };
 
 export type AdminPoolEntry = {
@@ -134,8 +182,8 @@ export async function fetchAdminUsers(): Promise<AdminUser[]> {
   return adminRequest<AdminUser[]>("/api/admin/users", { method: "GET" });
 }
 
-export async function fetchAdminUserCards(userId: string): Promise<AdminUserCards> {
-  return adminRequest<AdminUserCards>(`/api/admin/users/${userId}/cards`, { method: "GET" });
+export async function fetchAdminUserDetail(userId: string): Promise<AdminUserDetail> {
+  return adminRequest<AdminUserDetail>(`/api/admin/users/${userId}`, { method: "GET" });
 }
 
 export async function fetchAdminPool(): Promise<AdminPoolEntry[]> {

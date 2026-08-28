@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/shared/ui/button";
-import { cardById } from "../../data/cards";
+import { CardPlaceholder } from "../../components/web/CardPlaceholder";
+import { cardById, rarityOrder } from "../../data/cards";
 import {
   adminLogin,
   adminLogout,
@@ -10,7 +11,7 @@ import {
   fetchAdminPool,
   fetchAdminTradePairs,
   fetchAdminTrades,
-  fetchAdminUserCards,
+  fetchAdminUserDetail,
   fetchAdminUsers,
   type AdminOverview,
   type AdminPoolEntry,
@@ -18,7 +19,7 @@ import {
   type AdminTradeFlag,
   type AdminTradePair,
   type AdminUser,
-  type AdminUserCards,
+  type AdminUserDetail,
 } from "../../utils/adminApi";
 
 const RARITY_ORDER = ["special", "legendary", "epic", "rare", "common"];
@@ -150,7 +151,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [tradePairs, setTradePairs] = useState<AdminTradePair[]>([]);
   const [onlyFlaggedTrades, setOnlyFlaggedTrades] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<AdminUserCards | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
   const [loadingUser, setLoadingUser] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -174,9 +175,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   async function openUser(userId: string) {
     setLoadingUser(true);
     try {
-      setSelectedUser(await fetchAdminUserCards(userId));
+      setSelectedUser(await fetchAdminUserDetail(userId));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Kunde inte ladda användarens samling.");
+      setError(e instanceof Error ? e.message : "Kunde inte ladda användaren.");
     } finally {
       setLoadingUser(false);
     }
@@ -279,7 +280,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </thead>
                 <tbody className="divide-y">
                   {users.map((u) => (
-                    <tr key={u.id}>
+                    <tr
+                      key={u.id}
+                      onClick={() => void openUser(u.id)}
+                      className="cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-4 py-2 font-medium">{u.username}</td>
                       <td className="px-4 py-2">
                         {u.firstName && u.lastName
@@ -292,15 +297,15 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       <td className="px-4 py-2 text-right text-gray-500">{u.totalCards}</td>
                       <td className="px-4 py-2 text-right">
                         <button
-                          onClick={() => void openUser(u.id)}
+                          onClick={(e) => { e.stopPropagation(); void openUser(u.id); }}
                           className="text-purple-600 hover:text-purple-800 text-xs font-medium underline"
                         >
-                          Visa samling
+                          Visa
                         </button>
                       </td>
                       <td className="px-4 py-2 text-right">
                         <button
-                          onClick={() => setUserToDelete(u)}
+                          onClick={(e) => { e.stopPropagation(); setUserToDelete(u); }}
                           className="text-red-600 hover:text-red-800 text-xs font-medium underline"
                         >
                           Radera
@@ -507,38 +512,42 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      {/* User collection modal */}
+      {/* User detail modal */}
       {(selectedUser || loadingUser) && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           onClick={() => setSelectedUser(null)}
         >
           <div
-            className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+            className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-5 border-b flex items-center justify-between">
-              <h3 className="font-semibold">
-                {loadingUser ? "Laddar..." : `${selectedUser?.user.username} — samling`}
-              </h3>
-              <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
+            <div className="p-5 border-b flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-lg">
+                  {loadingUser ? "Laddar..." : selectedUser?.user.username}
+                </h3>
+                {selectedUser && (
+                  <div className="text-sm text-gray-500 mt-0.5">
+                    {selectedUser.user.firstName && selectedUser.user.lastName
+                      ? `${selectedUser.user.firstName} ${selectedUser.user.lastName} · `
+                      : ""}
+                    {selectedUser.user.email}
+                    <span className="text-gray-400"> · med sedan {formatDate(selectedUser.user.createdAt)}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-gray-400 hover:text-gray-700 text-xl leading-none shrink-0"
+                aria-label="Stäng"
+              >
+                ×
+              </button>
             </div>
-            <div className="p-5 overflow-y-auto">
-              {selectedUser && selectedUser.cards.length === 0 && (
-                <p className="text-sm text-gray-500">Inga kort.</p>
-              )}
-              {selectedUser && selectedUser.cards.length > 0 && (
-                <ul className="text-sm divide-y">
-                  {[...selectedUser.cards]
-                    .sort((a, b) => cardName(a.cardId).localeCompare(cardName(b.cardId), "sv"))
-                    .map((c) => (
-                      <li key={c.cardId} className="flex justify-between py-1.5">
-                        <span>{cardName(c.cardId)}</span>
-                        <span className="text-gray-500">×{c.count}</span>
-                      </li>
-                    ))}
-                </ul>
-              )}
+
+            <div className="p-5 overflow-y-auto space-y-8">
+              {selectedUser && <UserDetail detail={selectedUser} />}
             </div>
           </div>
         </div>
@@ -574,6 +583,246 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       )}
     </main>
+  );
+}
+
+const TRADE_STATUS_LABEL: Record<string, string> = {
+  pending: "Väntar",
+  accepted: "Genomfört",
+  rejected: "Avböjt",
+  cancelled: "Avbrutet",
+  countered: "Motbud lämnat",
+};
+
+/** Full picture of one player: balance, collection, chests, trades, partners. */
+function UserDetail({ detail }: { detail: AdminUserDetail }) {
+  const { state, totals, rarityCounts, cards, chests, achievements, trades, partners } = detail;
+
+  // Rarest first, then alphabetically — the interesting cards sort to the top.
+  // rarityOrder is a rank map (special 0 … common 4), so lower sorts first.
+  const sortedCards = useMemo(
+    () =>
+      [...cards].sort((a, b) => {
+        const ra = cardById(a.cardId)?.rarity;
+        const rb = cardById(b.cardId)?.rarity;
+        const ia = ra ? rarityOrder[ra] : 99;
+        const ib = rb ? rarityOrder[rb] : 99;
+        return ia - ib || cardName(a.cardId).localeCompare(cardName(b.cardId), "sv");
+      }),
+    [cards],
+  );
+
+  return (
+    <>
+      {/* Key numbers */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Diamanter" value={state.diamonds} />
+        <StatCard label="Kort totalt" value={totals.totalCards} />
+        <StatCard label="Unika kort" value={totals.uniqueCards} />
+        <StatCard label="Markerade för byte" value={totals.markedForTrade} />
+        <StatCard label="Kistor" value={totals.chests} />
+        <StatCard label="Kistplatser" value={totals.chestSlots} />
+        <StatCard label="Byten" value={totals.trades} />
+        <StatCard label="Genomförda byten" value={totals.tradesAccepted} />
+      </section>
+
+      <p className="text-xs text-gray-500 -mt-4">
+        Dagliga diamanter:{" "}
+        {state.lastDailyClaimDate
+          ? `senast hämtade ${state.lastDailyClaimDate}`
+          : "aldrig hämtade"}
+        {state.canClaimDailyDiamonds ? " · kan hämta idag" : " · redan hämtade idag"}
+        {" · "}
+        {totals.achievementsClaimed} av {totals.achievementsTotal} prestationer uthämtade
+      </p>
+
+      {/* Rarity split */}
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold">Samlingen per raritet</h4>
+        <div className="flex flex-wrap gap-2">
+          {RARITY_ORDER.map((r) => (
+            <span key={r} className="rounded-lg border bg-gray-50 px-3 py-1.5 text-sm">
+              <span className="capitalize text-gray-500">{r}</span>{" "}
+              <span className="font-semibold">{rarityCounts[r] ?? 0}</span>
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* Chests */}
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold">Kistor ({chests.length})</h4>
+        {chests.length === 0 ? (
+          <p className="text-sm text-gray-500">Inga olåsta kistor.</p>
+        ) : (
+          <ul className="text-sm divide-y rounded-xl border">
+            {chests.map((chest) => (
+              <li key={chest.id} className="flex items-center justify-between px-4 py-2">
+                <span>{chest.label}</span>
+                <span className={chest.ready ? "text-green-700 font-medium" : "text-gray-500"}>
+                  {chest.ready ? "Klar att öppnas" : `Klar ${new Date(chest.readyAt).toLocaleString("sv-SE")}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Who they trade with */}
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold">Handelspartners ({partners.length})</h4>
+        {partners.length === 0 ? (
+          <p className="text-sm text-gray-500">Har inte genomfört några byten.</p>
+        ) : (
+          <div className="rounded-xl border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-500">
+                <tr>
+                  <th className="text-left px-4 py-2">Spelare</th>
+                  <th className="text-right px-4 py-2">Byten</th>
+                  <th className="text-right px-4 py-2">Ojämna</th>
+                  <th className="text-right px-4 py-2" title="Nettovärde till den här spelaren">Netto</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {partners.map((p) => (
+                  <tr key={p.id}>
+                    <td className="px-4 py-2 font-medium">{p.username}</td>
+                    <td className="px-4 py-2 text-right">{p.acceptedTrades}</td>
+                    <td className="px-4 py-2 text-right">
+                      {p.flaggedTrades > 0
+                        ? <span className="text-amber-700 font-medium">{p.flaggedTrades}</span>
+                        : <span className="text-gray-400">0</span>}
+                    </td>
+                    <td className={"px-4 py-2 text-right " + (p.netValue > 0 ? "text-green-700" : p.netValue < 0 ? "text-red-700" : "text-gray-400")}>
+                      {p.netValue > 0 ? "+" : ""}{Math.round(p.netValue)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Trade history, from this player's point of view */}
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold">Byteshistorik ({trades.length})</h4>
+        {trades.length === 0 ? (
+          <p className="text-sm text-gray-500">Inga byten.</p>
+        ) : (
+          <div className="rounded-xl border overflow-x-auto max-h-80 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-500 sticky top-0">
+                <tr>
+                  <th className="text-left px-4 py-2">Datum</th>
+                  <th className="text-left px-4 py-2">Motpart</th>
+                  <th className="text-left px-4 py-2">Ger</th>
+                  <th className="text-left px-4 py-2">Får</th>
+                  <th className="text-right px-4 py-2">Netto</th>
+                  <th className="text-left px-4 py-2">Status</th>
+                  <th className="text-right px-4 py-2">Flaggor</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {trades.map((t) => (
+                  <tr key={t.id} className={t.flags.length > 0 ? "bg-amber-50/40" : undefined}>
+                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <span className="text-gray-400">{t.direction === "sent" ? "→ " : "← "}</span>
+                      {t.counterparty.username}
+                      {t.isCounter && <span className="ml-1 text-[11px] text-purple-600">(motbud)</span>}
+                    </td>
+                    <td className="px-4 py-2">{formatSide(t.givesCardIds, t.givesDiamonds)}</td>
+                    <td className="px-4 py-2">{formatSide(t.getsCardIds, t.getsDiamonds)}</td>
+                    <td className={"px-4 py-2 text-right whitespace-nowrap " + (t.netValue > 0 ? "text-green-700" : t.netValue < 0 ? "text-red-700" : "text-gray-400")}>
+                      {t.netValue > 0 ? "+" : ""}{Math.round(t.netValue)}
+                    </td>
+                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                      {TRADE_STATUS_LABEL[t.status] ?? t.status}
+                    </td>
+                    <td className="px-4 py-2 text-right"><FlagBadges flags={t.flags} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Claimed achievements */}
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold">
+          Prestationer ({totals.achievementsClaimed} av {totals.achievementsTotal})
+        </h4>
+        {achievements.length === 0 ? (
+          <p className="text-sm text-gray-500">Inga uthämtade prestationer.</p>
+        ) : (
+          <div className="rounded-xl border overflow-x-auto max-h-56 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-500 sticky top-0">
+                <tr>
+                  <th className="text-left px-4 py-2">Prestation</th>
+                  <th className="text-right px-4 py-2">Belöning</th>
+                  <th className="text-right px-4 py-2">Uthämtad</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {achievements.map((a) => (
+                  <tr key={a.id}>
+                    <td className="px-4 py-2">{a.title}</td>
+                    <td className="px-4 py-2 text-right text-gray-500">
+                      {a.reward === null ? "–" : `${a.reward} \u25c6`}
+                    </td>
+                    <td className="px-4 py-2 text-right text-gray-500 whitespace-nowrap">
+                      {formatDate(a.claimedAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* The collection itself */}
+      <section className="space-y-3">
+        <h4 className="text-sm font-semibold">
+          Samling ({totals.uniqueCards} unika, {totals.totalCards} kort)
+        </h4>
+        {sortedCards.length === 0 ? (
+          <p className="text-sm text-gray-500">Inga kort.</p>
+        ) : (
+          <div className="flex flex-wrap gap-4">
+            {sortedCards.map(({ cardId, count, markedForTrade }) => {
+              const card = cardById(cardId);
+              return (
+                <div key={cardId} className="relative">
+                  <CardPlaceholder
+                    rarity={card?.rarity}
+                    size="small"
+                    name={card?.name ?? cardId}
+                    danceStyle={card?.danceStyle}
+                    designKey={card?.designKey}
+                    showCaption
+                  />
+                  {count > 1 && (
+                    <div className="absolute top-1.5 right-1.5 z-10 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white pointer-events-none">
+                      ×{count}
+                    </div>
+                  )}
+                  {markedForTrade > 0 && (
+                    <div className="absolute top-1.5 left-1.5 z-10 rounded bg-purple-600/90 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white pointer-events-none">
+                      Byte {markedForTrade}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </>
   );
 }
 

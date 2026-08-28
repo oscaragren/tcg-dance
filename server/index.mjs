@@ -787,12 +787,20 @@ function analyzeTrade(row) {
   else if (ratio >= VERY_LOPSIDED_RATIO) flags.push("very_lopsided");
   else if (ratio >= LOPSIDED_RATIO) flags.push("lopsided");
 
+  // Round each side first, then subtract, so the three figures always add up on
+  // screen. Rounding the raw difference separately drifts by up to 0.1 (a
+  // diamond is worth 10.075), which reads as an arithmetic error in the admin
+  // tables even though every individual figure is correct. The outer round1
+  // only clears float noise from the subtraction.
+  const senderValueRounded = round1(senderValue);
+  const receiverValueRounded = round1(receiverValue);
+
   return {
     offeredCardIds,
     requestedCardIds,
-    senderValue: round1(senderValue),
-    receiverValue: round1(receiverValue),
-    senderNet: round1(receiverValue - senderValue),
+    senderValue: senderValueRounded,
+    receiverValue: receiverValueRounded,
+    senderNet: round1(receiverValueRounded - senderValueRounded),
     ratio,
     favours: senderValue === receiverValue ? "even" : senderValue < receiverValue ? "sender" : "receiver",
     flags,
@@ -1585,15 +1593,131 @@ app.get("/api/admin/users", requireAdmin, (_request, response) => {
   })));
 });
 
-app.get("/api/admin/users/:id/cards", requireAdmin, (request, response) => {
-  const user = db.prepare("SELECT id, username, email FROM users WHERE id = ?").get(request.params.id);
+// Everything about one player in a single call: account, balance, collection,
+// chests, achievements, trade history and who they trade with. One round trip
+// rather than six, because the whole point is scanning a player at a glance.
+app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
+  const userId = request.params.id;
+  const user = db
+    .prepare("SELECT id, username, email, created_at, first_name, last_name FROM users WHERE id = ?")
+    .get(userId);
   if (!user) { response.status(404).json({ message: "Användaren hittades inte." }); return; }
-  const rows = db
+
+  const state = db.prepare("SELECT * FROM player_state WHERE user_id = ?").get(userId);
+
+  const ownedRows = db
     .prepare("SELECT card_id, COUNT(*) AS count FROM owned_cards WHERE user_id = ? GROUP BY card_id")
-    .all(request.params.id);
+    .all(userId);
+  const markedForTrade = new Map(
+    db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(userId)
+      .map((r) => [r.card_id, r.quantity]),
+  );
+
+  const rarityCounts = {};
+  let totalCards = 0;
+  for (const row of ownedRows) {
+    const rarity = cardById.get(row.card_id)?.rarity ?? "unknown";
+    rarityCounts[rarity] = (rarityCounts[rarity] ?? 0) + row.count;
+    totalCards += row.count;
+  }
+
+  const chestRows = db
+    .prepare("SELECT * FROM chests WHERE user_id = ? ORDER BY ready_at ASC")
+    .all(userId);
+  const slotsRow = db.prepare("SELECT slots FROM chest_slots WHERE user_id = ?").get(userId);
+
+  const claimedRows = db
+    .prepare("SELECT achievement_id, claimed_at FROM achievement_claims WHERE user_id = ? ORDER BY claimed_at DESC")
+    .all(userId);
+
+  // Trades this player is party to, valued with the same model as the
+  // trade-integrity report so the numbers agree between the two views.
+  const exclusive = exclusivePairKeys();
+  const tradeRows = stmtAdminTrades.all()
+    .filter((r) => r.sender_user_id === userId || r.receiver_user_id === userId);
+
+  const trades = tradeRows.map((row) => {
+    const analysis = analyzeTrade(row);
+    const isSender = row.sender_user_id === userId;
+    const flags = [...analysis.flags];
+    if (exclusive.has(pairKey(row.sender_user_id, row.receiver_user_id))) flags.push("exclusive_pair");
+    return {
+      id: row.id,
+      status: row.status,
+      createdAt: row.created_at,
+      direction: isSender ? "sent" : "received",
+      counterparty: isSender
+        ? { id: row.receiver_user_id, username: row.receiver_username }
+        : { id: row.sender_user_id, username: row.sender_username },
+      // Always from this player's point of view: what they hand over vs receive.
+      givesCardIds: isSender ? analysis.offeredCardIds : analysis.requestedCardIds,
+      givesDiamonds: isSender ? row.offered_diamonds : row.requested_diamonds,
+      getsCardIds: isSender ? analysis.requestedCardIds : analysis.offeredCardIds,
+      getsDiamonds: isSender ? row.requested_diamonds : row.offered_diamonds,
+      givesValue: isSender ? analysis.senderValue : analysis.receiverValue,
+      getsValue: isSender ? analysis.receiverValue : analysis.senderValue,
+      netValue: isSender ? analysis.senderNet : -analysis.senderNet,
+      ratio: analysis.ratio,
+      isCounter: row.counter_of_trade_id !== null,
+      flags,
+    };
+  });
+
+  // Who they actually complete trades with, and which way the value ran.
+  const partners = new Map();
+  for (const trade of trades) {
+    if (trade.status !== "accepted") continue;
+    const entry = partners.get(trade.counterparty.id) ?? {
+      id: trade.counterparty.id, username: trade.counterparty.username,
+      acceptedTrades: 0, netValue: 0, flaggedTrades: 0,
+    };
+    entry.acceptedTrades += 1;
+    entry.netValue += trade.netValue;
+    if (trade.flags.some((f) => f !== "exclusive_pair")) entry.flaggedTrades += 1;
+    partners.set(trade.counterparty.id, entry);
+  }
+
   response.json({
-    user: { id: user.id, username: user.username, email: user.email },
-    cards: rows.map((r) => ({ cardId: r.card_id, count: r.count })),
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.first_name ?? null,
+      lastName: user.last_name ?? null,
+      createdAt: user.created_at,
+    },
+    state: {
+      diamonds: state?.diamonds ?? 0,
+      lastDailyClaimDate: state?.last_daily_claim_date ?? null,
+      canClaimDailyDiamonds: (state?.last_daily_claim_date ?? null) !== todayIso(),
+    },
+    totals: {
+      totalCards,
+      uniqueCards: ownedRows.length,
+      markedForTrade: [...markedForTrade.values()].reduce((sum, n) => sum + n, 0),
+      chests: chestRows.length,
+      chestSlots: slotsRow?.slots ?? 1,
+      achievementsClaimed: claimedRows.length,
+      achievementsTotal: achievementDefinitions.length,
+      trades: trades.length,
+      tradesAccepted: trades.filter((t) => t.status === "accepted").length,
+    },
+    rarityCounts,
+    cards: ownedRows.map((r) => ({
+      cardId: r.card_id,
+      count: r.count,
+      // Capped at what they actually own, same rule the trade routes apply.
+      markedForTrade: Math.min(markedForTrade.get(r.card_id) ?? 0, r.count),
+    })),
+    chests: chestRows.map(publicChest),
+    achievements: claimedRows.map((r) => ({
+      id: r.achievement_id,
+      title: achievementById.get(r.achievement_id)?.title ?? r.achievement_id,
+      reward: achievementById.get(r.achievement_id)?.reward ?? null,
+      claimedAt: r.claimed_at,
+    })),
+    trades,
+    partners: [...partners.values()].sort((a, b) => b.acceptedTrades - a.acceptedTrades),
   });
 });
 
