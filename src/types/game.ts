@@ -97,13 +97,29 @@ export type Chest = {
   boughtAt: string;
   readyAt: string;
   ready: boolean;
+  /** Which slot it occupies: its own chest type, or the free universal slot. */
+  slot: ChestType | "free";
+};
+
+/** A dedicated slot a player can buy — one per chest type, bought once. */
+export type ChestSlotOption = {
+  type: ChestType;
+  label: string;
+  /** Swedish name of the slot itself, e.g. "bronsplats". */
+  slotLabel: string;
+  price: number;
+  owned: boolean;
 };
 
 export type ChestsResponse = {
   chests: Chest[];
+  /** Free universal slots plus dedicated slots bought. */
   slots: number;
   maxSlots: number;
-  nextSlotPrice: number | null;
+  freeSlots: number;
+  slotTypes: ChestSlotOption[];
+  /** Server's answer to "is there room for one more of this type right now?". */
+  canStore: Record<ChestType, boolean>;
   types: ChestTypeConfig[];
 };
 

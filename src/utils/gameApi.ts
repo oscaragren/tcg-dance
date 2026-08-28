@@ -190,8 +190,12 @@ export async function buyChest(type: ChestType): Promise<ChestsMutationResponse>
   });
 }
 
-export async function buyChestSlot(): Promise<ChestsMutationResponse> {
-  return requestJson<ChestsMutationResponse>("/api/game/chests/buy-slot", { method: "POST" });
+/** Buy the permanent dedicated slot for one chest type. */
+export async function buyChestSlot(type: ChestType): Promise<ChestsMutationResponse> {
+  return requestJson<ChestsMutationResponse>("/api/game/chests/buy-slot", {
+    method: "POST",
+    body: JSON.stringify({ type }),
+  });
 }
 
 export async function collectChest(chestId: string): Promise<CollectChestResponse> {

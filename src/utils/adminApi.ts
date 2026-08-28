@@ -64,6 +64,8 @@ export type AdminUserDetail = {
     markedForTrade: number;
     chests: number;
     chestSlots: number;
+    /** Dedicated per-type slots this player has bought. */
+    chestSlotTypes: string[];
     achievementsClaimed: number;
     achievementsTotal: number;
     trades: number;

@@ -1313,14 +1313,54 @@ const CHEST_TYPES = {
   },
 };
 
-// Price of the *next* slot, indexed by how many slots you already have.
-// Everyone starts with 1; four is the ceiling.
-const CHEST_SLOT_PRICES = { 1: 5000, 2: 50000, 3: 500000 };
-const MAX_CHEST_SLOTS = 4;
+// Chest storage: one free universal slot everyone has, plus at most one bought
+// slot per chest type. A dedicated slot only ever holds its own type, so the
+// ceiling is 1 + 3 = 4 chests.
+const CHEST_SLOT_PRICES = { bronze: 1000, silver: 3000, gold: 5000 };
 
-function chestSlotsFor(userId) {
-  const row = db.prepare("SELECT slots FROM chest_slots WHERE user_id = ?").get(userId);
-  return row?.slots ?? 1;
+// Swedish labels for the slots themselves — "Bronskista" doesn't inflect into a
+// slot name on its own ("bronskistaplats"), so the words are spelled out.
+const CHEST_SLOT_LABELS = {
+  bronze: { slot: "bronsplats", plural: "bronskistor" },
+  silver: { slot: "silverplats", plural: "silverkistor" },
+  gold: { slot: "guldplats", plural: "guldkistor" },
+};
+const FREE_CHEST_SLOTS = 1;
+const MAX_CHEST_SLOTS = FREE_CHEST_SLOTS + Object.keys(CHEST_SLOT_PRICES).length;
+
+/** Which dedicated slots this user has bought, as a Set of chest types. */
+function dedicatedSlotsFor(userId) {
+  return new Set(
+    db.prepare("SELECT type FROM chest_type_slots WHERE user_id = ?").all(userId).map((r) => r.type),
+  );
+}
+
+function heldChestCounts(userId) {
+  const counts = {};
+  for (const row of db.prepare("SELECT type, COUNT(*) AS n FROM chests WHERE user_id = ? GROUP BY type").all(userId)) {
+    counts[row.type] = row.n;
+  }
+  return counts;
+}
+
+/**
+ * How many chests spill past the dedicated slots and therefore need the free
+ * universal one. Filling each dedicated slot with its own type first is always
+ * optimal — a dedicated slot can hold nothing else — so this greedy count is
+ * exact, not an approximation.
+ */
+function universalSlotsUsed(held, dedicated) {
+  let overflow = 0;
+  for (const type of Object.keys(CHEST_TYPES)) {
+    overflow += Math.max(0, (held[type] ?? 0) - (dedicated.has(type) ? 1 : 0));
+  }
+  return overflow;
+}
+
+/** Is there room for one more chest of this type right now? */
+function canStoreChest(type, held, dedicated) {
+  const next = { ...held, [type]: (held[type] ?? 0) + 1 };
+  return universalSlotsUsed(next, dedicated) <= FREE_CHEST_SLOTS;
 }
 
 function rollDiamonds({ min, max, step }) {
@@ -1340,7 +1380,7 @@ const drawCardOfRarityTx = db.transaction((rarity) => {
   return row.card_id;
 });
 
-function publicChest(row) {
+function publicChest(row, slot) {
   const config = CHEST_TYPES[row.type];
   return {
     id: row.id,
@@ -1349,6 +1389,8 @@ function publicChest(row) {
     boughtAt: row.bought_at,
     readyAt: row.ready_at,
     ready: Date.parse(row.ready_at) <= Date.now(),
+    /** Which slot it occupies: its own chest type, or "free" for the universal one. */
+    slot,
   };
 }
 
@@ -1356,12 +1398,38 @@ function buildChestsResponse(userId) {
   const rows = db
     .prepare("SELECT * FROM chests WHERE user_id = ? ORDER BY ready_at ASC")
     .all(userId);
-  const slots = chestSlotsFor(userId);
+  const dedicated = dedicatedSlotsFor(userId);
+  const held = heldChestCounts(userId);
+
+  // Assign each chest to a slot for display, dedicated first — the same greedy
+  // rule the capacity check uses, so what the player sees matches what the
+  // server will allow.
+  const dedicatedTaken = new Set();
+  const chests = rows.map((row) => {
+    if (dedicated.has(row.type) && !dedicatedTaken.has(row.type)) {
+      dedicatedTaken.add(row.type);
+      return publicChest(row, row.type);
+    }
+    return publicChest(row, "free");
+  });
+
   return {
-    chests: rows.map(publicChest),
-    slots,
+    chests,
+    slots: FREE_CHEST_SLOTS + dedicated.size,
     maxSlots: MAX_CHEST_SLOTS,
-    nextSlotPrice: slots >= MAX_CHEST_SLOTS ? null : CHEST_SLOT_PRICES[slots] ?? null,
+    freeSlots: FREE_CHEST_SLOTS,
+    /** One entry per buyable dedicated slot, whether owned yet or not. */
+    slotTypes: Object.values(CHEST_TYPES).map((c) => ({
+      type: c.id,
+      label: c.label,
+      slotLabel: CHEST_SLOT_LABELS[c.id].slot,
+      price: CHEST_SLOT_PRICES[c.id],
+      owned: dedicated.has(c.id),
+    })),
+    /** Server-computed room check per type, so the UI never re-derives the rule. */
+    canStore: Object.fromEntries(
+      Object.keys(CHEST_TYPES).map((type) => [type, canStoreChest(type, held, dedicated)]),
+    ),
     types: Object.values(CHEST_TYPES).map((c) => ({
       id: c.id,
       label: c.label,
@@ -1389,9 +1457,14 @@ app.post("/api/game/chests/buy", authed, (request, response) => {
 
   try {
     db.transaction(() => {
-      const held = db.prepare("SELECT COUNT(*) AS n FROM chests WHERE user_id = ?").get(userId).n;
-      if (held >= chestSlotsFor(userId)) {
-        throw new Error("Alla dina kistplatser är upptagna. Öppna en kista eller köp en plats till.");
+      const dedicated = dedicatedSlotsFor(userId);
+      if (!canStoreChest(config.id, heldChestCounts(userId), dedicated)) {
+        const words = CHEST_SLOT_LABELS[config.id];
+        throw new Error(
+          dedicated.has(config.id)
+            ? `Din ${words.slot} och den fria platsen är upptagna. Öppna en kista först.`
+            : `Ingen ledig plats för fler ${words.plural}. Öppna en kista, eller köp en fast ${words.slot} i Samling.`,
+        );
       }
 
       const { diamonds } = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(userId);
@@ -1415,24 +1488,36 @@ app.post("/api/game/chests/buy", authed, (request, response) => {
   response.status(201).json({ ...buildChestsResponse(userId), state: buildStateResponse(userId) });
 });
 
+// Buy the dedicated slot for one chest type. Each type can be bought once, in
+// any order, and is permanent.
 app.post("/api/game/chests/buy-slot", authed, (request, response) => {
   const userId = request.auth.userId;
+  const type = String(request.body?.type ?? "");
+  const config = CHEST_TYPES[type];
+  const price = CHEST_SLOT_PRICES[type];
+
+  if (!config || !price) {
+    response.status(400).json({ message: "Okänd kistplats." });
+    return;
+  }
+
   ensurePlayerState(userId);
 
   try {
     db.transaction(() => {
-      const slots = chestSlotsFor(userId);
-      if (slots >= MAX_CHEST_SLOTS) throw new Error("Du har redan max antal kistplatser.");
-      const price = CHEST_SLOT_PRICES[slots];
-      if (!price) throw new Error("Ingen fler kistplats att köpa.");
+      if (dedicatedSlotsFor(userId).has(type)) {
+        throw new Error(`Du har redan en ${CHEST_SLOT_LABELS[type].slot}.`);
+      }
 
       const { diamonds } = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(userId);
       if (diamonds < price) throw new Error("Inte tillräckligt med diamanter.");
 
       db.prepare("UPDATE player_state SET diamonds = diamonds - ? WHERE user_id = ?").run(price, userId);
-      db.prepare(
-        "INSERT INTO chest_slots (user_id, slots) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET slots = ?",
-      ).run(userId, slots + 1, slots + 1);
+      db.prepare("INSERT INTO chest_type_slots (user_id, type, bought_at) VALUES (?, ?, ?)").run(
+        userId,
+        type,
+        new Date().toISOString(),
+      );
     })();
   } catch (err) {
     response.status(400).json({ message: err.message });
@@ -1622,7 +1707,7 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
   const chestRows = db
     .prepare("SELECT * FROM chests WHERE user_id = ? ORDER BY ready_at ASC")
     .all(userId);
-  const slotsRow = db.prepare("SELECT slots FROM chest_slots WHERE user_id = ?").get(userId);
+  const dedicatedSlots = dedicatedSlotsFor(userId);
 
   const claimedRows = db
     .prepare("SELECT achievement_id, claimed_at FROM achievement_claims WHERE user_id = ? ORDER BY claimed_at DESC")
@@ -1694,7 +1779,9 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
       uniqueCards: ownedRows.length,
       markedForTrade: [...markedForTrade.values()].reduce((sum, n) => sum + n, 0),
       chests: chestRows.length,
-      chestSlots: slotsRow?.slots ?? 1,
+      chestSlots: FREE_CHEST_SLOTS + dedicatedSlots.size,
+      // Which dedicated slots they have bought, in a stable order.
+      chestSlotTypes: Object.keys(CHEST_TYPES).filter((t) => dedicatedSlots.has(t)),
       achievementsClaimed: claimedRows.length,
       achievementsTotal: achievementDefinitions.length,
       trades: trades.length,
@@ -1707,7 +1794,7 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
       // Capped at what they actually own, same rule the trade routes apply.
       markedForTrade: Math.min(markedForTrade.get(r.card_id) ?? 0, r.count),
     })),
-    chests: chestRows.map(publicChest),
+    chests: chestRows.map((row) => publicChest(row, dedicatedSlots.has(row.type) ? row.type : "free")),
     achievements: claimedRows.map((r) => ({
       id: r.achievement_id,
       title: achievementById.get(r.achievement_id)?.title ?? r.achievement_id,
@@ -1752,6 +1839,7 @@ app.delete("/api/admin/users/:id", requireAdmin, (request, response) => {
     db.prepare("DELETE FROM cards_for_trade WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM chests WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM chest_slots WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM chest_type_slots WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM achievement_claims WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM password_reset_tokens WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM trades WHERE sender_user_id = ? OR receiver_user_id = ?").run(userId, userId);

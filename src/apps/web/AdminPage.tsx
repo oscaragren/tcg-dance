@@ -621,7 +621,11 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
         <StatCard label="Unika kort" value={totals.uniqueCards} />
         <StatCard label="Märkta vill byta" value={totals.markedForTrade} />
         <StatCard label="Kistor" value={totals.chests} />
-        <StatCard label="Kistplatser" value={totals.chestSlots} />
+        <StatCard
+          label="Kistplatser"
+          value={totals.chestSlots}
+          hint={totals.chestSlotTypes.length > 0 ? `fast: ${totals.chestSlotTypes.join(", ")}` : undefined}
+        />
         <StatCard label="Byten" value={totals.trades} />
         <StatCard label="Genomförda byten" value={totals.tradesAccepted} />
       </section>
@@ -826,11 +830,12 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
     <div className="rounded-xl border bg-white p-4">
       <div className="text-2xl font-bold">{value}</div>
       <div className="text-xs text-gray-500 mt-1">{label}</div>
+      {hint && <div className="text-[11px] text-gray-400 mt-0.5">{hint}</div>}
     </div>
   );
 }

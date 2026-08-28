@@ -94,11 +94,23 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_chests_user ON chests(user_id);
 
-  -- How many chests a user may store at once: 1 by default, up to 4 by buying
-  -- extra slots with diamonds.
+  -- Legacy: a single "how many chests may I hold" counter, replaced by the
+  -- per-type slots below. Kept (unused) so that upgrading a database never
+  -- silently destroys a purchase; safe to drop by hand once verified empty.
   CREATE TABLE IF NOT EXISTS chest_slots (
     user_id TEXT PRIMARY KEY REFERENCES users(id),
     slots   INTEGER NOT NULL DEFAULT 1
+  );
+
+  -- Chest storage. Everyone has one free universal slot that takes any chest;
+  -- on top of that a player can buy one dedicated slot per chest type, which
+  -- only ever holds that type. One row per slot bought — no row means not
+  -- bought, so the free slot needs no row at all.
+  CREATE TABLE IF NOT EXISTS chest_type_slots (
+    user_id     TEXT NOT NULL REFERENCES users(id),
+    type        TEXT NOT NULL,
+    bought_at   TEXT NOT NULL,
+    PRIMARY KEY (user_id, type)
   );
 `);
 

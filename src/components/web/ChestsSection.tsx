@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import type { DanceCard } from "../../types/danceCard";
-import type { Chest, ChestsResponse } from "../../types/game";
-import { buyChestSlot, collectChest, fetchChests } from "../../utils/gameApi";
+import type { Chest, ChestSlotOption, ChestsResponse, ChestType } from "../../types/game";
+import { buyChestSlot, collectChest, fetchChests, fetchGameState } from "../../utils/gameApi";
 import { ChestRewardModal } from "./ChestRewardModal";
 
 const CHEST_EMOJI: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇" };
@@ -38,6 +38,7 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [diamonds, setDiamonds] = useState<number | null>(null);
   const [reward, setReward] = useState<{ label: string; diamonds: number; cards: DanceCard[] } | null>(null);
 
   useEffect(() => {
@@ -45,6 +46,12 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
       .then(setData)
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda kistor."))
       .finally(() => setIsLoading(false));
+  }, []);
+
+  // Only so the slot buttons can say "för få diamanter" before the server does.
+  // Every mutation below returns a fresh state, so this is fetched once.
+  useEffect(() => {
+    fetchGameState().then((state) => setDiamonds(state.diamonds)).catch(() => {});
   }, []);
 
   // Drive the countdowns. One shared ticker rather than one per chest.
@@ -61,6 +68,7 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
     try {
       const result = await collectChest(chest.id);
       setData(result);
+      setDiamonds(result.state.diamonds);
       setReward({ label: result.chestLabel, diamonds: result.diamondsAwarded, cards: result.cards });
       onCollected?.();
     } catch (e) {
@@ -70,11 +78,13 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
     }
   }
 
-  async function handleBuySlot() {
-    setBusyId("slot");
+  async function handleBuySlot(type: ChestType) {
+    setBusyId(`slot:${type}`);
     setError(null);
     try {
-      setData(await buyChestSlot());
+      const result = await buyChestSlot(type);
+      setData(result);
+      setDiamonds(result.state.diamonds);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Kunde inte köpa kistplats.");
     } finally {
@@ -85,7 +95,24 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
   if (isLoading || !data) return null;
 
   const readyCount = data.chests.filter((c) => Date.parse(c.readyAt) <= now).length;
-  const emptySlots = Math.max(0, data.slots - data.chests.length);
+
+  // One entry per slot the player owns that has nothing in it. The free slot
+  // takes anything; a dedicated one only its own type.
+  const occupied = new Set(data.chests.map((c) => c.slot));
+  const emptySlots: { key: string; label: string; hint: string }[] = [];
+  const freeInUse = data.chests.filter((c) => c.slot === "free").length;
+  for (let i = freeInUse; i < data.freeSlots; i += 1) {
+    emptySlots.push({ key: `free-${i}`, label: "Fri plats", hint: "Tar alla sorters kistor" });
+  }
+  for (const slot of data.slotTypes) {
+    if (slot.owned && !occupied.has(slot.type)) {
+      emptySlots.push({
+        key: slot.type,
+        label: capitalize(slot.slotLabel),
+        hint: `Tar bara ${slot.label.toLowerCase()}`,
+      });
+    }
+  }
 
   return (
     <>
@@ -146,6 +173,11 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
                       <div className="text-xs text-gray-500">
                         {isReady ? "Redo att öppnas!" : `Klar om ${formatRemaining(remaining)}`}
                       </div>
+                      <div className="text-[11px] text-gray-400">
+                        {chest.slot === "free"
+                          ? "Fri plats"
+                          : capitalize(data.slotTypes.find((s) => s.type === chest.slot)?.slotLabel ?? "plats")}
+                      </div>
                     </div>
                     <Button
                       size="sm"
@@ -160,15 +192,18 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
                 );
               })}
 
-              {Array.from({ length: emptySlots }, (_, i) => (
+              {emptySlots.map((slot) => (
                 <div
-                  key={`empty-${i}`}
+                  key={`empty-${slot.key}`}
                   className="rounded-xl border border-dashed border-gray-300 p-4 flex items-center gap-4 text-gray-400"
                 >
                   <div className="h-12 w-12 shrink-0 rounded-lg bg-gray-50 flex items-center justify-center text-xl" aria-hidden>
                     +
                   </div>
-                  <div className="min-w-0 flex-1 text-sm">Ledig kistplats</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm">{slot.label}</div>
+                    <div className="text-[11px]">{slot.hint}</div>
+                  </div>
                   <Button asChild size="sm" variant="outline" className="shrink-0">
                     <Link to="/handel">Köp kista</Link>
                   </Button>
@@ -176,29 +211,71 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
               ))}
             </div>
 
-            <div className="rounded-xl border bg-gray-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex-1 text-sm">
+            <div className="rounded-xl border bg-gray-50 p-4 space-y-3">
+              <div className="text-sm">
                 <div className="font-medium">Kistplatser: {data.slots} av {data.maxSlots}</div>
                 <div className="text-xs text-gray-500">
-                  {data.nextSlotPrice === null
-                    ? "Du har max antal platser."
-                    : `Nästa plats kostar ${data.nextSlotPrice.toLocaleString("sv-SE")} ◆.`}
+                  Din fria plats tar vilken kista som helst. Utöver den kan du köpa en fast plats
+                  per sort — en fast plats rymmer bara sin egen sorts kista.
                 </div>
               </div>
-              {data.nextSlotPrice !== null && (
-                <Button
-                  size="sm"
-                  disabled={busyId === "slot"}
-                  onClick={() => void handleBuySlot()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
-                >
-                  {busyId === "slot" ? "Köper..." : `Köp plats (${data.nextSlotPrice.toLocaleString("sv-SE")} ◆)`}
-                </Button>
-              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {data.slotTypes.map((slot) => (
+                  <SlotPurchase
+                    key={slot.type}
+                    slot={slot}
+                    diamonds={diamonds}
+                    isBusy={busyId === `slot:${slot.type}`}
+                    disabled={busyId !== null}
+                    onBuy={() => void handleBuySlot(slot.type)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
       </section>
     </>
+  );
+}
+
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/** One dedicated-slot offer: bought once, permanent, its own chest type only. */
+function SlotPurchase({ slot, diamonds, isBusy, disabled, onBuy }: {
+  slot: ChestSlotOption;
+  diamonds: number | null;
+  isBusy: boolean;
+  disabled: boolean;
+  onBuy: () => void;
+}) {
+  const canAfford = diamonds === null || diamonds >= slot.price;
+
+  return (
+    <div className="rounded-lg border bg-white p-3 flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xl" aria-hidden>{CHEST_EMOJI[slot.type] ?? "🎁"}</span>
+        <div className="min-w-0">
+          <div className="text-sm font-medium truncate">{capitalize(slot.slotLabel)}</div>
+          <div className="text-[11px] text-gray-500">{slot.price.toLocaleString("sv-SE")} ◆</div>
+        </div>
+      </div>
+      {slot.owned ? (
+        <div className="text-xs font-medium text-green-600 mt-auto">✓ Köpt</div>
+      ) : (
+        <Button
+          size="sm"
+          disabled={disabled || !canAfford}
+          onClick={onBuy}
+          variant={canAfford ? "default" : "outline"}
+          className={canAfford ? "bg-blue-600 hover:bg-blue-700 text-white mt-auto" : "mt-auto"}
+        >
+          {isBusy ? "Köper..." : canAfford ? "Köp plats" : "För få ◆"}
+        </Button>
+      )}
+    </div>
   );
 }

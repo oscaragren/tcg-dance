@@ -219,7 +219,8 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                     <h2 className="text-2xl font-bold">Kistor</h2>
                     <p className="text-sm text-gray-600">
                       Köp en kista, vänta ut klockan och hämta diamanter (och kanske ett kort) i{" "}
-                      <Link to="/samling" className="text-purple-600 hover:underline">Samling</Link>.
+                      <Link to="/samling" className="text-purple-600 hover:underline">Samling</Link>. Din
+                      fria plats tar en kista i taget — fasta platser per sort köper du i Samling.
                     </p>
                   </div>
                   <div className="text-sm text-gray-500">
@@ -232,7 +233,9 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {chests.types.map((chest) => {
                     const canAfford = diamonds >= chest.price;
-                    const slotsFull = chests.chests.length >= chests.slots;
+                    // The server decides whether this specific type fits: its own
+                    // dedicated slot, or the free one if that is still empty.
+                    const slotsFull = !chests.canStore[chest.id];
                     return (
                       <div key={chest.id} className="rounded-2xl border bg-white overflow-hidden flex flex-col">
                         <div className={`h-2 bg-gradient-to-r ${CHEST_ACCENT[chest.id]}`} />
@@ -258,7 +261,7 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                             {buyingChest === chest.id
                               ? "Köper..."
                               : slotsFull
-                                ? "Inga lediga platser"
+                                ? "Ingen ledig plats"
                                 : canAfford
                                   ? `Köp för ${chest.price} ◆`
                                   : "För få diamanter"}
