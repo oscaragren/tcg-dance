@@ -8,10 +8,15 @@ import {
   deleteAdminUser,
   fetchAdminOverview,
   fetchAdminPool,
+  fetchAdminTradePairs,
+  fetchAdminTrades,
   fetchAdminUserCards,
   fetchAdminUsers,
   type AdminOverview,
   type AdminPoolEntry,
+  type AdminTrade,
+  type AdminTradeFlag,
+  type AdminTradePair,
   type AdminUser,
   type AdminUserCards,
 } from "../../utils/adminApi";
@@ -20,6 +25,56 @@ const RARITY_ORDER = ["special", "legendary", "epic", "rare", "common"];
 
 function cardName(cardId: string): string {
   return cardById(cardId)?.name ?? cardId;
+}
+
+const FLAG_LABELS: Record<AdminTradeFlag, string> = {
+  gift: "Gåva",
+  lopsided: "Ojämnt",
+  very_lopsided: "Mycket ojämnt",
+  exclusive_pair: "Slutet par",
+};
+
+const FLAG_STYLES: Record<AdminTradeFlag, string> = {
+  gift: "bg-red-100 text-red-700",
+  lopsided: "bg-amber-100 text-amber-700",
+  very_lopsided: "bg-red-100 text-red-700",
+  exclusive_pair: "bg-purple-100 text-purple-700",
+};
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("sv-SE");
+}
+
+/** "Kort A, Kort B +2 till · 50 ◆" — a whole trade side in one cell. */
+function formatSide(cardIds: string[], diamonds: number): string {
+  const names = cardIds.map(cardName);
+  const shown = names.slice(0, 2).join(", ");
+  const rest = names.length > 2 ? " +" + String(names.length - 2) + " till" : "";
+  const cards = names.length > 0 ? shown + rest : "";
+  const gems = diamonds > 0 ? String(diamonds) + " \u25c6" : "";
+  return [cards, gems].filter(Boolean).join(" \u00b7 ") || "\u2014";
+}
+
+/** Signup gap in whatever unit reads most naturally at that distance. */
+function formatSignupGap(minutes: number | null): string {
+  if (minutes === null) return "\u2014";
+  if (minutes < 60) return String(minutes) + " min";
+  if (minutes < 60 * 48) return String(Math.round(minutes / 60)) + " h";
+  return String(Math.round(minutes / (60 * 24))) + " dagar";
+}
+
+function FlagBadges({ flags }: { flags: AdminTradeFlag[] }) {
+  if (flags.length === 0) return <span className="text-gray-300">{"\u2014"}</span>;
+  return (
+    <span className="flex flex-wrap gap-1 justify-end">
+      {flags.map((f) => (
+        <span key={f} className={"rounded px-1.5 py-0.5 text-[11px] font-medium " + FLAG_STYLES[f]}>
+          {FLAG_LABELS[f]}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 export function AdminPage() {
@@ -91,6 +146,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pool, setPool] = useState<AdminPoolEntry[]>([]);
+  const [trades, setTrades] = useState<AdminTrade[]>([]);
+  const [tradePairs, setTradePairs] = useState<AdminTradePair[]>([]);
+  const [onlyFlaggedTrades, setOnlyFlaggedTrades] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUserCards | null>(null);
   const [loadingUser, setLoadingUser] = useState(false);
@@ -98,8 +156,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchAdminOverview(), fetchAdminUsers(), fetchAdminPool()])
-      .then(([o, u, p]) => { setOverview(o); setUsers(u); setPool(p); })
+    Promise.all([
+      fetchAdminOverview(), fetchAdminUsers(), fetchAdminPool(),
+      fetchAdminTrades(), fetchAdminTradePairs(),
+    ])
+      .then(([o, u, p, t, tp]) => {
+        setOverview(o); setUsers(u); setPool(p); setTrades(t); setTradePairs(tp);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda admin-data."));
   }, []);
 
@@ -134,6 +197,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       setDeleting(false);
     }
   }
+
+  const visibleTrades = useMemo(
+    () => (onlyFlaggedTrades ? trades.filter((t) => t.flags.length > 0) : trades),
+    [trades, onlyFlaggedTrades],
+  );
+
+  const flaggedTradeCount = useMemo(() => trades.filter((t) => t.flags.length > 0).length, [trades]);
 
   const poolSorted = useMemo(
     () => [...pool].sort((a, b) => b.bought - a.bought || cardName(a.cardId).localeCompare(cardName(b.cardId), "sv")),
@@ -198,6 +268,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <thead className="bg-gray-50 text-gray-500">
                   <tr>
                     <th className="text-left px-4 py-2">Användarnamn</th>
+                    <th className="text-left px-4 py-2">Namn</th>
                     <th className="text-left px-4 py-2">E-post</th>
                     <th className="text-right px-4 py-2">◆</th>
                     <th className="text-right px-4 py-2">Unika</th>
@@ -210,6 +281,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   {users.map((u) => (
                     <tr key={u.id}>
                       <td className="px-4 py-2 font-medium">{u.username}</td>
+                      <td className="px-4 py-2">
+                        {u.firstName && u.lastName
+                          ? u.firstName + " " + u.lastName
+                          : <span className="text-amber-600 text-xs">Saknas</span>}
+                      </td>
                       <td className="px-4 py-2 text-gray-500">{u.email}</td>
                       <td className="px-4 py-2 text-right">{u.diamonds}</td>
                       <td className="px-4 py-2 text-right">{u.uniqueCards}</td>
@@ -235,6 +311,169 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </tbody>
               </table>
             </div>
+          </section>
+
+          {/* Suspicious trading pairs */}
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">Byteskonton att titta på ({tradePairs.length})</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Par som har genomfört minst ett byte, sorterade efter hur mycket de
+                liknar en person som handlar med sig själv. Inget här är ett bevis —
+                <span className="font-medium"> Endast varandra</span> betyder att inget av
+                kontona någonsin har bytt med någon annan.
+              </p>
+            </div>
+            {tradePairs.length === 0 ? (
+              <p className="text-sm text-gray-500 rounded-xl border bg-white p-4">Inga genomförda byten än.</p>
+            ) : (
+              <div className="rounded-xl border bg-white overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-500">
+                    <tr>
+                      <th className="text-left px-4 py-2">Spelare</th>
+                      <th className="text-right px-4 py-2">Byten</th>
+                      <th className="text-right px-4 py-2">Ojämna</th>
+                      <th className="text-right px-4 py-2" title="Andel av det minst aktiva kontots byten som sker med den här partnern">
+                        Koncentration
+                      </th>
+                      <th className="text-right px-4 py-2" title="Antal olika motparter respektive konto har bytt med">
+                        Motparter
+                      </th>
+                      <th className="text-right px-4 py-2" title="Nettovärde som flyttats till den ena spelaren">
+                        Nettoflöde
+                      </th>
+                      <th className="text-right px-4 py-2" title="Tid mellan de två kontonas registrering">
+                        Reg. isär
+                      </th>
+                      <th className="text-right px-4 py-2">Flaggor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {tradePairs.map((pair) => {
+                      const winner = pair.netValueToA >= 0 ? pair.userA : pair.userB;
+                      const netAbs = Math.abs(pair.netValueToA);
+                      return (
+                        <tr key={pair.key} className={pair.exclusive ? "bg-purple-50/50" : undefined}>
+                          <td className="px-4 py-2">
+                            <div className="font-medium">
+                              {pair.userA.username} {"\u2194"} {pair.userB.username}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {pair.userA.email} {"\u00b7"} {pair.userB.email}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-right">{pair.tradeCount}</td>
+                          <td className="px-4 py-2 text-right">
+                            {pair.lopsidedCount > 0
+                              ? <span className="text-amber-700 font-medium">{pair.lopsidedCount}</span>
+                              : <span className="text-gray-400">0</span>}
+                          </td>
+                          <td className="px-4 py-2 text-right">{pair.concentration}%</td>
+                          <td className="px-4 py-2 text-right text-gray-500">
+                            {pair.partnersA} / {pair.partnersB}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            {netAbs === 0
+                              ? <span className="text-gray-400">jämnt</span>
+                              : <span title={"Netto till " + winner.username}>
+                                  {"\u2192"} {winner.username} +{netAbs}
+                                </span>}
+                          </td>
+                          <td className="px-4 py-2 text-right text-gray-500">
+                            {formatSignupGap(pair.signupGapMinutes)}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <span className="flex flex-wrap gap-1 justify-end">
+                              {pair.exclusive && (
+                                <span className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-purple-100 text-purple-700">
+                                  Endast varandra
+                                </span>
+                              )}
+                              {pair.registeredTogether && (
+                                <span className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-amber-100 text-amber-700">
+                                  Samtidig reg.
+                                </span>
+                              )}
+                              {!pair.exclusive && !pair.registeredTogether && (
+                                <span className="text-gray-300">{"\u2014"}</span>
+                              )}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* All trades */}
+          <section className="space-y-4">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Byten ({trades.length}, varav {flaggedTradeCount} flaggade)
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Varje sida värderas efter spelets egen uppgraderingsstege
+                  (20 common = 1 rare, 15 rare = 1 epic, 10 epic = 1 legendary).
+                  Ett byte flaggas när ena sidan är minst 3 gånger mer värd än den andra.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => setOnlyFlaggedTrades((v) => !v)}>
+                {onlyFlaggedTrades ? "Visa alla" : "Visa bara flaggade"}
+              </Button>
+            </div>
+            {visibleTrades.length === 0 ? (
+              <p className="text-sm text-gray-500 rounded-xl border bg-white p-4">
+                {onlyFlaggedTrades ? "Inga flaggade byten." : "Inga byten än."}
+              </p>
+            ) : (
+              <div className="rounded-xl border bg-white overflow-x-auto max-h-[560px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-500 sticky top-0">
+                    <tr>
+                      <th className="text-left px-4 py-2">Datum</th>
+                      <th className="text-left px-4 py-2">Från {"\u2192"} Till</th>
+                      <th className="text-left px-4 py-2">Avsändaren ger</th>
+                      <th className="text-left px-4 py-2">Mottagaren ger</th>
+                      <th className="text-right px-4 py-2">Värde</th>
+                      <th className="text-right px-4 py-2" title="Större sidan delat med mindre sidan">Kvot</th>
+                      <th className="text-left px-4 py-2">Status</th>
+                      <th className="text-right px-4 py-2">Flaggor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {visibleTrades.map((t) => (
+                      <tr key={t.id} className={t.flags.length > 0 ? "bg-amber-50/40" : undefined}>
+                        <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          <span className={t.favours === "sender" ? "font-semibold" : undefined}>
+                            {t.sender.username}
+                          </span>
+                          {" \u2192 "}
+                          <span className={t.favours === "receiver" ? "font-semibold" : undefined}>
+                            {t.receiver.username}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2">{formatSide(t.offeredCardIds, t.offeredDiamonds)}</td>
+                        <td className="px-4 py-2">{formatSide(t.requestedCardIds, t.requestedDiamonds)}</td>
+                        <td className="px-4 py-2 text-right whitespace-nowrap text-gray-500">
+                          {t.senderValue} / {t.receiverValue}
+                        </td>
+                        <td className="px-4 py-2 text-right font-medium">
+                          {t.ratio === null ? "\u221e" : t.ratio + "x"}
+                        </td>
+                        <td className="px-4 py-2 capitalize text-gray-500">{t.status}</td>
+                        <td className="px-4 py-2 text-right"><FlagBadges flags={t.flags} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
 
           {/* Card pool */}

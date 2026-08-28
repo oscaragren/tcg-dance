@@ -1,10 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import type { CollectionConfig } from "../../data/buildCardCatalog";
-import { cards } from "../../data/cards";
-import type { CardPoolInfo } from "../../types/game";
-import { fetchCardPool } from "../../utils/gameApi";
+import { CardPoolRemaining } from "./CardPoolRemaining";
 
 type FeaturedCollectionProps = {
   collection: CollectionConfig;
@@ -14,14 +11,6 @@ type FeaturedCollectionProps = {
   isBuying?: boolean;
   buyError?: string;
 };
-
-const RARITIES = [
-  { key: "special",   label: "Special",   color: "text-fuchsia-400", zero: "text-red-400" },
-  { key: "legendary", label: "Legendary", color: "text-amber-400",  zero: "text-red-400" },
-  { key: "epic",      label: "Epic",      color: "text-purple-400", zero: "text-red-400" },
-  { key: "rare",      label: "Rare",      color: "text-blue-400",   zero: "text-red-400" },
-  { key: "common",    label: "Common",    color: "text-gray-400",   zero: "text-red-400" },
-] as const;
 
 export function FeaturedCollection({
   collection,
@@ -33,25 +22,6 @@ export function FeaturedCollection({
   const { pack } = collection;
   const isLoggedIn = onBuy !== undefined;
   const canAfford  = diamonds !== undefined && diamonds >= pack.price;
-
-  const [poolInfo, setPoolInfo] = useState<CardPoolInfo>({});
-
-  useEffect(() => {
-    fetchCardPool().then(setPoolInfo).catch(() => {});
-  }, []);
-
-  const remaining = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const card of cards) {
-      if (card.collectionId !== collection.id) continue;
-      const entry = poolInfo[card.id];
-      if (entry === undefined) continue;
-      counts[card.rarity] = (counts[card.rarity] ?? 0) + entry.copiesRemaining;
-    }
-    return counts;
-  }, [poolInfo, collection.id]);
-
-  const poolLoaded = Object.keys(poolInfo).length > 0;
 
   return (
     <section className="bg-gradient-to-br from-gray-900 via-purple-950 to-gray-900 py-20">
@@ -113,22 +83,7 @@ export function FeaturedCollection({
                 <div className="text-gray-400 text-sm">{pack.cardCount} kort per pack</div>
               </div>
 
-              <div className="space-y-3">
-                <div className="text-xs text-gray-500 uppercase tracking-wider">Kort kvar i poolen</div>
-                {RARITIES.map(({ key, label, color, zero }) => {
-                  const count = remaining[key];
-                  const loaded = poolLoaded;
-                  const soldOut = loaded && count === 0;
-                  return (
-                    <div key={key} className="flex items-center justify-between">
-                      <span className={`text-sm font-medium ${color}`}>{label}</span>
-                      <span className={`text-sm font-semibold ${soldOut ? zero : "text-white"}`}>
-                        {!loaded ? "–" : soldOut ? "Slutsåld" : `${count} kvar`}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              <CardPoolRemaining collectionId={collection.id} />
 
               <div className="pt-2 border-t border-white/10 flex items-center justify-between">
                 <span className="text-gray-400 text-sm">Pris</span>

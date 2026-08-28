@@ -4,12 +4,28 @@ import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
-import type { CardForTrade, UserSearchResult } from "../../types/game";
-import { createTrade, fetchGameState, getUserCardsForTrade, searchUsers } from "../../utils/gameApi";
+import type { CardForTrade, Trade, UserSearchResult } from "../../types/game";
+import {
+  counterTrade,
+  createTrade,
+  fetchGameState,
+  fetchMyTrades,
+  getUserCardsForTrade,
+  searchUsers,
+} from "../../utils/gameApi";
 
 type NewTradePageProps = { currentUser: AuthUser | null };
 
 type PickerEntry = { cardId: string; max: number };
+
+/** "Kort A, Kort B · 50 ◆" — one side of an offer, for the counter summary. */
+function describeSide(cardIds: string[], diamonds: number): string {
+  const names = cardIds.map((id) => cardById(id)?.name ?? id);
+  const parts = [];
+  if (names.length > 0) parts.push(names.join(", "));
+  if (diamonds > 0) parts.push(`${diamonds} \u25c6`);
+  return parts.join(" \u00b7 ") || "\u2014";
+}
 
 function expand(counts: Record<string, number>): string[] {
   return Object.entries(counts).flatMap(([cardId, n]) => Array.from({ length: n }, () => cardId));
@@ -36,12 +52,27 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Set when this page was opened via "Motbjud" on an incoming trade. The
+  // counterparty is then fixed and submitting answers that trade instead of
+  // opening a new one.
+  const counterOfTradeId = searchParams.get("motbud");
+  const isCounter = counterOfTradeId !== null;
+  const [originalTrade, setOriginalTrade] = useState<Trade | null>(null);
+
   // Pre-select user when coming from the card search on TradePage
   useEffect(() => {
     const id   = searchParams.get("anvandare");
     const namn = searchParams.get("namn");
     if (id && namn) setSelectedUser({ id, username: decodeURIComponent(namn) });
   }, [searchParams]);
+
+  // Load the offer being answered, so the builder can show what it replaces.
+  useEffect(() => {
+    if (!currentUser || !counterOfTradeId) return;
+    fetchMyTrades()
+      .then((all) => setOriginalTrade(all.find((t) => t.id === counterOfTradeId) ?? null))
+      .catch(() => {});
+  }, [currentUser, counterOfTradeId]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -108,17 +139,25 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
     if (!selectedUser) return;
     setIsSubmitting(true);
     setError(null);
+    const terms = {
+      offeredCardIds: expand(offeredCounts),
+      offeredDiamonds,
+      requestedCardIds: expand(requestedCounts),
+      requestedDiamonds,
+    };
     try {
-      await createTrade({
-        receiverUserId: selectedUser.id,
-        offeredCardIds: expand(offeredCounts),
-        offeredDiamonds,
-        requestedCardIds: expand(requestedCounts),
-        requestedDiamonds,
-      });
+      if (counterOfTradeId) {
+        await counterTrade(counterOfTradeId, terms);
+      } else {
+        await createTrade({ receiverUserId: selectedUser.id, ...terms });
+      }
       navigate("/byte");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Kunde inte skapa handeln.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : counterOfTradeId ? "Kunde inte skicka motbudet." : "Kunde inte skapa handeln.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -154,26 +193,55 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
       <div className="container mx-auto px-6">
         <div className="max-w-5xl mx-auto space-y-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Ny handel</h1>
-            <p className="text-gray-600">Välj en spelare och bygg ditt erbjudande.</p>
+            <h1 className="text-4xl font-bold mb-2">{isCounter ? "Motbud" : "Ny handel"}</h1>
+            <p className="text-gray-600">
+              {isCounter
+                ? "Bygg ditt motbud. Det ursprungliga erbjudandet stängs när du skickar."
+                : "Välj en spelare och bygg ditt erbjudande."}
+            </p>
           </div>
 
+          {isCounter && originalTrade && (
+            <section className="rounded-2xl border border-purple-200 bg-purple-50 p-6">
+              <h2 className="text-sm font-semibold text-purple-900 mb-3">
+                Du svarar på {originalTrade.sender.username}s erbjudande
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div className="text-xs font-medium text-purple-700 mb-1">De erbjöd</div>
+                  <div className="text-gray-700">
+                    {describeSide(originalTrade.offeredCardIds, originalTrade.offeredDiamonds)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-purple-700 mb-1">De ville ha</div>
+                  <div className="text-gray-700">
+                    {describeSide(originalTrade.requestedCardIds, originalTrade.requestedDiamonds)}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           <section className="rounded-2xl border bg-white p-6">
-            <h2 className="text-lg font-semibold mb-4">Välj spelare</h2>
+            <h2 className="text-lg font-semibold mb-4">{isCounter ? "Motpart" : "Välj spelare"}</h2>
             {selectedUser ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium flex-1">{selectedUser.username}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedUser(null);
-                    setTheirCards([]);
-                    setRequestedCounts({});
-                  }}
-                >
-                  Byt spelare
-                </Button>
+                {/* A counter always goes back to whoever opened the trade. */}
+                {!isCounter && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedUser(null);
+                      setTheirCards([]);
+                      setRequestedCounts({});
+                    }}
+                  >
+                    Byt spelare
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-2 max-w-sm">
@@ -248,7 +316,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                   onClick={() => void handleSubmit()}
                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
-                  {isSubmitting ? "Skickar..." : "Skicka erbjudande"}
+                  {isSubmitting ? "Skickar..." : isCounter ? "Skicka motbud" : "Skicka erbjudande"}
                 </Button>
               </div>
             </>

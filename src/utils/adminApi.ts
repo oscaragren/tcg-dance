@@ -15,6 +15,9 @@ export type AdminUser = {
   id: string;
   username: string;
   email: string;
+  /** Null for accounts registered before names became mandatory. */
+  firstName: string | null;
+  lastName: string | null;
   createdAt: string;
   diamonds: number;
   totalCards: number;
@@ -33,6 +36,58 @@ export type AdminPoolEntry = {
   total: number;
   remaining: number;
   bought: number;
+};
+
+/** Why a trade or a pair of accounts was singled out. */
+export type AdminTradeFlag = "gift" | "lopsided" | "very_lopsided" | "exclusive_pair";
+
+export type AdminTrade = {
+  id: string;
+  status: string;
+  createdAt: string;
+  sender: { id: string; username: string };
+  receiver: { id: string; username: string };
+  offeredCardIds: string[];
+  offeredDiamonds: number;
+  requestedCardIds: string[];
+  requestedDiamonds: number;
+  /** Value handed over by each side, in the shared unit derived from the upgrade ladder. */
+  senderValue: number;
+  receiverValue: number;
+  /** Positive when the sender came out ahead. */
+  senderNet: number;
+  /** Bigger side divided by smaller; null when one side gave nothing at all. */
+  ratio: number | null;
+  favours: "sender" | "receiver" | "even";
+  flags: AdminTradeFlag[];
+};
+
+export type AdminTradePairUser = {
+  id: string;
+  username: string;
+  email: string;
+  createdAt: string;
+};
+
+export type AdminTradePair = {
+  key: string;
+  userA: AdminTradePairUser;
+  userB: AdminTradePairUser;
+  tradeCount: number;
+  lopsidedCount: number;
+  /** Net value that has flowed to userA across all their accepted trades. */
+  netValueToA: number;
+  firstTradeAt: string;
+  lastTradeAt: string;
+  /** How many distinct people each account has ever traded with. */
+  partnersA: number;
+  partnersB: number;
+  /** True when neither account has traded with anyone but the other. */
+  exclusive: boolean;
+  /** Percent of the less-committed account's trades that are with this partner. */
+  concentration: number;
+  signupGapMinutes: number | null;
+  registeredTogether: boolean;
 };
 
 async function parseErrorMessage(response: Response): Promise<string> {
@@ -85,6 +140,14 @@ export async function fetchAdminUserCards(userId: string): Promise<AdminUserCard
 
 export async function fetchAdminPool(): Promise<AdminPoolEntry[]> {
   return adminRequest<AdminPoolEntry[]>("/api/admin/pool", { method: "GET" });
+}
+
+export async function fetchAdminTrades(): Promise<AdminTrade[]> {
+  return adminRequest<AdminTrade[]>("/api/admin/trades", { method: "GET" });
+}
+
+export async function fetchAdminTradePairs(): Promise<AdminTradePair[]> {
+  return adminRequest<AdminTradePair[]>("/api/admin/trade-pairs", { method: "GET" });
 }
 
 export async function deleteAdminUser(userId: string): Promise<void> {

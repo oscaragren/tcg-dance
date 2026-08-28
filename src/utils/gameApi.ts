@@ -119,6 +119,22 @@ export async function fetchMyTrades(): Promise<Trade[]> {
   return requestJson<Trade[]>("/api/trade", { method: "GET" });
 }
 
+/** Answer a pending incoming trade with your own terms. Closes the original. */
+export async function counterTrade(
+  tradeId: string,
+  payload: {
+    offeredCardIds: string[];
+    offeredDiamonds: number;
+    requestedCardIds: string[];
+    requestedDiamonds: number;
+  },
+): Promise<{ tradeId: string }> {
+  return requestJson<{ tradeId: string }>(`/api/trade/${tradeId}/counter`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function createTrade(payload: {
   receiverUserId: string;
   offeredCardIds: string[];

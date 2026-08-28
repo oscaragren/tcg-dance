@@ -29,6 +29,13 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
       .finally(() => setIsLoading(false));
   }, [currentUser, userId]);
 
+  // Blank for accounts that predate mandatory names — the subheader is then
+  // simply omitted rather than showing an empty line.
+  const fullName = useMemo(
+    () => [profile?.user.firstName, profile?.user.lastName].filter(Boolean).join(" "),
+    [profile],
+  );
+
   const ownedCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const id of profile?.ownedCardIds ?? []) counts[id] = (counts[id] ?? 0) + 1;
@@ -93,7 +100,12 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
             <>
               <div className="mt-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
                 <div>
-                  <h1 className="text-4xl md:text-5xl font-bold mb-3">{profile.user.username}</h1>
+                  <h1 className={"text-4xl md:text-5xl font-bold " + (fullName ? "mb-1" : "mb-3")}>
+                    {profile.user.username}
+                  </h1>
+                  {fullName && (
+                    <p className="text-lg text-gray-500 mb-3">{fullName}</p>
+                  )}
                   <p className="text-gray-600">
                     {profile.ownedCardIds.length} kort ·{" "}
                     <span className="text-amber-700">{rarityTally.legendary} legendary</span> ·{" "}

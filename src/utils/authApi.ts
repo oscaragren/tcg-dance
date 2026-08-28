@@ -1,5 +1,12 @@
 import type { AuthUser } from "../types/auth";
 
+export const NAME_REQUIREMENTS_MESSAGE =
+  "Förnamn och efternamn måste vara minst 2 tecken vardera.";
+
+export function isValidName(value: string): boolean {
+  return value.trim().length >= 2 && value.trim().length <= 50;
+}
+
 export const PASSWORD_REQUIREMENTS_MESSAGE =
   "Lösenordet måste vara minst 8 tecken och innehålla minst en stor bokstav, en liten bokstav och en siffra.";
 
@@ -49,6 +56,8 @@ export async function registerUser(input: {
   username: string;
   email: string;
   password: string;
+  firstName: string;
+  lastName: string;
 }): Promise<AuthUser> {
   const response = await requestJson<ApiAuthResponse>("/api/auth/register", {
     method: "POST",
@@ -60,6 +69,18 @@ export async function registerUser(input: {
 export async function loginUser(input: { email: string; password: string }): Promise<AuthUser> {
   const response = await requestJson<ApiAuthResponse>("/api/auth/login", {
     method: "POST",
+    body: JSON.stringify(input),
+  });
+  return response.user;
+}
+
+/** Fills in (or corrects) the account's real name. */
+export async function updateProfile(input: {
+  firstName: string;
+  lastName: string;
+}): Promise<AuthUser> {
+  const response = await requestJson<ApiAuthResponse>("/api/auth/profile", {
+    method: "PATCH",
     body: JSON.stringify(input),
   });
   return response.user;

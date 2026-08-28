@@ -9,6 +9,7 @@ import { fetchCurrentUser, logoutUser } from "../../utils/authApi";
 import { DIAMONDS_EVENT, fetchGameState, fetchIncomingTradeCount } from "../../utils/gameApi";
 import type { AuthUser } from "../../types/auth";
 import { AuthPage } from "./AuthPage";
+import { CompleteProfilePage } from "./CompleteProfilePage";
 import { CollectionPage } from "./CollectionPage";
 import { LoggedInHomePage } from "./LoggedInHomePage";
 import { HandelPage } from "./HandelPage";
@@ -121,6 +122,26 @@ export default function App() {
 
   if (isAuthLoading) {
     return <div className="min-h-screen bg-white" />;
+  }
+
+  // Hard gate for accounts that predate mandatory first/last names: nothing but
+  // the completion form renders until they are filled in. The admin panel is
+  // exempt because it has its own password login and must stay reachable even
+  // if the operator's own player account is incomplete; the privacy policy is
+  // exempt because it has to be readable before agreeing to hand over a name.
+  const GATE_EXEMPT_PATHS = ["/admin", "/integritetspolicy"];
+  const isGateExempt = GATE_EXEMPT_PATHS.some((p) => location.pathname.startsWith(p));
+
+  if (currentUser && !currentUser.profileComplete && !isGateExempt) {
+    return (
+      <div className="min-h-screen bg-white">
+        <CompleteProfilePage
+          currentUser={currentUser}
+          onComplete={setCurrentUser}
+          onLogout={handleLogout}
+        />
+      </div>
+    );
   }
 
   return (

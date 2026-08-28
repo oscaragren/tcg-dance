@@ -10,10 +10,24 @@ import {
 } from "../../components/shared/ui/card";
 import { Input } from "../../components/shared/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
-import { isStrongPassword, loginUser, PASSWORD_REQUIREMENTS_MESSAGE, registerUser, requestPasswordReset } from "../../utils/authApi";
+import {
+  isStrongPassword,
+  isValidName,
+  loginUser,
+  NAME_REQUIREMENTS_MESSAGE,
+  PASSWORD_REQUIREMENTS_MESSAGE,
+  registerUser,
+  requestPasswordReset,
+} from "../../utils/authApi";
 import type { AuthUser } from "../../types/auth";
 
-type RegisterForm = { username: string; email: string; password: string };
+type RegisterForm = {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+};
 type AuthPageProps = { onLogin: (user: AuthUser) => void };
 
 export function AuthPage({ onLogin }: AuthPageProps) {
@@ -26,7 +40,9 @@ export function AuthPage({ onLogin }: AuthPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [registerForm, setRegisterForm] = useState<RegisterForm>({ username: "", email: "", password: "" });
+  const [registerForm, setRegisterForm] = useState<RegisterForm>({
+    firstName: "", lastName: "", username: "", email: "", password: "",
+  });
   const [loginForm, setLoginForm]       = useState({ email: "", password: "" });
   const [forgotEmail, setForgotEmail]   = useState("");
   const [forgotSent, setForgotSent]     = useState(false);
@@ -34,8 +50,17 @@ export function AuthPage({ onLogin }: AuthPageProps) {
   async function handleRegisterSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const clean = { username: registerForm.username.trim(), email: registerForm.email.trim().toLowerCase(), password: registerForm.password };
-    if (!clean.username || !clean.email || !clean.password) { setError("Fyll i alla fält."); return; }
+    const clean = {
+      firstName: registerForm.firstName.trim(),
+      lastName: registerForm.lastName.trim(),
+      username: registerForm.username.trim(),
+      email: registerForm.email.trim().toLowerCase(),
+      password: registerForm.password,
+    };
+    if (!clean.firstName || !clean.lastName || !clean.username || !clean.email || !clean.password) {
+      setError("Fyll i alla fält."); return;
+    }
+    if (!isValidName(clean.firstName) || !isValidName(clean.lastName)) { setError(NAME_REQUIREMENTS_MESSAGE); return; }
     if (!isStrongPassword(clean.password)) { setError(PASSWORD_REQUIREMENTS_MESSAGE); return; }
     setIsSubmitting(true);
     try { onLogin(await registerUser(clean)); navigate("/"); }
@@ -140,6 +165,22 @@ export function AuthPage({ onLogin }: AuthPageProps) {
 
                 <TabsContent value="register" className="mt-4">
                   <form className="space-y-4" onSubmit={handleRegisterSubmit}>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label htmlFor="register-first-name" className="text-sm font-medium">Förnamn</label>
+                        <Input id="register-first-name" value={registerForm.firstName}
+                          autoComplete="given-name"
+                          onChange={(e) => setRegisterForm((p) => ({ ...p, firstName: e.target.value }))}
+                          placeholder="Anna" />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="register-last-name" className="text-sm font-medium">Efternamn</label>
+                        <Input id="register-last-name" value={registerForm.lastName}
+                          autoComplete="family-name"
+                          onChange={(e) => setRegisterForm((p) => ({ ...p, lastName: e.target.value }))}
+                          placeholder="Andersson" />
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <label htmlFor="register-username" className="text-sm font-medium">Användarnamn</label>
                       <Input id="register-username" value={registerForm.username}

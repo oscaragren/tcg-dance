@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cardById } from "../../data/cards";
@@ -12,6 +12,7 @@ type Tab = "incoming" | "outgoing" | "history";
 type TradePageProps = { currentUser: AuthUser | null };
 
 export function TradePage({ currentUser }: TradePageProps) {
+  const navigate = useNavigate();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [tab, setTab] = useState<Tab>("incoming");
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +43,19 @@ export function TradePage({ currentUser }: TradePageProps) {
       setTrades((prev) => prev.map((t) => t.id === tradeId ? { ...t, status: "rejected" as const } : t));
     } catch (e) { setError(e instanceof Error ? e.message : "Kunde inte avböja bytet."); }
     finally { setActionLoading(null); }
+  }
+
+  // Countering reuses the full offer builder rather than a cut-down inline form:
+  // the counter has to respect the same marked-for-trade rule as any other offer,
+  // and that page already knows how to show only what the other player has
+  // actually made available.
+  function handleCounter(trade: Trade) {
+    const params = new URLSearchParams({
+      anvandare: trade.sender.id,
+      namn: trade.sender.username,
+      motbud: trade.id,
+    });
+    navigate(`/byte/ny?${params.toString()}`);
   }
 
   async function handleCancel(tradeId: string) {
@@ -137,6 +151,7 @@ export function TradePage({ currentUser }: TradePageProps) {
                     onAccept={handleAccept}
                     onReject={handleReject}
                     onCancel={handleCancel}
+                    onCounter={handleCounter}
                   />
                 ))}
               </div>
@@ -151,11 +166,13 @@ export function TradePage({ currentUser }: TradePageProps) {
 
 const STATUS_LABEL: Record<Trade["status"], string> = {
   pending: "", accepted: "Accepterat", rejected: "Avböjt", cancelled: "Avbrutet",
+  countered: "Motbud lämnat",
 };
 
-function TradeCard({ trade, myId, actionLoading, onAccept, onReject, onCancel }: {
+function TradeCard({ trade, myId, actionLoading, onAccept, onReject, onCancel, onCounter }: {
   trade: Trade; myId: string; actionLoading: string | null;
   onAccept: (id: string) => void; onReject: (id: string) => void; onCancel: (id: string) => void;
+  onCounter: (trade: Trade) => void;
 }) {
   const isIncoming = trade.receiver.id === myId;
   const isActing   = actionLoading === trade.id;
@@ -194,6 +211,7 @@ function TradeCard({ trade, myId, actionLoading, onAccept, onReject, onCancel }:
           {isIncoming ? (
             <>
               <Button size="sm" variant="outline" disabled={isActing} onClick={() => onReject(trade.id)}>Avböj</Button>
+              <Button size="sm" variant="outline" disabled={isActing} onClick={() => onCounter(trade)}>Motbjud</Button>
               <Button size="sm" disabled={isActing} className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onAccept(trade.id)}>
                 {isActing ? "Accepterar..." : "Acceptera"}
               </Button>

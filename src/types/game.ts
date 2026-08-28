@@ -57,8 +57,14 @@ export type LeaderboardEntry = {
   common: number;
 };
 
+/** The profile page shows the player's real name; search and trades do not. */
+export type PlayerProfileUser = UserSearchResult & {
+  firstName: string | null;
+  lastName: string | null;
+};
+
 export type PlayerProfile = {
-  user: UserSearchResult;
+  user: PlayerProfileUser;
   ownedCardIds: string[];
   cardsForTrade: CardForTrade[];
   isSelf: boolean;
@@ -110,7 +116,7 @@ export type CollectChestResponse = ChestsMutationResponse & {
   cards: DanceCard[];
 };
 
-export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled";
+export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled" | "countered";
 
 export type Achievement = {
   id: string;
@@ -139,4 +145,6 @@ export type Trade = {
   requestedCardIds: string[];
   requestedDiamonds: number;
   createdAt: string;
+  /** Set when this offer was made in reply to another; null for a first offer. */
+  counterOfTradeId: string | null;
 };

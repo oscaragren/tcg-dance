@@ -17,7 +17,9 @@ db.exec(`
     username     TEXT NOT NULL,
     email        TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    created_at   TEXT NOT NULL
+    created_at   TEXT NOT NULL,
+    first_name   TEXT,
+    last_name    TEXT
   );
 
   CREATE TABLE IF NOT EXISTS player_state (
@@ -44,7 +46,8 @@ db.exec(`
     requested_card_ids TEXT NOT NULL DEFAULT '[]',
     requested_diamonds INTEGER NOT NULL DEFAULT 0,
     status             TEXT NOT NULL DEFAULT 'pending',
-    created_at         TEXT NOT NULL
+    created_at         TEXT NOT NULL,
+    counter_of_trade_id TEXT REFERENCES trades(id)
   );
 
   CREATE INDEX IF NOT EXISTS idx_trades_sender   ON trades(sender_user_id);
@@ -113,6 +116,35 @@ const hasTradeQuantity =
 if (!hasTradeQuantity) {
   db.exec("ALTER TABLE cards_for_trade ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1");
   console.log("Migrated cards_for_trade: added quantity column.");
+}
+
+// Add counter_of_trade_id if upgrading from a schema without counter-offers.
+// Nullable by nature: only counters have a parent. Kept even though the UI shows
+// counters as standalone offers, because it is the only record of which offer a
+// counter replaced — the admin trade report and any later dispute need that.
+{
+  const exists =
+    db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('trades') WHERE name = 'counter_of_trade_id'").get().n > 0;
+  if (!exists) {
+    db.exec("ALTER TABLE trades ADD COLUMN counter_of_trade_id TEXT REFERENCES trades(id)");
+    console.log("Migrated trades: added counter_of_trade_id column.");
+  }
+}
+
+// Add first_name / last_name columns if upgrading from an older schema.
+// Deliberately nullable even though names are mandatory: SQLite cannot add a
+// NOT NULL column to a table that already has rows without supplying a default,
+// and any default would let every pre-existing account satisfy the constraint
+// with a blank name. The requirement is enforced in the application instead —
+// register validation rejects missing names, and requireCompleteProfile blocks
+// every gameplay route until an existing user has filled theirs in.
+for (const column of ["first_name", "last_name"]) {
+  const exists =
+    db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('users') WHERE name = ?").get(column).n > 0;
+  if (!exists) {
+    db.exec(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
+    console.log(`Migrated users: added ${column} column.`);
+  }
 }
 
 // One-time migration from JSON files

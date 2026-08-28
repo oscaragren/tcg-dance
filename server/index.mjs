@@ -95,7 +95,17 @@ console.log(`Card pool ready — ${allCards.length} cards (${rarityBreakdown}) a
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
 function publicUser(user) {
-  return { id: user.id, username: user.username, email: user.email, createdAt: user.created_at };
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    createdAt: user.created_at,
+    firstName: user.first_name ?? null,
+    lastName: user.last_name ?? null,
+    // The frontend gates the whole app on this flag. It is derived rather than
+    // stored so it can never drift out of sync with the columns themselves.
+    profileComplete: Boolean(user.first_name && user.last_name),
+  };
 }
 
 function setAuthCookie(response, payload) {
@@ -160,6 +170,20 @@ function requireAdmin(request, response, next) {
   }
 }
 
+const NAME_REQUIREMENTS_MESSAGE =
+  "Förnamn och efternamn måste vara minst 2 tecken vardera.";
+const MAX_NAME_LENGTH = 50;
+
+// Collapse internal whitespace so " Anna   Maria " and "Anna Maria" are stored
+// identically — names are compared by eye in the admin panel.
+function normalizeName(value) {
+  return String(value ?? "").trim().replace(/\s+/g, " ");
+}
+
+function isValidName(value) {
+  return value.length >= 2 && value.length <= MAX_NAME_LENGTH;
+}
+
 const PASSWORD_REQUIREMENTS_MESSAGE =
   "Lösenordet måste vara minst 8 tecken och innehålla minst en stor bokstav, en liten bokstav och en siffra.";
 
@@ -180,9 +204,15 @@ app.post("/api/auth/register", async (request, response) => {
   const username = String(request.body?.username ?? "").trim();
   const email = String(request.body?.email ?? "").trim().toLowerCase();
   const password = String(request.body?.password ?? "");
+  const firstName = normalizeName(request.body?.firstName);
+  const lastName = normalizeName(request.body?.lastName);
 
   if (!username || !email || !password) {
     response.status(400).json({ message: "Username, email, and password are required." });
+    return;
+  }
+  if (!isValidName(firstName) || !isValidName(lastName)) {
+    response.status(400).json({ message: NAME_REQUIREMENTS_MESSAGE });
     return;
   }
   if (!isStrongPassword(password)) {
@@ -198,8 +228,8 @@ app.post("/api/auth/register", async (request, response) => {
   const passwordHash = await bcrypt.hash(password, 12);
   const id = crypto.randomUUID();
   db.prepare(
-    "INSERT INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-  ).run(id, username, email, passwordHash, new Date().toISOString());
+    "INSERT INTO users (id, username, email, password_hash, created_at, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  ).run(id, username, email, passwordHash, new Date().toISOString(), firstName, lastName);
 
   ensurePlayerState(id);
 
@@ -307,6 +337,50 @@ app.get("/api/auth/me", requireAuth, (request, response) => {
   response.json({ user: publicUser(user) });
 });
 
+// Fills in the names for an account that predates them (and lets anyone fix a
+// typo later). Deliberately NOT behind requireCompleteProfile — it is the one
+// authenticated route an incomplete account must still be able to reach.
+app.patch("/api/auth/profile", requireAuth, (request, response) => {
+  const firstName = normalizeName(request.body?.firstName);
+  const lastName = normalizeName(request.body?.lastName);
+
+  if (!isValidName(firstName) || !isValidName(lastName)) {
+    response.status(400).json({ message: NAME_REQUIREMENTS_MESSAGE });
+    return;
+  }
+
+  db.prepare("UPDATE users SET first_name = ?, last_name = ? WHERE id = ?")
+    .run(firstName, lastName, request.auth.userId);
+
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(request.auth.userId);
+  response.json({ user: publicUser(user) });
+});
+
+// ── Profile-completion gate ───────────────────────────────────────────────────
+// Accounts created before names were mandatory have NULL name columns. The UI
+// funnels them into a completion screen, but the UI is not a security boundary:
+// without this guard anyone could keep playing straight through the API with
+// curl. Every authenticated gameplay route below is registered with `authed`
+// (requireAuth + this) rather than requireAuth alone. Deliberately excluded:
+// /api/auth/me and /api/auth/profile (needed to detect and fix the gap),
+// /api/auth/logout, and the admin routes, which use their own password cookie.
+function requireCompleteProfile(request, response, next) {
+  const user = db
+    .prepare("SELECT first_name, last_name FROM users WHERE id = ?")
+    .get(request.auth.userId);
+
+  if (!user?.first_name || !user?.last_name) {
+    response.status(403).json({
+      code: "PROFILE_INCOMPLETE",
+      message: "Du måste fylla i förnamn och efternamn innan du kan fortsätta.",
+    });
+    return;
+  }
+  next();
+}
+
+const authed = [requireAuth, requireCompleteProfile];
+
 // ── Game helpers ──────────────────────────────────────────────────────────────
 
 function todayIso() {
@@ -390,7 +464,7 @@ const stmtPickCardOfRarity = db.prepare(
 
 // ── Game routes ───────────────────────────────────────────────────────────────
 
-app.get("/api/game/state", requireAuth, (request, response) => {
+app.get("/api/game/state", authed, (request, response) => {
   response.json(buildStateResponse(request.auth.userId));
 });
 
@@ -420,7 +494,7 @@ app.get("/api/game/collections", (_request, response) => {
 // Special cards are not counted.
 const LEADERBOARD_RARITIES = ["common", "rare", "epic", "legendary"];
 
-app.get("/api/leaderboard", requireAuth, (_request, response) => {
+app.get("/api/leaderboard", authed, (_request, response) => {
   const users = db.prepare("SELECT id, username FROM users").all();
   const ownedStmt = db.prepare("SELECT card_id FROM owned_cards WHERE user_id = ?");
 
@@ -445,7 +519,7 @@ app.get("/api/leaderboard", requireAuth, (_request, response) => {
   response.json(entries.slice(0, 100).map((e, i) => ({ rank: i + 1, ...e })));
 });
 
-app.post("/api/game/claim-daily-diamonds", requireAuth, (request, response) => {
+app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
   ensurePlayerState(request.auth.userId);
   const state = db
     .prepare("SELECT last_daily_claim_date FROM player_state WHERE user_id = ?")
@@ -465,7 +539,7 @@ app.post("/api/game/claim-daily-diamonds", requireAuth, (request, response) => {
 
 const ALLOWED_PACK_QUANTITIES = [1, 5, 10];
 
-app.post("/api/game/buy-pack", requireAuth, (request, response) => {
+app.post("/api/game/buy-pack", authed, (request, response) => {
   const collectionId = String(request.body?.collectionId ?? "").trim();
   if (!collectionId) {
     response.status(400).json({ message: "collectionId krävs." });
@@ -511,7 +585,7 @@ app.post("/api/game/buy-pack", requireAuth, (request, response) => {
   response.json({ pulledCards, state: buildStateResponse(request.auth.userId) });
 });
 
-app.post("/api/game/upgrade", requireAuth, (request, response) => {
+app.post("/api/game/upgrade", authed, (request, response) => {
   const userId = request.auth.userId;
   const requestedCardIds = Array.isArray(request.body?.cardIds) ? request.body.cardIds.map(String) : [];
 
@@ -614,11 +688,11 @@ function buildAchievementsResponse(userId) {
   });
 }
 
-app.get("/api/achievements", requireAuth, (request, response) => {
+app.get("/api/achievements", authed, (request, response) => {
   response.json(buildAchievementsResponse(request.auth.userId));
 });
 
-app.post("/api/achievements/:id/claim", requireAuth, (request, response) => {
+app.post("/api/achievements/:id/claim", authed, (request, response) => {
   const definition = achievementById.get(request.params.id);
   if (!definition) { response.status(404).json({ message: "Okänd prestation." }); return; }
 
@@ -646,6 +720,85 @@ app.post("/api/achievements/:id/claim", requireAuth, (request, response) => {
 
 // ── Trade helpers ─────────────────────────────────────────────────────────────
 
+// Relative card values come straight from the game's own upgrade ladder
+// (UPGRADE_CARDS_REQUIRED above): 20 commons make a rare, 15 rares an epic,
+// 10 epics a legendary. That is the exchange rate the economy already declares,
+// so it is also the rate someone funnelling cards between their own accounts is
+// arbitraging. "special" sits outside the ladder (one copy each, never dropped
+// from a pack) — 2x legendary is a judgement call; tune it here if it misjudges
+// real trades. Used only for admin fraud heuristics, never for gameplay.
+const RARITY_VALUE = { common: 1, rare: 20, epic: 300, legendary: 3000, special: 6000 };
+
+// Diamonds expressed in the same unit, derived from what a pack actually costs:
+// `price` diamonds buys `cardCount` cards, so one diamond is worth a pack's
+// expected card value divided by its price. Falls back to a flat rate if a
+// collection ships without usable pack odds.
+const DIAMOND_VALUE = (() => {
+  const pack = collections[0]?.pack;
+  const chances = pack?.rarityChances;
+  if (!pack?.price || !pack?.cardCount || !chances) return 10;
+  const expectedPerCard = Object.entries(chances).reduce(
+    (sum, [rarity, chance]) => sum + (RARITY_VALUE[rarity] ?? 0) * Number(chance ?? 0),
+    0,
+  );
+  if (expectedPerCard <= 0) return 10;
+  return (expectedPerCard * pack.cardCount) / pack.price;
+})();
+
+// A trade this far out of balance is worth a human look. Two accounts run by the
+// same person have no reason to trade fairly, so a persistently one-sided pair is
+// the strongest signal available without device or IP fingerprinting.
+const LOPSIDED_RATIO = 3;
+const VERY_LOPSIDED_RATIO = 10;
+
+// Accounts registered within this window of each other are worth noticing when
+// they also trade heavily with one another.
+const SAME_SIGNUP_WINDOW_MINUTES = 60;
+
+function cardValue(cardId) {
+  return RARITY_VALUE[cardById.get(cardId)?.rarity] ?? RARITY_VALUE.common;
+}
+
+function sideValue(cardIds, diamonds) {
+  return cardIds.reduce((sum, id) => sum + cardValue(id), 0) + Number(diamonds ?? 0) * DIAMOND_VALUE;
+}
+
+function round1(n) {
+  return Math.round(n * 10) / 10;
+}
+
+// Values a trade from both directions. `senderValue` is what the sender hands
+// over, `receiverValue` what the receiver hands over, so a positive `senderNet`
+// means the sender came out ahead.
+function analyzeTrade(row) {
+  const offeredCardIds = JSON.parse(row.offered_card_ids);
+  const requestedCardIds = JSON.parse(row.requested_card_ids);
+  const senderValue = sideValue(offeredCardIds, row.offered_diamonds);
+  const receiverValue = sideValue(requestedCardIds, row.requested_diamonds);
+
+  const high = Math.max(senderValue, receiverValue);
+  const low = Math.min(senderValue, receiverValue);
+  // null rather than Infinity — JSON.stringify turns Infinity into null anyway,
+  // so make the "one side gave nothing" case explicit instead of accidental.
+  const ratio = low > 0 ? round1(high / low) : null;
+
+  const flags = [];
+  if (low <= 0) flags.push("gift");
+  else if (ratio >= VERY_LOPSIDED_RATIO) flags.push("very_lopsided");
+  else if (ratio >= LOPSIDED_RATIO) flags.push("lopsided");
+
+  return {
+    offeredCardIds,
+    requestedCardIds,
+    senderValue: round1(senderValue),
+    receiverValue: round1(receiverValue),
+    senderNet: round1(receiverValue - senderValue),
+    ratio,
+    favours: senderValue === receiverValue ? "even" : senderValue < receiverValue ? "sender" : "receiver",
+    flags,
+  };
+}
+
 function tallyIds(ids) {
   const counts = new Map();
   for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
@@ -663,6 +816,7 @@ function buildTrade(row) {
     requestedCardIds: JSON.parse(row.requested_card_ids),
     requestedDiamonds: row.requested_diamonds,
     createdAt: row.created_at,
+    counterOfTradeId: row.counter_of_trade_id ?? null,
   };
 }
 
@@ -676,7 +830,7 @@ const stmtTradeById = db.prepare(`
 
 // ── User routes ───────────────────────────────────────────────────────────────
 
-app.get("/api/users/search", requireAuth, (request, response) => {
+app.get("/api/users/search", authed, (request, response) => {
   const q = String(request.query.q ?? "").trim();
   if (q.length < 2) { response.json([]); return; }
   const users = db
@@ -685,7 +839,7 @@ app.get("/api/users/search", requireAuth, (request, response) => {
   response.json(users);
 });
 
-app.get("/api/users/:userId/cards", requireAuth, (request, response) => {
+app.get("/api/users/:userId/cards", authed, (request, response) => {
   const ownedCardIds = db
     .prepare("SELECT card_id FROM owned_cards WHERE user_id = ?")
     .all(request.params.userId)
@@ -696,8 +850,10 @@ app.get("/api/users/:userId/cards", requireAuth, (request, response) => {
 // Public profile for another player: their username plus the cards they own and
 // the ones they have marked for trade. Backs the "view a player's collection"
 // page reachable from the leaderboard.
-app.get("/api/users/:userId/profile", requireAuth, (request, response) => {
-  const user = db.prepare("SELECT id, username FROM users WHERE id = ?").get(request.params.userId);
+app.get("/api/users/:userId/profile", authed, (request, response) => {
+  const user = db
+    .prepare("SELECT id, username, first_name, last_name FROM users WHERE id = ?")
+    .get(request.params.userId);
   if (!user) {
     response.status(404).json({ message: "Spelaren hittades inte." });
     return;
@@ -716,7 +872,14 @@ app.get("/api/users/:userId/profile", requireAuth, (request, response) => {
     .filter((r) => r.quantity > 0);
 
   response.json({
-    user: { id: user.id, username: user.username },
+    // Real names are shown on the player's collection page. Null only for
+    // accounts that predate mandatory names and have not logged in since.
+    user: {
+      id: user.id,
+      username: user.username,
+      firstName: user.first_name ?? null,
+      lastName: user.last_name ?? null,
+    },
     ownedCardIds,
     cardsForTrade,
     isSelf: user.id === request.auth.userId,
@@ -732,7 +895,7 @@ function ownedCountMap(userId) {
 
 // Marked-for-trade cards for the current user, each capped at how many copies
 // they still own.
-app.get("/api/game/cards-for-trade", requireAuth, (request, response) => {
+app.get("/api/game/cards-for-trade", authed, (request, response) => {
   const owned = ownedCountMap(request.auth.userId);
   const rows = db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(request.auth.userId);
   const result = rows
@@ -742,7 +905,7 @@ app.get("/api/game/cards-for-trade", requireAuth, (request, response) => {
 });
 
 // Replace the user's entire marked-for-trade set with the provided quantities.
-app.post("/api/game/cards-for-trade", requireAuth, (request, response) => {
+app.post("/api/game/cards-for-trade", authed, (request, response) => {
   const userId = request.auth.userId;
   const items = Array.isArray(request.body?.items) ? request.body.items : [];
   const owned = ownedCountMap(userId);
@@ -765,7 +928,7 @@ app.post("/api/game/cards-for-trade", requireAuth, (request, response) => {
   response.json(clean);
 });
 
-app.get("/api/users/:userId/cards-for-trade", requireAuth, (request, response) => {
+app.get("/api/users/:userId/cards-for-trade", authed, (request, response) => {
   // Only return cards that are both marked for trade AND still owned, capped at
   // the owned count.
   const owned = ownedCountMap(request.params.userId);
@@ -806,7 +969,7 @@ function liveMarketRows() {
 
 // Which players offer a given card. Excludes the caller — you cannot trade with
 // yourself.
-app.get("/api/market/card/:cardId", requireAuth, (request, response) => {
+app.get("/api/market/card/:cardId", authed, (request, response) => {
   const cardId = String(request.params.cardId);
   if (!cardById.has(cardId)) {
     response.status(404).json({ message: "Okänt kort." });
@@ -823,7 +986,7 @@ app.get("/api/market/card/:cardId", requireAuth, (request, response) => {
 
 // Every player with at least one card up for trade, so the market can be
 // browsed without knowing who or what to look for.
-app.get("/api/market/traders", requireAuth, (request, response) => {
+app.get("/api/market/traders", authed, (request, response) => {
   const byUser = new Map();
   for (const row of liveMarketRows()) {
     if (row.userId === request.auth.userId) continue;
@@ -852,7 +1015,63 @@ app.get("/api/market/traders", requireAuth, (request, response) => {
 
 // ── Trade routes ──────────────────────────────────────────────────────────────
 
-app.post("/api/trade", requireAuth, (request, response) => {
+// Shared by /api/trade and /api/trade/:id/counter — a counter is just a new
+// proposal with the two parties swapped, so it must clear exactly the same bar.
+// Returns { status, message } on failure, or null when the proposal is valid.
+function validateTradeProposal({
+  senderId,
+  receiverUserId,
+  offeredCardIds,
+  offeredDiamonds,
+  requestedCardIds,
+  requestedDiamonds,
+}) {
+  if (!receiverUserId) return { status: 400, message: "receiverUserId krävs." };
+  if (receiverUserId === senderId) return { status: 400, message: "Du kan inte handla med dig själv." };
+  if (!db.prepare("SELECT 1 FROM users WHERE id = ?").get(receiverUserId)) {
+    return { status: 404, message: "Mottagaren hittades inte." };
+  }
+  if (offeredCardIds.length === 0 && offeredDiamonds === 0) {
+    return { status: 400, message: "Du måste erbjuda minst ett kort eller diamanter." };
+  }
+  if (requestedCardIds.length === 0 && requestedDiamonds === 0) {
+    return { status: 400, message: "Du måste begära minst ett kort eller diamanter." };
+  }
+
+  const stmtCountOwned = db.prepare("SELECT COUNT(*) AS n FROM owned_cards WHERE user_id = ? AND card_id = ?");
+  for (const [cardId, need] of tallyIds(offeredCardIds)) {
+    if (stmtCountOwned.get(senderId, cardId).n < need) {
+      return { status: 400, message: "Du äger inte alla erbjudna kort." };
+    }
+  }
+  // Requested cards must be marked for trade by the receiver, in sufficient
+  // quantity — nobody can be asked for cards they never offered up.
+  const receiverMarked = new Map(
+    db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(receiverUserId).map((r) => [r.card_id, r.quantity]),
+  );
+  for (const [cardId, need] of tallyIds(requestedCardIds)) {
+    const available = Math.min(receiverMarked.get(cardId) ?? 0, stmtCountOwned.get(receiverUserId, cardId).n);
+    if (available < need) {
+      return { status: 400, message: "Mottagaren erbjuder inte så många av ett begärt kort." };
+    }
+  }
+
+  if (offeredDiamonds > 0) {
+    ensurePlayerState(senderId);
+    const ps = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(senderId);
+    if (ps.diamonds < offeredDiamonds) {
+      return { status: 400, message: "Inte tillräckligt med diamanter." };
+    }
+  }
+
+  return null;
+}
+
+const stmtInsertTrade = db.prepare(
+  "INSERT INTO trades (id, sender_user_id, receiver_user_id, offered_card_ids, offered_diamonds, requested_card_ids, requested_diamonds, status, created_at, counter_of_trade_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)",
+);
+
+app.post("/api/trade", authed, (request, response) => {
   const senderId = request.auth.userId;
   const {
     receiverUserId,
@@ -862,52 +1081,80 @@ app.post("/api/trade", requireAuth, (request, response) => {
     requestedDiamonds = 0,
   } = request.body ?? {};
 
-  if (!receiverUserId) { response.status(400).json({ message: "receiverUserId krävs." }); return; }
-  if (receiverUserId === senderId) { response.status(400).json({ message: "Du kan inte handla med dig själv." }); return; }
-  if (!db.prepare("SELECT 1 FROM users WHERE id = ?").get(receiverUserId)) {
-    response.status(404).json({ message: "Mottagaren hittades inte." }); return;
-  }
-  if (offeredCardIds.length === 0 && offeredDiamonds === 0) {
-    response.status(400).json({ message: "Du måste erbjuda minst ett kort eller diamanter." }); return;
-  }
-  if (requestedCardIds.length === 0 && requestedDiamonds === 0) {
-    response.status(400).json({ message: "Du måste begära minst ett kort eller diamanter." }); return;
-  }
-
-  const stmtCountOwned = db.prepare("SELECT COUNT(*) AS n FROM owned_cards WHERE user_id = ? AND card_id = ?");
-  for (const [cardId, need] of tallyIds(offeredCardIds)) {
-    if (stmtCountOwned.get(senderId, cardId).n < need) {
-      response.status(400).json({ message: "Du äger inte alla erbjudna kort." }); return;
-    }
-  }
-  // Requested cards must be marked for trade by the receiver, in sufficient quantity.
-  const receiverMarked = new Map(
-    db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(receiverUserId).map((r) => [r.card_id, r.quantity]),
-  );
-  for (const [cardId, need] of tallyIds(requestedCardIds)) {
-    const available = Math.min(receiverMarked.get(cardId) ?? 0, stmtCountOwned.get(receiverUserId, cardId).n);
-    if (available < need) {
-      response.status(400).json({ message: "Mottagaren erbjuder inte så många av ett begärt kort." }); return;
-    }
-  }
-
-  if (offeredDiamonds > 0) {
-    ensurePlayerState(senderId);
-    const ps = db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(senderId);
-    if (ps.diamonds < offeredDiamonds) {
-      response.status(400).json({ message: "Inte tillräckligt med diamanter." }); return;
-    }
-  }
+  const invalid = validateTradeProposal({
+    senderId, receiverUserId, offeredCardIds, offeredDiamonds, requestedCardIds, requestedDiamonds,
+  });
+  if (invalid) { response.status(invalid.status).json({ message: invalid.message }); return; }
 
   const id = crypto.randomUUID();
-  db.prepare(
-    "INSERT INTO trades (id, sender_user_id, receiver_user_id, offered_card_ids, offered_diamonds, requested_card_ids, requested_diamonds, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)",
-  ).run(id, senderId, receiverUserId, JSON.stringify(offeredCardIds), offeredDiamonds, JSON.stringify(requestedCardIds), requestedDiamonds, new Date().toISOString());
+  stmtInsertTrade.run(
+    id, senderId, receiverUserId,
+    JSON.stringify(offeredCardIds), offeredDiamonds,
+    JSON.stringify(requestedCardIds), requestedDiamonds,
+    new Date().toISOString(), null,
+  );
 
   response.status(201).json({ tradeId: id });
 });
 
-app.get("/api/trade", requireAuth, (request, response) => {
+// Counter-offer: the recipient of a pending trade answers with their own terms.
+// The original is closed as 'countered' (never silently edited — the admin trade
+// report and the players' history both keep the offer as it stood) and a fresh
+// pending trade is created with the two parties swapped, so the counter can in
+// turn be accepted, declined, or countered again. Both steps run in one
+// transaction, and the original is re-checked as still pending inside it so two
+// simultaneous counters cannot both succeed.
+app.post("/api/trade/:id/counter", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const original = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
+
+  if (!original) { response.status(404).json({ message: "Handel hittades inte." }); return; }
+  if (original.receiver_user_id !== userId) {
+    response.status(403).json({ message: "Bara mottagaren kan lämna ett motbud." }); return;
+  }
+  if (original.status !== "pending") {
+    response.status(400).json({ message: "Handeln är inte längre aktiv." }); return;
+  }
+
+  const {
+    offeredCardIds = [],
+    offeredDiamonds = 0,
+    requestedCardIds = [],
+    requestedDiamonds = 0,
+  } = request.body ?? {};
+
+  // The counter always goes back to whoever opened the original.
+  const receiverUserId = original.sender_user_id;
+
+  const invalid = validateTradeProposal({
+    senderId: userId, receiverUserId, offeredCardIds, offeredDiamonds, requestedCardIds, requestedDiamonds,
+  });
+  if (invalid) { response.status(invalid.status).json({ message: invalid.message }); return; }
+
+  const id = crypto.randomUUID();
+  try {
+    db.transaction(() => {
+      const changed = db
+        .prepare("UPDATE trades SET status = 'countered' WHERE id = ? AND status = 'pending'")
+        .run(original.id).changes;
+      if (changed === 0) throw new Error("Handeln är inte längre aktiv.");
+
+      stmtInsertTrade.run(
+        id, userId, receiverUserId,
+        JSON.stringify(offeredCardIds), offeredDiamonds,
+        JSON.stringify(requestedCardIds), requestedDiamonds,
+        new Date().toISOString(), original.id,
+      );
+    })();
+  } catch (err) {
+    response.status(409).json({ message: err.message });
+    return;
+  }
+
+  response.status(201).json({ tradeId: id });
+});
+
+app.get("/api/trade", authed, (request, response) => {
   const userId = request.auth.userId;
   const rows = db.prepare(`
     SELECT t.*, su.username AS sender_username, ru.username AS receiver_username
@@ -921,14 +1168,14 @@ app.get("/api/trade", requireAuth, (request, response) => {
 });
 
 // Cheap poll for the "Byte" nav badge — how many trades are waiting on me.
-app.get("/api/trade/incoming-count", requireAuth, (request, response) => {
+app.get("/api/trade/incoming-count", authed, (request, response) => {
   const { n } = db
     .prepare("SELECT COUNT(*) AS n FROM trades WHERE receiver_user_id = ? AND status = 'pending'")
     .get(request.auth.userId);
   response.json({ count: n });
 });
 
-app.post("/api/trade/:id/accept", requireAuth, (request, response) => {
+app.post("/api/trade/:id/accept", authed, (request, response) => {
   const userId = request.auth.userId;
   const row = stmtTradeById.get(request.params.id);
 
@@ -993,7 +1240,7 @@ app.post("/api/trade/:id/accept", requireAuth, (request, response) => {
   }
 });
 
-app.post("/api/trade/:id/reject", requireAuth, (request, response) => {
+app.post("/api/trade/:id/reject", authed, (request, response) => {
   const userId = request.auth.userId;
   const row = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
   if (!row || row.receiver_user_id !== userId) { response.status(403).json({ message: "Inte behörig." }); return; }
@@ -1002,7 +1249,7 @@ app.post("/api/trade/:id/reject", requireAuth, (request, response) => {
   response.status(204).send();
 });
 
-app.post("/api/trade/:id/cancel", requireAuth, (request, response) => {
+app.post("/api/trade/:id/cancel", authed, (request, response) => {
   const userId = request.auth.userId;
   const row = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
   if (!row || row.sender_user_id !== userId) { response.status(403).json({ message: "Inte behörig." }); return; }
@@ -1120,11 +1367,11 @@ function buildChestsResponse(userId) {
   };
 }
 
-app.get("/api/game/chests", requireAuth, (request, response) => {
+app.get("/api/game/chests", authed, (request, response) => {
   response.json(buildChestsResponse(request.auth.userId));
 });
 
-app.post("/api/game/chests/buy", requireAuth, (request, response) => {
+app.post("/api/game/chests/buy", authed, (request, response) => {
   const userId = request.auth.userId;
   const config = CHEST_TYPES[String(request.body?.type ?? "")];
   if (!config) {
@@ -1162,7 +1409,7 @@ app.post("/api/game/chests/buy", requireAuth, (request, response) => {
   response.status(201).json({ ...buildChestsResponse(userId), state: buildStateResponse(userId) });
 });
 
-app.post("/api/game/chests/buy-slot", requireAuth, (request, response) => {
+app.post("/api/game/chests/buy-slot", authed, (request, response) => {
   const userId = request.auth.userId;
   ensurePlayerState(userId);
 
@@ -1189,7 +1436,7 @@ app.post("/api/game/chests/buy-slot", requireAuth, (request, response) => {
   response.json({ ...buildChestsResponse(userId), state: buildStateResponse(userId) });
 });
 
-app.post("/api/game/chests/:id/collect", requireAuth, (request, response) => {
+app.post("/api/game/chests/:id/collect", authed, (request, response) => {
   const userId = request.auth.userId;
   const chest = db.prepare("SELECT * FROM chests WHERE id = ?").get(request.params.id);
 
@@ -1317,7 +1564,7 @@ app.get("/api/admin/overview", requireAdmin, (_request, response) => {
 
 app.get("/api/admin/users", requireAdmin, (_request, response) => {
   const rows = db.prepare(`
-    SELECT u.id, u.username, u.email, u.created_at,
+    SELECT u.id, u.username, u.email, u.created_at, u.first_name, u.last_name,
            COALESCE(ps.diamonds, 0) AS diamonds,
            (SELECT COUNT(*) FROM owned_cards oc WHERE oc.user_id = u.id) AS total_cards,
            (SELECT COUNT(DISTINCT oc.card_id) FROM owned_cards oc WHERE oc.user_id = u.id) AS unique_cards
@@ -1329,6 +1576,8 @@ app.get("/api/admin/users", requireAdmin, (_request, response) => {
     id: r.id,
     username: r.username,
     email: r.email,
+    firstName: r.first_name ?? null,
+    lastName: r.last_name ?? null,
     createdAt: r.created_at,
     diamonds: r.diamonds,
     totalCards: r.total_cards,
@@ -1389,6 +1638,180 @@ app.delete("/api/admin/users/:id", requireAdmin, (request, response) => {
   })();
 
   response.status(204).send();
+});
+
+// ── Admin: trade integrity ────────────────────────────────────────────────────
+// Two reports aimed at the same problem: one person running several accounts to
+// double their pack income and funnel cards to a main. Neither proves anything on
+// its own — they surface pairs and trades worth a human look.
+
+const stmtAdminTrades = db.prepare(`
+  SELECT t.*,
+         su.username AS sender_username, su.email AS sender_email, su.created_at AS sender_created_at,
+         ru.username AS receiver_username, ru.email AS receiver_email, ru.created_at AS receiver_created_at
+  FROM trades t
+  JOIN users su ON su.id = t.sender_user_id
+  JOIN users ru ON ru.id = t.receiver_user_id
+  ORDER BY t.created_at DESC
+`);
+
+// Every trade, newest first, valued on both sides and flagged when heavily
+// one-sided. Returned whole rather than pre-filtered so the admin page can show
+// "all" and "flagged only" without a second round trip — this table is small.
+app.get("/api/admin/trades", requireAdmin, (_request, response) => {
+  const rows = stmtAdminTrades.all();
+  const exclusive = exclusivePairKeys();
+
+  response.json(
+    rows.map((row) => {
+      const analysis = analyzeTrade(row);
+      const flags = [...analysis.flags];
+      if (exclusive.has(pairKey(row.sender_user_id, row.receiver_user_id))) {
+        flags.push("exclusive_pair");
+      }
+      return {
+        id: row.id,
+        status: row.status,
+        createdAt: row.created_at,
+        sender: { id: row.sender_user_id, username: row.sender_username },
+        receiver: { id: row.receiver_user_id, username: row.receiver_username },
+        offeredCardIds: analysis.offeredCardIds,
+        offeredDiamonds: row.offered_diamonds,
+        requestedCardIds: analysis.requestedCardIds,
+        requestedDiamonds: row.requested_diamonds,
+        senderValue: analysis.senderValue,
+        receiverValue: analysis.receiverValue,
+        senderNet: analysis.senderNet,
+        ratio: analysis.ratio,
+        favours: analysis.favours,
+        flags,
+      };
+    }),
+  );
+});
+
+function pairKey(a, b) {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+// Builds the accepted-trade graph: who has actually exchanged value with whom.
+// Pending and rejected trades move nothing, so they would only add noise here.
+function acceptedTradeGraph() {
+  const rows = stmtAdminTrades.all().filter((r) => r.status === "accepted");
+  const partners = new Map(); // userId -> Set of counterparty ids
+  const tradeCount = new Map(); // userId -> accepted trades, any counterparty
+
+  for (const row of rows) {
+    const { sender_user_id: a, receiver_user_id: b } = row;
+    if (!partners.has(a)) partners.set(a, new Set());
+    if (!partners.has(b)) partners.set(b, new Set());
+    partners.get(a).add(b);
+    partners.get(b).add(a);
+    tradeCount.set(a, (tradeCount.get(a) ?? 0) + 1);
+    tradeCount.set(b, (tradeCount.get(b) ?? 0) + 1);
+  }
+
+  return { rows, partners, tradeCount };
+}
+
+// Pairs where neither account has ever traded with anyone else — the shape a
+// self-trading account farm makes.
+function exclusivePairKeys() {
+  const { partners } = acceptedTradeGraph();
+  const keys = new Set();
+  for (const [userId, set] of partners) {
+    if (set.size !== 1) continue;
+    const [other] = set;
+    if (partners.get(other)?.size === 1) keys.add(pairKey(userId, other));
+  }
+  return keys;
+}
+
+function minutesBetween(isoA, isoB) {
+  const a = Date.parse(isoA);
+  const b = Date.parse(isoB);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return Math.round(Math.abs(a - b) / 60000);
+}
+
+// Every pair that has completed at least one trade, ranked by how much they look
+// like one person trading with themselves. Computed on request rather than by a
+// nightly job: the trades table is small enough that this is a few milliseconds,
+// and an on-demand report can never be stale or silently stop running.
+app.get("/api/admin/trade-pairs", requireAdmin, (_request, response) => {
+  const { rows, partners, tradeCount } = acceptedTradeGraph();
+  const pairs = new Map();
+
+  for (const row of rows) {
+    const key = pairKey(row.sender_user_id, row.receiver_user_id);
+    // userA is whichever id sorts first, so netValueToA has a stable direction
+    // no matter who happened to open any individual trade.
+    const aIsSender = row.sender_user_id < row.receiver_user_id;
+    let pair = pairs.get(key);
+    if (!pair) {
+      const sender = {
+        id: row.sender_user_id, username: row.sender_username,
+        email: row.sender_email, createdAt: row.sender_created_at,
+      };
+      const receiver = {
+        id: row.receiver_user_id, username: row.receiver_username,
+        email: row.receiver_email, createdAt: row.receiver_created_at,
+      };
+      pair = {
+        key,
+        userA: aIsSender ? sender : receiver,
+        userB: aIsSender ? receiver : sender,
+        tradeCount: 0,
+        lopsidedCount: 0,
+        netValueToA: 0,
+        firstTradeAt: row.created_at,
+        lastTradeAt: row.created_at,
+      };
+      pairs.set(key, pair);
+    }
+
+    const analysis = analyzeTrade(row);
+    pair.tradeCount += 1;
+    if (analysis.flags.length > 0) pair.lopsidedCount += 1;
+    // senderNet is what the sender gained; flip it when the sender is userB.
+    pair.netValueToA += aIsSender ? analysis.senderNet : -analysis.senderNet;
+    if (row.created_at < pair.firstTradeAt) pair.firstTradeAt = row.created_at;
+    if (row.created_at > pair.lastTradeAt) pair.lastTradeAt = row.created_at;
+  }
+
+  const result = [...pairs.values()].map((pair) => {
+    const partnersA = partners.get(pair.userA.id)?.size ?? 0;
+    const partnersB = partners.get(pair.userB.id)?.size ?? 0;
+    // What share of each account's trading life is spent on this one partner.
+    // An alt-account farmer who makes a couple of real trades to look legitimate
+    // still scores high here, where a strict exclusivity test would clear them.
+    const shareA = pair.tradeCount / (tradeCount.get(pair.userA.id) || 1);
+    const shareB = pair.tradeCount / (tradeCount.get(pair.userB.id) || 1);
+    const signupGapMinutes = minutesBetween(pair.userA.createdAt, pair.userB.createdAt);
+
+    return {
+      ...pair,
+      netValueToA: round1(pair.netValueToA),
+      partnersA,
+      partnersB,
+      exclusive: partnersA === 1 && partnersB === 1,
+      concentration: round1(Math.min(shareA, shareB) * 100),
+      signupGapMinutes,
+      registeredTogether:
+        signupGapMinutes !== null && signupGapMinutes <= SAME_SIGNUP_WINDOW_MINUTES,
+    };
+  });
+
+  // Most suspicious first: exclusive pairs, then the most concentrated, then the
+  // busiest.
+  result.sort(
+    (a, b) =>
+      Number(b.exclusive) - Number(a.exclusive) ||
+      b.concentration - a.concentration ||
+      b.tradeCount - a.tradeCount,
+  );
+
+  response.json(result);
 });
 
 // ── Static frontend (production) ────────────────────────────────────────────────

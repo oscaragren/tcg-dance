@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
+import { CardPoolPeek } from "../../components/web/CardPoolPeek";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
 import { collections, dailyDiamonds } from "../../data/packs";
@@ -157,18 +158,22 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                 return (
                   <div
                     key={collection.id}
-                    className="rounded-2xl border bg-white overflow-hidden"
+                    className="rounded-2xl border bg-white"
                   >
-                    <div className="h-2 bg-gradient-to-r from-purple-500 to-blue-500" />
+                    <div className="h-2 rounded-t-2xl bg-gradient-to-r from-purple-500 to-blue-500" />
                     <div className="p-6 flex flex-col gap-5">
-                      <div>
-                        <div className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1">
-                          {collection.label}
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1">
+                            {collection.label}
+                          </div>
+                          <div className="text-2xl font-bold">{pack.label}</div>
+                          {collection.description && (
+                            <div className="text-sm text-gray-500 mt-1">{collection.description}</div>
+                          )}
                         </div>
-                        <div className="text-2xl font-bold">{pack.label}</div>
-                        {collection.description && (
-                          <div className="text-sm text-gray-500 mt-1">{collection.description}</div>
-                        )}
+                        {/* Scoped to this collection, so each pack card reports its own pool. */}
+                        <CardPoolPeek collectionId={collection.id} label={collection.label} />
                       </div>
 
                       <div className="text-sm text-gray-500">
