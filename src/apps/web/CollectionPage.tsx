@@ -118,11 +118,11 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
             <div>
               <h1 className="text-4xl md:text-5xl font-bold mb-3">Samling</h1>
               <p className="text-gray-600 mb-3">
-                Dina kort. Kort märkta med <span className="text-purple-600 font-medium">⇄</span> är tillgängliga för byte.
+                Dina kort. Kort märkta med <span className="text-purple-600 font-medium">⇄</span> har du markerat att du vill byta bort.
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
-                  <Link to="/samling/byte">⇄ Markera kort för byte</Link>
+                  <Link to="/samling/byte">⇄ Välj kort du vill byta</Link>
                 </Button>
                 <Button
                   size="sm"
@@ -140,7 +140,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
               )}
               {forTradeCount > 0 && (
                 <p className="text-xs text-purple-600 mt-2">
-                  {forTradeCount} {forTradeCount === 1 ? "kort markerat" : "kort markerade"} för byte just nu
+                  Du vill byta bort {forTradeCount} kort just nu
                 </p>
               )}
             </div>

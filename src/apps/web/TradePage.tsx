@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
+import { TradeMarket } from "../../components/web/TradeMarket";
 import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
 import type { Trade } from "../../types/game";
@@ -46,9 +47,9 @@ export function TradePage({ currentUser }: TradePageProps) {
   }
 
   // Countering reuses the full offer builder rather than a cut-down inline form:
-  // the counter has to respect the same marked-for-trade rule as any other offer,
-  // and that page already knows how to show only what the other player has
-  // actually made available.
+  // a counter is an ordinary proposal and has to clear the same validation, and
+  // that page already knows how to show the other player's collection with their
+  // "vill byta" cards first.
   function handleCounter(trade: Trade) {
     const params = new URLSearchParams({
       anvandare: trade.sender.id,
@@ -96,12 +97,9 @@ export function TradePage({ currentUser }: TradePageProps) {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold mb-2">Byte</h1>
-              <p className="text-gray-600">Byt kort med andra spelare. Leta i bytesmarknaden efter ett kort du saknar.</p>
+              <p className="text-gray-600">Byt kort med andra spelare. Leta i bytesmarknaden nedan efter ett kort du saknar.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline">
-                <Link to="/byte/marknad">Bytesmarknad</Link>
-              </Button>
               <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                 <Link to="/byte/ny">Nytt byte</Link>
               </Button>
@@ -157,6 +155,23 @@ export function TradePage({ currentUser }: TradePageProps) {
               </div>
             )}
           </div>
+
+          {/* The same market as /byte/marknad, rendered inline so a player with
+              an empty inbox can go straight from here to finding an offer. */}
+          <section className="border-t pt-10">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-1">Bytesmarknad</h2>
+                <p className="text-sm text-gray-600">
+                  Hitta ett kort du saknar, eller bläddra bland allas byteshyllor.
+                </p>
+              </div>
+              <Button asChild variant="outline" size="sm" className="shrink-0">
+                <Link to="/byte/marknad">Öppna som egen sida</Link>
+              </Button>
+            </div>
+            <TradeMarket />
+          </section>
 
         </div>
       </div>

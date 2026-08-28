@@ -4,19 +4,27 @@ import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
+import { UnownedDot } from "../../components/web/TradeMarket";
 import type { CardForTrade, Trade, UserSearchResult } from "../../types/game";
 import {
   counterTrade,
   createTrade,
   fetchGameState,
   fetchMyTrades,
-  getUserCardsForTrade,
+  getPlayerProfile,
   searchUsers,
 } from "../../utils/gameApi";
 
 type NewTradePageProps = { currentUser: AuthUser | null };
 
-type PickerEntry = { cardId: string; max: number };
+type PickerEntry = {
+  cardId: string;
+  max: number;
+  /** How many copies the owner has marked "vill byta" (0 = not marked). */
+  wanted?: number;
+  /** True when the viewer does not own this card at all. */
+  missing?: boolean;
+};
 
 /** "Kort A, Kort B · 50 ◆" — one side of an offer, for the counter summary. */
 function describeSide(cardIds: string[], diamonds: number): string {
@@ -42,7 +50,8 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
 
   const [myCardIds, setMyCardIds] = useState<string[]>([]);
   const [myDiamonds, setMyDiamonds] = useState(0);
-  const [theirCards, setTheirCards] = useState<CardForTrade[]>([]);
+  const [theirOwnedCardIds, setTheirOwnedCardIds] = useState<string[]>([]);
+  const [theirWantedCards, setTheirWantedCards] = useState<CardForTrade[]>([]);
 
   const [offeredCounts, setOfferedCounts] = useState<Record<string, number>>({});
   const [offeredDiamonds, setOfferedDiamonds] = useState(0);
@@ -84,11 +93,15 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
       .catch(() => {});
   }, [currentUser]);
 
+  // Their whole collection is askable — the "vill byta" marks only decide what
+  // is listed first and badged, not what may be requested.
   useEffect(() => {
     if (!selectedUser) return;
-    // Only load cards the other user has marked as available for trade
-    getUserCardsForTrade(selectedUser.id)
-      .then((res) => setTheirCards(res.cards))
+    getPlayerProfile(selectedUser.id)
+      .then((profile) => {
+        setTheirOwnedCardIds(profile.ownedCardIds);
+        setTheirWantedCards(profile.cardsForTrade);
+      })
       .catch(() => {});
   }, [selectedUser]);
 
@@ -117,13 +130,32 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
     [myOwnedCounts],
   );
 
-  const theirEntries: PickerEntry[] = useMemo(
-    () =>
-      theirCards
-        .map((c) => ({ cardId: c.cardId, max: c.quantity }))
-        .sort((a, b) => (cardById(a.cardId)?.name ?? "").localeCompare(cardById(b.cardId)?.name ?? "", "sv")),
-    [theirCards],
-  );
+  const myOwnedSet = useMemo(() => new Set(myCardIds), [myCardIds]);
+
+  const theirWantedCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const c of theirWantedCards) counts[c.cardId] = c.quantity;
+    return counts;
+  }, [theirWantedCards]);
+
+  // Cards they want to trade first, then the ones you are missing, then by name.
+  const theirEntries: PickerEntry[] = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const id of theirOwnedCardIds) counts[id] = (counts[id] ?? 0) + 1;
+    return Object.entries(counts)
+      .map(([cardId, max]) => ({
+        cardId,
+        max,
+        wanted: theirWantedCounts[cardId] ?? 0,
+        missing: !myOwnedSet.has(cardId),
+      }))
+      .sort(
+        (a, b) =>
+          Number(b.wanted > 0) - Number(a.wanted > 0) ||
+          Number(b.missing) - Number(a.missing) ||
+          (cardById(a.cardId)?.name ?? "").localeCompare(cardById(b.cardId)?.name ?? "", "sv"),
+      );
+  }, [theirOwnedCardIds, theirWantedCounts, myOwnedSet]);
 
   function adjust(setter: React.Dispatch<React.SetStateAction<Record<string, number>>>, cardId: string, next: number, max: number) {
     const clamped = Math.max(0, Math.min(max, next));
@@ -235,7 +267,8 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                     variant="outline"
                     onClick={() => {
                       setSelectedUser(null);
-                      setTheirCards([]);
+                      setTheirOwnedCardIds([]);
+                      setTheirWantedCards([]);
                       setRequestedCounts({});
                     }}
                   >
@@ -294,11 +327,23 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                 />
                 <CardPickerPanel
                   title="Du begär"
-                  hint={`Välj kort och antal du vill ha från ${selectedUser.username}.`}
+                  hint={`Välj bland alla kort i ${selectedUser.username}s samling.`}
+                  legend={
+                    <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-600 text-white text-[9px] leading-none">⇄</span>
+                        vill byta bort kortet
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <UnownedDot label="Röd prick" />
+                        kort du inte äger
+                      </span>
+                    </span>
+                  }
                   entries={theirEntries}
                   selected={requestedCounts}
                   onAdjust={(cardId, next, max) => adjust(setRequestedCounts, cardId, next, max)}
-                  emptyMessage={`${selectedUser.username} har inga kort markerade för byte.`}
+                  emptyMessage={`${selectedUser.username} har inga kort.`}
                   diamondLabel="Diamanter att begära"
                   diamondValue={requestedDiamonds}
                   onDiamondsChange={setRequestedDiamonds}
@@ -330,6 +375,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
 function CardPickerPanel({
   title,
   hint,
+  legend,
   entries,
   selected,
   onAdjust,
@@ -341,6 +387,7 @@ function CardPickerPanel({
 }: {
   title: string;
   hint: string;
+  legend?: React.ReactNode;
   entries: PickerEntry[];
   selected: Record<string, number>;
   onAdjust: (cardId: string, next: number, max: number) => void;
@@ -355,6 +402,7 @@ function CardPickerPanel({
       <div>
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-xs text-gray-400 mt-0.5">{hint}</p>
+        {legend && <div className="text-[11px] text-gray-500 mt-2">{legend}</div>}
       </div>
 
       <div>
@@ -376,7 +424,7 @@ function CardPickerPanel({
         <p className="text-sm text-gray-400">{emptyMessage}</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-96">
-          {entries.map(({ cardId, max }) => {
+          {entries.map(({ cardId, max, wanted = 0, missing = false }) => {
             const card = cardById(cardId);
             if (!card) return null;
             const qty = selected[cardId] ?? 0;
@@ -388,14 +436,30 @@ function CardPickerPanel({
                   isSelected ? "ring-2 ring-purple-500 bg-purple-50" : ""
                 }`}
               >
-                <CardPlaceholder
-                  rarity={card.rarity}
-                  size="small"
-                  name={card.name}
-                  designKey={card.designKey}
-                  showCaption
-                  disableLightbox
-                />
+                <div className="relative">
+                  <CardPlaceholder
+                    rarity={card.rarity}
+                    size="small"
+                    name={card.name}
+                    designKey={card.designKey}
+                    showCaption
+                    disableLightbox
+                  />
+                  {wanted > 0 && (
+                    <div
+                      title="Markerat som vill byta"
+                      className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none"
+                    >
+                      ⇄
+                    </div>
+                  )}
+                  {missing && (
+                    <div
+                      title="Du äger inte det här kortet"
+                      className="absolute top-1.5 right-1.5 z-10 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white pointer-events-none"
+                    />
+                  )}
+                </div>
                 {max === 1 ? (
                   <button
                     onClick={() => onAdjust(cardId, isSelected ? 0 : 1, max)}

@@ -115,8 +115,8 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
       <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
-            <h1 className="text-3xl font-bold mb-4">Markera för byte</h1>
-            <p className="text-gray-600 mb-6">Logga in för att hantera dina bytkort.</p>
+            <h1 className="text-3xl font-bold mb-4">Vill byta</h1>
+            <p className="text-gray-600 mb-6">Logga in för att välja vilka kort du vill byta bort.</p>
             <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
           </div>
         </div>
@@ -143,9 +143,11 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
 
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">Markera för byte</h1>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">Vill byta</h1>
                 <p className="text-gray-500 text-sm">
-                  Välj hur många kopior av varje kort du vill göra tillgängliga för byte, och tryck Spara.
+                  Markera hur många kopior av varje kort du vill byta bort, och tryck Spara. Korten
+                  visas på bytesmarknaden — andra spelare kan ändå fråga efter vilket kort som helst
+                  i din samling.
                 </p>
               </div>
               {markedCount > 0 && (
@@ -237,7 +239,7 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
                             : "border border-gray-300 text-gray-600 hover:border-gray-400"
                         }`}
                       >
-                        {isForTrade ? "Markerad" : "Markera"}
+                        {isForTrade ? "✓ Vill byta" : "Vill byta"}
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">

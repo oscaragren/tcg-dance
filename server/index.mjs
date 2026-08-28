@@ -1052,15 +1052,13 @@ function validateTradeProposal({
       return { status: 400, message: "Du äger inte alla erbjudna kort." };
     }
   }
-  // Requested cards must be marked for trade by the receiver, in sufficient
-  // quantity — nobody can be asked for cards they never offered up.
-  const receiverMarked = new Map(
-    db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(receiverUserId).map((r) => [r.card_id, r.quantity]),
-  );
+  // Any card the receiver actually owns may be asked for. The "vill byta" marks
+  // are a signal of willingness (and what the market lists), not a gate: the
+  // receiver still has to accept, so an unmarked request costs them nothing but
+  // a decline. Applies to counter-offers too, which share this function.
   for (const [cardId, need] of tallyIds(requestedCardIds)) {
-    const available = Math.min(receiverMarked.get(cardId) ?? 0, stmtCountOwned.get(receiverUserId, cardId).n);
-    if (available < need) {
-      return { status: 400, message: "Mottagaren erbjuder inte så många av ett begärt kort." };
+    if (stmtCountOwned.get(receiverUserId, cardId).n < need) {
+      return { status: 400, message: "Mottagaren äger inte så många av ett begärt kort." };
     }
   }
 

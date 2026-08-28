@@ -619,7 +619,7 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
         <StatCard label="Diamanter" value={state.diamonds} />
         <StatCard label="Kort totalt" value={totals.totalCards} />
         <StatCard label="Unika kort" value={totals.uniqueCards} />
-        <StatCard label="Markerade för byte" value={totals.markedForTrade} />
+        <StatCard label="Märkta vill byta" value={totals.markedForTrade} />
         <StatCard label="Kistor" value={totals.chests} />
         <StatCard label="Kistplatser" value={totals.chestSlots} />
         <StatCard label="Byten" value={totals.trades} />
