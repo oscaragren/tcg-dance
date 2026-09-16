@@ -377,7 +377,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   value={newAnnouncementTitle}
                   onChange={(e) => setNewAnnouncementTitle(e.target.value)}
                   maxLength={80}
-                  placeholder="Kort rubrik, t.ex. \"Ny funktion\""
+                  placeholder="Kort rubrik, t.ex. Ny funktion"
                   className="w-full h-10 rounded-md border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 />
               </div>
