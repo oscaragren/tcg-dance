@@ -201,3 +201,12 @@ export async function buyChestSlot(type: ChestType): Promise<ChestsMutationRespo
 export async function collectChest(chestId: string): Promise<CollectChestResponse> {
   return requestJson<CollectChestResponse>(`/api/game/chests/${chestId}/collect`, { method: "POST" });
 }
+
+
+export async function fetchAnnouncements(): Promise<AnnouncementsResponse> {
+  return requestJson<AnnouncementsResponse>("/api/announcements", { method: "GET" });
+}
+
+export async function markAnnouncementsSeen(): Promise<void> {
+  await requestJson<unknown>("/api/announcements/seen", { method: "POST" });
+}
