@@ -1,4 +1,4 @@
-import type { Achievement, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {

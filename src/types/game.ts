@@ -21,6 +21,21 @@ export type ClaimDailyDiamondsResponse = {
   state: GameState;
 };
 
+/** One news item shown from the megaphone dropdown in the header. */
+export type Announcement = {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+};
+
+export type AnnouncementsResponse = {
+  /** Newest first. */
+  announcements: Announcement[];
+  /** True when a newer announcement exists than the one this player last opened the dropdown after. */
+  hasUnseen: boolean;
+};
+
 export type BuyPackResponse = {
   pulledCards: DanceCard[];
   state: GameState;

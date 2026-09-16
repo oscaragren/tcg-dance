@@ -572,6 +572,41 @@ app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
   });
 });
 
+// ── Announcements ────────────────────────────────────────────────────────────
+// News shown from the megaphone dropdown in the header. Published/removed by
+// admins (see admin routes below); every player just reads the list and has
+// their own "have I seen the latest one" marker.
+
+function latestAnnouncementCreatedAt() {
+  return db.prepare("SELECT created_at FROM announcements ORDER BY created_at DESC LIMIT 1").get()?.created_at ?? null;
+}
+
+app.get("/api/announcements", authed, (request, response) => {
+  ensurePlayerState(request.auth.userId);
+  const rows = db.prepare("SELECT id, title, body, created_at FROM announcements ORDER BY created_at DESC").all();
+  const { last_seen_announcement_at } = db
+    .prepare("SELECT last_seen_announcement_at FROM player_state WHERE user_id = ?")
+    .get(request.auth.userId);
+
+  const latest = rows[0]?.created_at ?? null;
+  const hasUnseen = latest !== null && (!last_seen_announcement_at || last_seen_announcement_at < latest);
+
+  response.json({
+    announcements: rows.map((r) => ({ id: r.id, title: r.title, body: r.body, createdAt: r.created_at })),
+    hasUnseen,
+  });
+});
+
+app.post("/api/announcements/seen", authed, (request, response) => {
+  ensurePlayerState(request.auth.userId);
+  const latest = latestAnnouncementCreatedAt();
+  if (latest) {
+    db.prepare("UPDATE player_state SET last_seen_announcement_at = ? WHERE user_id = ?")
+      .run(latest, request.auth.userId);
+  }
+  response.status(204).send();
+});
+
 const ALLOWED_PACK_QUANTITIES = [1, 5, 10];
 
 app.post("/api/game/buy-pack", authed, (request, response) => {
@@ -2057,6 +2092,49 @@ app.get("/api/admin/trade-pairs", requireAdmin, (_request, response) => {
   );
 
   response.json(result);
+});
+
+const ANNOUNCEMENT_TITLE_MAX = 80;
+const ANNOUNCEMENT_BODY_MAX = 1000;
+
+app.get("/api/admin/announcements", requireAdmin, (_request, response) => {
+  const rows = db.prepare("SELECT id, title, body, created_at FROM announcements ORDER BY created_at DESC").all();
+  response.json(rows.map((r) => ({ id: r.id, title: r.title, body: r.body, createdAt: r.created_at })));
+});
+
+app.post("/api/admin/announcements", requireAdmin, (request, response) => {
+  const title = String(request.body?.title ?? "").trim();
+  const body = String(request.body?.body ?? "").trim();
+
+  if (!title || !body) {
+    response.status(400).json({ message: "Rubrik och text krävs." });
+    return;
+  }
+  if (title.length > ANNOUNCEMENT_TITLE_MAX) {
+    response.status(400).json({ message: `Rubriken får vara högst ${ANNOUNCEMENT_TITLE_MAX} tecken.` });
+    return;
+  }
+  if (body.length > ANNOUNCEMENT_BODY_MAX) {
+    response.status(400).json({ message: `Texten får vara högst ${ANNOUNCEMENT_BODY_MAX} tecken.` });
+    return;
+  }
+
+  const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  db.prepare("INSERT INTO announcements (id, title, body, created_at) VALUES (?, ?, ?, ?)").run(
+    id, title, body, createdAt,
+  );
+
+  response.status(201).json({ id, title, body, createdAt });
+});
+
+app.delete("/api/admin/announcements/:id", requireAdmin, (request, response) => {
+  const result = db.prepare("DELETE FROM announcements WHERE id = ?").run(request.params.id);
+  if (result.changes === 0) {
+    response.status(404).json({ message: "Meddelandet hittades inte." });
+    return;
+  }
+  response.status(204).send();
 });
 
 // ── Static frontend (production) ────────────────────────────────────────────────

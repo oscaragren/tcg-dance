@@ -203,3 +203,25 @@ export async function fetchAdminTradePairs(): Promise<AdminTradePair[]> {
 export async function deleteAdminUser(userId: string): Promise<void> {
   await adminRequest<unknown>(`/api/admin/users/${userId}`, { method: "DELETE" });
 }
+
+export type AdminAnnouncement = {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+};
+
+export async function fetchAdminAnnouncements(): Promise<AdminAnnouncement[]> {
+  return adminRequest<AdminAnnouncement[]>("/api/admin/announcements", { method: "GET" });
+}
+
+export async function createAdminAnnouncement(title: string, body: string): Promise<AdminAnnouncement> {
+  return adminRequest<AdminAnnouncement>("/api/admin/announcements", {
+    method: "POST",
+    body: JSON.stringify({ title, body }),
+  });
+}
+
+export async function deleteAdminAnnouncement(id: string): Promise<void> {
+  await adminRequest<unknown>(`/api/admin/announcements/${id}`, { method: "DELETE" });
+}

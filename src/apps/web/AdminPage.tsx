@@ -6,13 +6,17 @@ import {
   adminLogin,
   adminLogout,
   adminMe,
+  createAdminAnnouncement,
+  deleteAdminAnnouncement,
   deleteAdminUser,
+  fetchAdminAnnouncements,
   fetchAdminOverview,
   fetchAdminPool,
   fetchAdminTradePairs,
   fetchAdminTrades,
   fetchAdminUserDetail,
   fetchAdminUsers,
+  type AdminAnnouncement,
   type AdminOverview,
   type AdminPoolEntry,
   type AdminTrade,
@@ -149,23 +153,61 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [pool, setPool] = useState<AdminPoolEntry[]>([]);
   const [trades, setTrades] = useState<AdminTrade[]>([]);
   const [tradePairs, setTradePairs] = useState<AdminTradePair[]>([]);
+  const [announcements, setAnnouncements] = useState<AdminAnnouncement[]>([]);
   const [onlyFlaggedTrades, setOnlyFlaggedTrades] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
   const [loadingUser, setLoadingUser] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [newAnnouncementTitle, setNewAnnouncementTitle] = useState("");
+  const [newAnnouncementBody, setNewAnnouncementBody] = useState("");
+  const [publishingAnnouncement, setPublishingAnnouncement] = useState(false);
+  const [announcementError, setAnnouncementError] = useState<string | null>(null);
+  const [deletingAnnouncementId, setDeletingAnnouncementId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetchAdminOverview(), fetchAdminUsers(), fetchAdminPool(),
-      fetchAdminTrades(), fetchAdminTradePairs(),
+      fetchAdminTrades(), fetchAdminTradePairs(), fetchAdminAnnouncements(),
     ])
-      .then(([o, u, p, t, tp]) => {
-        setOverview(o); setUsers(u); setPool(p); setTrades(t); setTradePairs(tp);
+      .then(([o, u, p, t, tp, a]) => {
+        setOverview(o); setUsers(u); setPool(p); setTrades(t); setTradePairs(tp); setAnnouncements(a);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda admin-data."));
   }, []);
+
+  async function handlePublishAnnouncement(e: React.FormEvent) {
+    e.preventDefault();
+    const title = newAnnouncementTitle.trim();
+    const body = newAnnouncementBody.trim();
+    if (!title || !body) return;
+
+    setPublishingAnnouncement(true);
+    setAnnouncementError(null);
+    try {
+      const created = await createAdminAnnouncement(title, body);
+      setAnnouncements((prev) => [created, ...prev]);
+      setNewAnnouncementTitle("");
+      setNewAnnouncementBody("");
+    } catch (err) {
+      setAnnouncementError(err instanceof Error ? err.message : "Kunde inte publicera meddelandet.");
+    } finally {
+      setPublishingAnnouncement(false);
+    }
+  }
+
+  async function handleDeleteAnnouncement(id: string) {
+    setDeletingAnnouncementId(id);
+    try {
+      await deleteAdminAnnouncement(id);
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    } catch (err) {
+      setAnnouncementError(err instanceof Error ? err.message : "Kunde inte radera meddelandet.");
+    } finally {
+      setDeletingAnnouncementId(null);
+    }
+  }
 
   async function handleLogout() {
     try { await adminLogout(); } catch { /* ignore */ }
@@ -316,6 +358,77 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </tbody>
               </table>
             </div>
+          </section>
+
+          {/* Announcements */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">Meddelanden ({announcements.length})</h2>
+            <form
+              onSubmit={(e) => void handlePublishAnnouncement(e)}
+              className="rounded-xl border bg-white p-4 space-y-3"
+            >
+              <div>
+                <label htmlFor="announcement-title" className="block text-sm text-gray-600 mb-1">
+                  Rubrik
+                </label>
+                <input
+                  id="announcement-title"
+                  type="text"
+                  value={newAnnouncementTitle}
+                  onChange={(e) => setNewAnnouncementTitle(e.target.value)}
+                  maxLength={80}
+                  placeholder="Kort rubrik, t.ex. \"Ny funktion\""
+                  className="w-full h-10 rounded-md border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                />
+              </div>
+              <div>
+                <label htmlFor="announcement-body" className="block text-sm text-gray-600 mb-1">
+                  Text
+                </label>
+                <textarea
+                  id="announcement-body"
+                  value={newAnnouncementBody}
+                  onChange={(e) => setNewAnnouncementBody(e.target.value)}
+                  maxLength={1000}
+                  rows={3}
+                  placeholder="Meddelandetext"
+                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                />
+              </div>
+              {announcementError && <p className="text-sm text-red-600">{announcementError}</p>}
+              <Button
+                type="submit"
+                disabled={publishingAnnouncement || !newAnnouncementTitle.trim() || !newAnnouncementBody.trim()}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                {publishingAnnouncement ? "Publicerar..." : "Publicera"}
+              </Button>
+            </form>
+
+            {announcements.length === 0 ? (
+              <p className="text-sm text-gray-500 rounded-xl border bg-white p-4">Inga meddelanden publicerade.</p>
+            ) : (
+              <ul className="rounded-xl border bg-white divide-y">
+                {announcements.map((a) => (
+                  <li key={a.id} className="px-4 py-3 flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{a.title}</span>
+                        <span className="text-xs text-gray-400">{formatDate(a.createdAt)}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-0.5">{a.body}</p>
+                    </div>
+                    <button
+                      onClick={() => void handleDeleteAnnouncement(a.id)}
+                      disabled={deletingAnnouncementId === a.id}
+                      className="text-red-600 hover:text-red-800 text-xs font-medium underline shrink-0"
+                    >
+                      {deletingAnnouncementId === a.id ? "Raderar..." : "Radera"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           {/* Suspicious trading pairs */}

@@ -11,6 +11,12 @@ const db = new Database(dbPath);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
+// Captured before the CREATE TABLE IF NOT EXISTS below runs, so we can tell a
+// brand-new database (seed the starter announcements) from one that's simply
+// never had this table before this deploy.
+const announcementsTableExisted =
+  db.prepare("SELECT COUNT(*) as n FROM sqlite_master WHERE type = 'table' AND name = 'announcements'").get().n > 0;
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id           TEXT PRIMARY KEY,
@@ -30,7 +36,10 @@ db.exec(`
     -- Consecutive days the daily diamonds have been claimed with no gap.
     -- Resets to 1 (today counts) whenever a day is missed, and back to 0 the
     -- moment it hits the 7-day bonus, so the next claim starts a fresh streak.
-    diamond_streak       INTEGER NOT NULL DEFAULT 0
+    diamond_streak       INTEGER NOT NULL DEFAULT 0,
+    -- created_at of the newest announcement this player has opened the
+    -- dropdown after. NULL means never opened it (or never any yet).
+    last_seen_announcement_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS owned_cards (
@@ -116,6 +125,15 @@ db.exec(`
     bought_at   TEXT NOT NULL,
     PRIMARY KEY (user_id, type)
   );
+
+  -- News shown from the megaphone dropdown in the header, newest first.
+  -- Managed from the admin panel: publish (insert) and remove (delete).
+  CREATE TABLE IF NOT EXISTS announcements (
+    id         TEXT PRIMARY KEY,
+    title      TEXT NOT NULL,
+    body       TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
 `);
 
 // Add collection_id column if upgrading from an older schema
@@ -171,6 +189,44 @@ for (const column of ["first_name", "last_name"]) {
     db.exec("ALTER TABLE player_state ADD COLUMN diamond_streak INTEGER NOT NULL DEFAULT 0");
     console.log("Migrated player_state: added diamond_streak column.");
   }
+}
+
+// Add last_seen_announcement_at column if upgrading from an older schema
+{
+  const exists =
+    db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('player_state') WHERE name = 'last_seen_announcement_at'").get().n > 0;
+  if (!exists) {
+    db.exec("ALTER TABLE player_state ADD COLUMN last_seen_announcement_at TEXT");
+    console.log("Migrated player_state: added last_seen_announcement_at column.");
+  }
+}
+
+// Seed the starter announcements once, the first time this database ever
+// gets the announcements table (fresh install, or upgrading from a version
+// before it existed). Never reruns after that, so deleting them from the
+// admin panel is permanent and won't come back on a restart.
+if (!announcementsTableExisted) {
+  const stmtAnnouncement = db.prepare(
+    "INSERT INTO announcements (id, title, body, created_at) VALUES (?, ?, ?, ?)",
+  );
+  db.transaction(() => {
+    stmtAnnouncement.run(
+      crypto.randomUUID(),
+      "Diamant-streak",
+      "Vi har lagt till en streak! Hämta dina diamanter 7 dagar i rad och få 500 diamanter " +
+        "(istället för 150) på den 7:e dagen. Glatt samlande!",
+      "2026-09-16T00:00:00.000Z",
+    );
+    stmtAnnouncement.run(
+      crypto.randomUUID(),
+      "GP-dagen 26 september",
+      "På tävlingsdagen den 26:e september när Säävbuggen GP går av stapeln får alla kortsamlare " +
+        "800 diamanter istället för 150 när man hämtar de dagliga diamanterna. Guldkistornas väntetid " +
+        "kortas dessutom ner från 12 till 3 timmar den dagen. Missa inte!",
+      "2026-09-10T00:00:00.000Z",
+    );
+  })();
+  console.log("Seeded starter announcements.");
 }
 
 // One-time migration from JSON files
