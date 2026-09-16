@@ -10,6 +10,8 @@ type HeaderProps = {
   pendingTradeCount?: number;
   /** Diamond balance shown next to the username. null while still loading. */
   diamonds?: number | null;
+  /** At least one chest is ready to collect — drives the red dot on "Samling". */
+  hasReadyChest?: boolean;
 };
 
 /** Diamond balance pill shown beside the username. */
@@ -37,7 +39,18 @@ function NotificationDot({ count }: { count: number }) {
   );
 }
 
-export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = null }: HeaderProps) {
+/** Plain small red dot, used to flag a chest ready to collect on the Samling link. */
+function PlainDot() {
+  return (
+    <span
+      className="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0"
+      aria-label="En kista är klar att öppna"
+      role="img"
+    />
+  );
+}
+
+export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = null, hasReadyChest = false }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   function closeMobile() { setMobileOpen(false); }
@@ -58,7 +71,10 @@ export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = n
 
               {/* Desktop nav */}
               <nav className="hidden md:flex items-center gap-6">
-                <Link to="/samling" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Samling</Link>
+                <Link to="/samling" className="relative flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                  Samling
+                  {hasReadyChest && <PlainDot />}
+                </Link>
                 <Link to="/handel"  className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Handel</Link>
                 <Link to="/byte"    className="relative flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   Byte
@@ -129,12 +145,12 @@ export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = n
           <div className="fixed top-[73px] left-0 right-0 z-40 bg-white border-b shadow-lg md:hidden">
             <nav className="container mx-auto px-6 py-4 flex flex-col gap-1">
               {[
-                { to: "/samling", label: "Samling" } as { to: string; label: string; badge?: number },
+                { to: "/samling", label: "Samling", dot: hasReadyChest } as { to: string; label: string; badge?: number; dot?: boolean },
                 { to: "/handel",  label: "Handel" },
                 { to: "/byte",    label: "Byte", badge: pendingTradeCount },
                 { to: "/uppgradering", label: "Uppgradering" },
                 { to: "/topplista", label: "Topplista" },
-              ].map(({ to, label, badge }) => (
+              ].map(({ to, label, badge, dot }) => (
                 <Link
                   key={to}
                   to={to}
@@ -143,6 +159,7 @@ export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = n
                 >
                   {label}
                   {!!badge && badge > 0 && <NotificationDot count={badge} />}
+                  {dot && <PlainDot />}
                 </Link>
               ))}
 

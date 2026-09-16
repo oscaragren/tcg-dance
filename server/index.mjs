@@ -387,7 +387,21 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function yesterdayIso() {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 const STARTING_DIAMONDS = 500;
+
+// Claim the daily diamonds on 7 consecutive days (no gap) and get a one-time
+// bonus on top of that day's normal claim. The streak then resets to 0, so
+// the next claim starts a brand new 7-day run; missing a single day resets
+// it too (the next claim after a gap starts over at 1, not 0, since that
+// claim itself is day one of the new streak).
+const DIAMOND_STREAK_TARGET = 7;
+const DIAMOND_STREAK_BONUS = 500;
 
 function ensurePlayerState(userId) {
   if (!db.prepare("SELECT user_id FROM player_state WHERE user_id = ?").get(userId)) {
@@ -411,6 +425,8 @@ function buildStateResponse(userId) {
     lastDailyClaimDate: state.last_daily_claim_date,
     canClaimDailyDiamonds: state.last_daily_claim_date !== todayIso(),
     lastOpenedCards: JSON.parse(state.last_opened_cards),
+    diamondStreak: state.diamond_streak,
+    diamondStreakTarget: DIAMOND_STREAK_TARGET,
   };
 }
 
@@ -522,7 +538,7 @@ app.get("/api/leaderboard", authed, (_request, response) => {
 app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
   ensurePlayerState(request.auth.userId);
   const state = db
-    .prepare("SELECT last_daily_claim_date FROM player_state WHERE user_id = ?")
+    .prepare("SELECT last_daily_claim_date, diamond_streak FROM player_state WHERE user_id = ?")
     .get(request.auth.userId);
 
   if (state.last_daily_claim_date === todayIso()) {
@@ -530,11 +546,30 @@ app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
     return;
   }
 
-  db.prepare(
-    "UPDATE player_state SET diamonds = diamonds + ?, last_daily_claim_date = ? WHERE user_id = ?",
-  ).run(dailyDiamonds, todayIso(), request.auth.userId);
+  // A claim yesterday keeps the streak going; anything else (never claimed,
+  // or a gap of one day or more) starts a new streak at 1 — today is its
+  // first day.
+  const continuesStreak = state.last_daily_claim_date === yesterdayIso();
+  let streak = continuesStreak ? state.diamond_streak + 1 : 1;
 
-  response.json({ diamondsAwarded: dailyDiamonds, state: buildStateResponse(request.auth.userId) });
+  let streakBonusAwarded = 0;
+  if (streak >= DIAMOND_STREAK_TARGET) {
+    streakBonusAwarded = DIAMOND_STREAK_BONUS;
+    streak = 0; // paid out — next claim starts a fresh 7-day run
+  }
+
+  const diamondsAwarded = dailyDiamonds + streakBonusAwarded;
+
+  db.prepare(
+    "UPDATE player_state SET diamonds = diamonds + ?, last_daily_claim_date = ?, diamond_streak = ? WHERE user_id = ?",
+  ).run(diamondsAwarded, todayIso(), streak, request.auth.userId);
+
+  response.json({
+    diamondsAwarded,
+    streakBonusAwarded,
+    diamondStreak: streak,
+    state: buildStateResponse(request.auth.userId),
+  });
 });
 
 const ALLOWED_PACK_QUANTITIES = [1, 5, 10];

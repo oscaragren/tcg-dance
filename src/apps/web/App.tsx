@@ -7,7 +7,7 @@ import { HowItWorks } from "../../components/web/HowItWorks";
 import { Footer } from "../../components/web/Footer";
 import { GpEventNotice } from "../../components/web/GpEventNotice";
 import { fetchCurrentUser, logoutUser } from "../../utils/authApi";
-import { DIAMONDS_EVENT, fetchGameState, fetchIncomingTradeCount } from "../../utils/gameApi";
+import { DIAMONDS_EVENT, fetchChests, fetchGameState, fetchIncomingTradeCount } from "../../utils/gameApi";
 import type { AuthUser } from "../../types/auth";
 import { AuthPage } from "./AuthPage";
 import { CompleteProfilePage } from "./CompleteProfilePage";
@@ -52,11 +52,15 @@ function HomePage({ currentUser }: { currentUser: AuthUser | null }) {
 /** Poll interval for the pending-trade badge. */
 const TRADE_BADGE_POLL_MS = 60_000;
 
+/** Poll interval for the ready-chest badge on "Samling". */
+const CHEST_BADGE_POLL_MS = 60_000;
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [pendingTradeCount, setPendingTradeCount] = useState(0);
   const [diamonds, setDiamonds] = useState<number | null>(null);
+  const [hasReadyChest, setHasReadyChest] = useState(false);
   const location = useLocation();
 
   // Header diamond balance. Seeded on login and on each navigation; kept live
@@ -96,6 +100,28 @@ export default function App() {
     return () => { cancelled = true; clearInterval(timer); };
   }, [currentUser, location.pathname]);
 
+  // Keep the "Samling" chest dot fresh: refresh on every navigation (so it
+  // clears as soon as a ready chest is collected) and on a slow timer while
+  // the tab is open, same pattern as the "Byte" badge above.
+  useEffect(() => {
+    if (!currentUser) { setHasReadyChest(false); return; }
+
+    let cancelled = false;
+    function refresh() {
+      fetchChests()
+        .then((data) => {
+          if (cancelled) return;
+          const ready = data.chests.some((c) => Date.parse(c.readyAt) <= Date.now());
+          setHasReadyChest(ready);
+        })
+        .catch(() => {});
+    }
+
+    refresh();
+    const timer = setInterval(refresh, CHEST_BADGE_POLL_MS);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [currentUser, location.pathname]);
+
   useEffect(() => {
     async function loadSession() {
       try {
@@ -123,6 +149,7 @@ export default function App() {
     setCurrentUser(null);
     setPendingTradeCount(0);
     setDiamonds(null);
+    setHasReadyChest(false);
   }
 
   if (isAuthLoading) {
@@ -156,6 +183,7 @@ export default function App() {
         onLogout={handleLogout}
         pendingTradeCount={pendingTradeCount}
         diamonds={diamonds}
+        hasReadyChest={hasReadyChest}
       />
       <Routes>
         <Route path="/"         element={<HomePage currentUser={currentUser} />} />

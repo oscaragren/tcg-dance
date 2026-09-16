@@ -22,6 +22,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const [buyingPack, setBuyingPack] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [streakBonusAwarded, setStreakBonusAwarded] = useState<number | null>(null);
   const [openedPack, setOpenedPack] = useState<{ label: string; cards: DanceCard[] } | null>(null);
 
   useEffect(() => {
@@ -42,9 +43,11 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     if (isClaiming) return;
     setIsClaiming(true);
     setError(null);
+    setStreakBonusAwarded(null);
     try {
       const result = await claimDailyDiamonds();
       setGameState(result.state);
+      if (result.streakBonusAwarded > 0) setStreakBonusAwarded(result.streakBonusAwarded);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunde inte hämta diamanter.");
     } finally {
@@ -90,6 +93,9 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
           isClaiming={isClaiming}
           error={error}
           onClaim={() => void handleClaimDailyDiamonds()}
+          diamondStreak={gameState?.diamondStreak ?? 0}
+          diamondStreakTarget={gameState?.diamondStreakTarget ?? 7}
+          streakBonusAwarded={streakBonusAwarded}
         />
 
         {featuredCollection && (

@@ -23,6 +23,7 @@ export function HandelPage({ currentUser }: HandelPageProps) {
   const [chests, setChests] = useState<ChestsResponse | null>(null);
   const [buyingChest, setBuyingChest] = useState<ChestType | null>(null);
   const [chestNotice, setChestNotice] = useState<string | null>(null);
+  const [streakBonusAwarded, setStreakBonusAwarded] = useState<number | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -58,9 +59,11 @@ export function HandelPage({ currentUser }: HandelPageProps) {
     if (isClaiming) return;
     setIsClaiming(true);
     setError(null);
+    setStreakBonusAwarded(null);
     try {
       const result = await claimDailyDiamonds();
       setGameState(result.state);
+      if (result.streakBonusAwarded > 0) setStreakBonusAwarded(result.streakBonusAwarded);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunde inte hämta diamanter.");
     } finally {
@@ -145,8 +148,19 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                       ? `Hämta ${dailyDiamonds} gratis ◆`
                       : "Diamanter hämtade idag"}
                 </Button>
+                {!isLoadingState && (
+                  <p className="text-[11px] text-amber-600 mt-1">
+                    🔥 {gameState?.diamondStreak ?? 0}/{gameState?.diamondStreakTarget ?? 7} dagar i rad
+                  </p>
+                )}
               </div>
             </div>
+
+            {!!streakBonusAwarded && (
+              <p className="text-sm font-medium text-amber-600">
+                🔥 {gameState?.diamondStreakTarget ?? 7} dagar i rad! +{streakBonusAwarded} ◆ streak-bonus.
+              </p>
+            )}
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 

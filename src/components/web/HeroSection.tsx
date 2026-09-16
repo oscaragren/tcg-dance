@@ -10,6 +10,12 @@ type HeroSectionProps = {
   isClaiming: boolean;
   error: string | null;
   onClaim: () => void;
+  /** Consecutive days claimed with no gap. */
+  diamondStreak?: number;
+  /** Streak length that pays out the bonus. */
+  diamondStreakTarget?: number;
+  /** Set right after a claim that completed the streak, for a one-off callout. */
+  streakBonusAwarded?: number | null;
 };
 
 export function HeroSection({
@@ -20,6 +26,9 @@ export function HeroSection({
   isClaiming,
   error,
   onClaim,
+  diamondStreak = 0,
+  diamondStreakTarget = 7,
+  streakBonusAwarded = null,
 }: HeroSectionProps) {
   return (
     <section className="relative w-full border-b bg-white">
@@ -41,6 +50,12 @@ export function HeroSection({
             <p className="text-xs text-gray-400">
               Du får {dailyDiamonds} ◆ gratis varje dag.
             </p>
+            {!isLoading && (
+              <p className="text-xs text-amber-600 mt-1">
+                🔥 {diamondStreak}/{diamondStreakTarget} dagar i rad — hämta {diamondStreakTarget} dagar
+                utan uppehåll för 500 ◆ bonus.
+              </p>
+            )}
           </div>
 
           {/* Daily claim + shortcuts */}
@@ -56,6 +71,12 @@ export function HeroSection({
             {!isLoading && (
               <p className="text-[11px] text-gray-400 mb-6">
                 {canClaim ? "Dina dagliga diamanter väntar." : "Kom tillbaka imorgon."}
+              </p>
+            )}
+
+            {!!streakBonusAwarded && (
+              <p className="mb-4 text-sm font-medium text-amber-600">
+                🔥 {diamondStreakTarget} dagar i rad! +{streakBonusAwarded} ◆ streak-bonus.
               </p>
             )}
 

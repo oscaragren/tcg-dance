@@ -26,7 +26,11 @@ db.exec(`
     user_id              TEXT PRIMARY KEY REFERENCES users(id),
     diamonds             INTEGER NOT NULL DEFAULT 0,
     last_daily_claim_date TEXT,
-    last_opened_cards    TEXT NOT NULL DEFAULT '[]'
+    last_opened_cards    TEXT NOT NULL DEFAULT '[]',
+    -- Consecutive days the daily diamonds have been claimed with no gap.
+    -- Resets to 1 (today counts) whenever a day is missed, and back to 0 the
+    -- moment it hits the 7-day bonus, so the next claim starts a fresh streak.
+    diamond_streak       INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS owned_cards (
@@ -156,6 +160,16 @@ for (const column of ["first_name", "last_name"]) {
   if (!exists) {
     db.exec(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
     console.log(`Migrated users: added ${column} column.`);
+  }
+}
+
+// Add diamond_streak column if upgrading from an older schema
+{
+  const exists =
+    db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('player_state') WHERE name = 'diamond_streak'").get().n > 0;
+  if (!exists) {
+    db.exec("ALTER TABLE player_state ADD COLUMN diamond_streak INTEGER NOT NULL DEFAULT 0");
+    console.log("Migrated player_state: added diamond_streak column.");
   }
 }
 

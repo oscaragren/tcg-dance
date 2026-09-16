@@ -14,9 +14,9 @@ function newTradeLink(userId: string, username: string) {
 }
 
 /**
- * The one visual language for "you don't own this yet" across the market: a red
- * dot on a player who offers something new to you, and a red ring on the cards
- * themselves. Explained by <UnownedLegend /> wherever it is used.
+ * The one visual language for "you don't own this yet" across the market: a
+ * small red dot on a player, and on the card itself, who offers something new
+ * to you. Explained by <UnownedLegend /> wherever it is used.
  */
 export function UnownedDot({ label }: { label: string }) {
   return (
@@ -35,8 +35,8 @@ export function UnownedLegend() {
       <UnownedDot label="Röd prick" />
       <span>
         Röd prick betyder att spelaren vill byta bort minst ett kort som du
-        <span className="font-medium text-gray-700"> inte äger ännu</span> — de korten är
-        inramade i rött.
+        <span className="font-medium text-gray-700"> inte äger ännu</span> — de korten har
+        en liten röd prick.
       </span>
     </p>
   );
@@ -174,7 +174,7 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
         <section className="rounded-2xl border bg-white p-6">
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="shrink-0">
-              <div className={isMissing ? "rounded-xl ring-2 ring-red-500 ring-offset-2" : ""}>
+              <div className="relative inline-block">
                 <CardPlaceholder
                   rarity={selectedCard.rarity}
                   size="small"
@@ -183,6 +183,9 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                   designKey={selectedCard.designKey}
                   showCaption
                 />
+                {isMissing && (
+                  <div className="absolute top-1.5 left-1.5 z-10 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white pointer-events-none" />
+                )}
               </div>
             </div>
 
@@ -312,7 +315,7 @@ function BrowseTradersTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                     const isMissing = !ownedCardIds.has(cardId);
                     return (
                       <div key={cardId} className="relative flex justify-center">
-                        <div className={`relative rounded-xl ${isMissing ? "ring-2 ring-red-500 ring-offset-2" : ""}`}>
+                        <div className="relative">
                           <CardPlaceholder
                             rarity={card.rarity}
                             size="small"
