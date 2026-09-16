@@ -5,7 +5,6 @@ import { Hero } from "../../components/web/Hero";
 import { FeaturedCollection } from "../../components/web/FeaturedCollection";
 import { HowItWorks } from "../../components/web/HowItWorks";
 import { Footer } from "../../components/web/Footer";
-import { GpEventNotice } from "../../components/web/GpEventNotice";
 import { fetchCurrentUser, logoutUser } from "../../utils/authApi";
 import { DIAMONDS_EVENT, fetchChests, fetchGameState, fetchIncomingTradeCount } from "../../utils/gameApi";
 import type { AuthUser } from "../../types/auth";
@@ -39,14 +38,9 @@ function LandingPage() {
 }
 
 function HomePage({ currentUser }: { currentUser: AuthUser | null }) {
-  return (
-    <>
-      <GpEventNotice />
-      {currentUser
-        ? <LoggedInHomePage username={currentUser.username} userEmail={currentUser.email} />
-        : <LandingPage />}
-    </>
-  );
+  return currentUser
+    ? <LoggedInHomePage username={currentUser.username} userEmail={currentUser.email} />
+    : <LandingPage />;
 }
 
 /** Poll interval for the pending-trade badge. */

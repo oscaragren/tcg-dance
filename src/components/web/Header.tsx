@@ -2,6 +2,7 @@ import { Menu, User, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
+import { AnnouncementsMenu } from "./AnnouncementsMenu";
 
 type HeaderProps = {
   username: string | null;
@@ -90,6 +91,7 @@ export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = n
               {username ? (
                 <>
                   <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <AnnouncementsMenu />
                     <span className="flex items-center">
                       <User className="w-4 h-4 mr-2" />
                       {username}
@@ -167,6 +169,7 @@ export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = n
                 {username ? (
                   <>
                     <div className="px-4 py-2 text-sm text-gray-500 flex items-center gap-2">
+                      <AnnouncementsMenu />
                       <User className="w-4 h-4" /> {username}
                       <DiamondBalance diamonds={diamonds} />
                     </div>
