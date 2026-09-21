@@ -3,6 +3,7 @@ import { FeaturedCollection } from "../../components/web/FeaturedCollection";
 import { HeroSection } from "../../components/web/HeroSection";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { PhotographerPromo } from "../../components/web/PhotographerPromo";
+import { UpcomingCollectionTeaser } from "../../components/web/UpcomingCollectionTeaser";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
 import type { GameState } from "../../types/game";
@@ -97,6 +98,8 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
           diamondStreakTarget={gameState?.diamondStreakTarget ?? 7}
           streakBonusAwarded={streakBonusAwarded}
         />
+
+        <UpcomingCollectionTeaser />
 
         {featuredCollection && (
           <FeaturedCollection

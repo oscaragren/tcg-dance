@@ -5,6 +5,7 @@ import { CardPoolPeek } from "../../components/web/CardPoolPeek";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
 import { collections, dailyDiamonds } from "../../data/packs";
+import { upcomingCollection } from "../../data/upcomingCollection";
 import type { AuthUser } from "../../types/auth";
 import type { DanceCard } from "../../types/danceCard";
 import type { GameState } from "../../types/game";
@@ -221,6 +222,41 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                   </div>
                 );
               })}
+
+              {/* Coming soon — no real pack behind this yet, so it's a static, disabled tile. */}
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50/60">
+                <div className="h-2 rounded-t-2xl bg-gradient-to-r from-gray-300 to-gray-200" />
+                <div className="p-6 flex flex-col gap-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1">
+                        {upcomingCollection.label}
+                      </div>
+                      <div className="text-2xl font-bold text-gray-400">Kommande pack</div>
+                      <div className="text-sm text-gray-500 mt-1">{upcomingCollection.blurb}</div>
+                    </div>
+                    <span className="shrink-0 inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-medium px-2.5 py-1">
+                      Kommer snart
+                    </span>
+                  </div>
+
+                  <div className="text-sm text-gray-400">Antal kort och pris meddelas snart</div>
+
+                  <div className="mt-auto grid grid-cols-3 gap-2">
+                    {PACK_QUANTITIES.map((qty) => (
+                      <Button
+                        key={qty}
+                        disabled
+                        variant="outline"
+                        className="flex-col h-auto py-2 opacity-60 cursor-not-allowed"
+                      >
+                        <span className="font-semibold">Köp {qty}</span>
+                        <span className="text-[11px] opacity-80">—</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <SmCollectionDisclaimer />

@@ -3,10 +3,13 @@ import { Link } from "react-router-dom";
 import { AchievementsSection } from "../../components/web/AchievementsSection";
 import { ChestsSection } from "../../components/web/ChestsSection";
 import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
+import { Badge } from "../../components/shared/ui/badge";
 import { Button } from "../../components/shared/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
 import { collections } from "../../data/packs";
+import { upcomingCollection } from "../../data/upcomingCollection";
 import { fetchGameState, fetchMyCardsForTrade } from "../../utils/gameApi";
 
 type RarityFilter = "all" | CardRarity;
@@ -219,52 +222,74 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
 
           <AchievementsSection />
 
-          {visibleCards.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
-              {isLoading
-                ? "Laddar samling..."
-                : showAll
-                  ? "Inga kort matchar filtren."
-                  : "Du har inga kort i den här kategorin ännu."}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {visibleCards.map((card) => {
-                const count = ownedCounts[card.id] ?? 0;
-                const isForTrade = forTradeIds.has(card.id);
-                // The design is a reward for owning the card, so unowned cards
-                // in "Se alla" mode show only their text details.
-                const isOwned = count > 0;
+          <Tabs defaultValue={collections[0]?.id ?? "current"} className="mt-8">
+            <TabsList>
+              {collections.map((c) => (
+                <TabsTrigger key={c.id} value={c.id}>{c.label}</TabsTrigger>
+              ))}
+              <TabsTrigger value="tba" className="gap-1.5">
+                {upcomingCollection.label}
+                <Badge variant="secondary">Kommer snart</Badge>
+              </TabsTrigger>
+            </TabsList>
 
-                return (
-                  <div key={card.id} className="flex flex-col items-center gap-1">
-                    <div className="relative">
-                      <CardPlaceholder
-                        rarity={card.rarity}
-                        size="small"
-                        name={card.name}
-                        danceStyle={card.danceStyle}
-                        designKey={card.designKey}
-                        showCaption
-                        hideDesign={!isOwned}
-                      />
-                      {count > 1 && (
-                        <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
-                          ×{count}
+            <TabsContent value={collections[0]?.id ?? "current"} className="mt-4">
+              {visibleCards.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
+                  {isLoading
+                    ? "Laddar samling..."
+                    : showAll
+                      ? "Inga kort matchar filtren."
+                      : "Du har inga kort i den här kategorin ännu."}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {visibleCards.map((card) => {
+                    const count = ownedCounts[card.id] ?? 0;
+                    const isForTrade = forTradeIds.has(card.id);
+                    // The design is a reward for owning the card, so unowned cards
+                    // in "Se alla" mode show only their text details.
+                    const isOwned = count > 0;
+
+                    return (
+                      <div key={card.id} className="flex flex-col items-center gap-1">
+                        <div className="relative">
+                          <CardPlaceholder
+                            rarity={card.rarity}
+                            size="small"
+                            name={card.name}
+                            danceStyle={card.danceStyle}
+                            designKey={card.designKey}
+                            showCaption
+                            hideDesign={!isOwned}
+                          />
+                          {count > 1 && (
+                            <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
+                              ×{count}
+                            </div>
+                          )}
+                          {isForTrade && (
+                            <div className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
+                              ⇄
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {isForTrade && (
-                        <div className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
-                          ⇄
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+            </TabsContent>
+
+            <TabsContent value="tba" className="mt-4">
+              <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
+                <div className="text-4xl mb-3" aria-hidden>🔒</div>
+                <h2 className="text-xl font-semibold mb-2">{upcomingCollection.tagline} är på väg</h2>
+                <p className="text-gray-500 max-w-md mx-auto">{upcomingCollection.blurb}</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </main>
