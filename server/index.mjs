@@ -1364,7 +1364,7 @@ const CHEST_TYPES = {
     cardRolls: [
       { rarity: "common", chance: 0.25 },
       { rarity: "common", chance: 0.25 },
-      { rarity: "rare", chance: 0.01 },
+      { rarity: "rare", chance: 0.025 },
     ],
   },
   gold: {
@@ -1372,7 +1372,7 @@ const CHEST_TYPES = {
     label: "Guldkista",
     price: 50,
     waitMs: 12 * HOUR_MS,
-    diamonds: { min: 100, max: 300, step: 5 },
+    diamonds: { min: 100, max: 250, step: 5 },
     cardRolls: [
       { rarity: "common", chance: 0.25 },
       { rarity: "common", chance: 0.25 },

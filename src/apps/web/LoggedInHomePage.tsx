@@ -3,6 +3,7 @@ import { FeaturedCollection } from "../../components/web/FeaturedCollection";
 import { HeroSection } from "../../components/web/HeroSection";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { PhotographerPromo } from "../../components/web/PhotographerPromo";
+import { Faq } from "../../components/web/Faq";
 import { UpcomingCollectionTeaser } from "../../components/web/UpcomingCollectionTeaser";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
@@ -112,6 +113,8 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
         )}
 
         <PhotographerPromo />
+
+        <Faq />
 
       </main>
     </>

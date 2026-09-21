@@ -4,6 +4,7 @@ import { Header } from "../../components/web/Header";
 import { Hero } from "../../components/web/Hero";
 import { FeaturedCollection } from "../../components/web/FeaturedCollection";
 import { HowItWorks } from "../../components/web/HowItWorks";
+import { Faq } from "../../components/web/Faq";
 import { Footer } from "../../components/web/Footer";
 import { fetchCurrentUser, logoutUser } from "../../utils/authApi";
 import { DIAMONDS_EVENT, fetchChests, fetchGameState, fetchIncomingTradeCount } from "../../utils/gameApi";
@@ -33,6 +34,7 @@ function LandingPage() {
       <Hero />
 {featuredCollection && <FeaturedCollection collection={featuredCollection} />}
       <HowItWorks />
+      <Faq />
     </main>
   );
 }
