@@ -430,15 +430,18 @@ function buildStateResponse(userId) {
   };
 }
 
-// Special cards are not obtainable from packs.
+// Special cards ARE obtainable from packs (2026-09-21) — they just fold into
+// the same scarcity-weighted draw as everything else, so their odds come
+// naturally from how few copies exist (1 each, 5 total system-wide) rather
+// than from a hand-picked percentage.
 const stmtSumAvailableCopies = db.prepare(
-  "SELECT COALESCE(SUM(copies_remaining), 0) AS total FROM card_pool WHERE collection_id = ? AND rarity != 'special' AND copies_remaining > 0",
+  "SELECT COALESCE(SUM(copies_remaining), 0) AS total FROM card_pool WHERE collection_id = ? AND copies_remaining > 0",
 );
 const stmtPickWeightedCard = db.prepare(
   `SELECT card_id FROM (
      SELECT card_id, SUM(copies_remaining) OVER (ORDER BY card_id) AS cum
      FROM card_pool
-     WHERE collection_id = ? AND rarity != 'special' AND copies_remaining > 0
+     WHERE collection_id = ? AND copies_remaining > 0
    ) WHERE cum > ? ORDER BY cum LIMIT 1`,
 );
 const stmtDecrementCard = db.prepare(
@@ -447,8 +450,10 @@ const stmtDecrementCard = db.prepare(
 
 // Draw one card weighted by how many copies are still in the pool, so every
 // physical copy is equally likely. The odds of a rarity therefore equal that
-// rarity's remaining copies divided by all remaining (non-special) copies —
-// e.g. at a full pool, legendary = 25 / (25 + 120 + 550 + 19300).
+// rarity's remaining copies divided by all remaining copies —
+// e.g. at a full pool, legendary = 25 / (25 + 120 + 550 + 19300 + 5) and
+// special = 5 / that same total (one copy each, so each specific special
+// card is a 1-in-20,000 pull).
 const drawCardTx = db.transaction((collectionId) => {
   const { total } = stmtSumAvailableCopies.get(collectionId);
   if (total <= 0) return null;
@@ -794,9 +799,9 @@ app.post("/api/achievements/:id/claim", authed, (request, response) => {
 // (UPGRADE_CARDS_REQUIRED above): 20 commons make a rare, 15 rares an epic,
 // 10 epics a legendary. That is the exchange rate the economy already declares,
 // so it is also the rate someone funnelling cards between their own accounts is
-// arbitraging. "special" sits outside the ladder (one copy each, never dropped
-// from a pack) — 2x legendary is a judgement call; tune it here if it misjudges
-// real trades. Used only for admin fraud heuristics, never for gameplay.
+// arbitraging. "special" sits outside the ladder (one copy each, extremely
+// rare pack pulls) — 2x legendary is a judgement call; tune it here if it
+// misjudges real trades. Used only for admin fraud heuristics, never for gameplay.
 const RARITY_VALUE = { common: 1, rare: 20, epic: 300, legendary: 3000, special: 6000 };
 
 // Diamonds expressed in the same unit, derived from what a pack actually costs:
