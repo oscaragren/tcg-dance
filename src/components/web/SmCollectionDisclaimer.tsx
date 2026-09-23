@@ -11,20 +11,20 @@ export function SmCollectionDisclaimer({ className = "" }: { className?: string 
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <section className={`rounded-2xl border bg-white overflow-hidden ${className}`}>
+    <section className={`border-0 bg-transparent md:rounded-2xl md:border md:bg-white md:overflow-hidden ${className}`}>
       <button
         onClick={() => setIsOpen((v) => !v)}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between gap-3 px-6 py-4 text-left"
+        className="w-full flex items-center gap-1.5 md:justify-between md:gap-3 px-0 py-1 md:px-4 md:py-2 text-left"
       >
-        <h2 className="text-sm font-semibold text-gray-900">Vilka är med i kollektionen?</h2>
+        <h2 className="text-[11px] font-semibold text-gray-500">Vilka är med i kollektionen?</h2>
         <ChevronDown
-          className={`w-5 h-5 shrink-0 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`w-3 h-3 md:w-3.5 md:h-3.5 shrink-0 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
       {isOpen && (
-        <div className="px-6 pb-5 -mt-1">
+        <div className="px-0 md:px-6 pb-3 md:pb-5 -mt-1">
           <p className="text-sm leading-relaxed text-gray-600">
             Vi har tagit alla som kvalificerade sig till SM 2026 som vi har hittat bilder på ifrån
             Angelicas Facebooksida. Det kan hända att vi missat någon och eftersom att det är många

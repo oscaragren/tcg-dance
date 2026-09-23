@@ -4,7 +4,12 @@ import { Button } from "../shared/ui/button";
 import type { Achievement } from "../../types/game";
 import { claimAchievement, fetchAchievements } from "../../utils/gameApi";
 
-export function AchievementsSection() {
+type AchievementsSectionProps = {
+  /** Scopes to one collection's achievements (global, collection-less ones are excluded). Omit to show all. */
+  collectionId?: string;
+};
+
+export function AchievementsSection({ collectionId }: AchievementsSectionProps) {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [claimingId, setClaimingId] = useState<string | null>(null);
@@ -33,41 +38,44 @@ export function AchievementsSection() {
 
   if (isLoading) return null;
 
-  // Hide achievements the user has already finished and claimed ("inlöst").
-  const visibleAchievements = achievements.filter((a) => !a.claimed);
+  // Hide achievements the user has already finished and claimed ("inlöst"),
+  // and scope to the active collection tab when one is set.
+  const visibleAchievements = achievements
+    .filter((a) => !a.claimed)
+    .filter((a) => (collectionId ? a.collectionId === collectionId : true));
   const claimableCount = visibleAchievements.filter((a) => a.complete).length;
 
   return (
     <section className="rounded-2xl border bg-white mb-10 overflow-hidden">
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 p-6 text-left"
+        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left"
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Prestationer</h2>
+          <h2 className="text-sm font-semibold">Prestationer</h2>
           {claimableCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
               {claimableCount}
             </span>
           )}
         </div>
-        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
-        <div className="px-6 pb-6">
-          <p className="text-sm text-gray-500 mb-4">Lös in prestationer för att tjäna diamanter.</p>
+        <div className="px-4 pb-4">
+          <p className="text-xs text-gray-500 mb-3">Lös in prestationer för att tjäna diamanter.</p>
 
           {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
           {visibleAchievements.length === 0 ? (
             <p className="text-sm text-gray-400">Inga prestationer kvar — du har löst in alla du klarat.</p>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {visibleAchievements.map((a) => {
               const pct = Math.min(100, Math.round((a.progress / a.target) * 100));
               return (
-                <div key={a.id} className="rounded-lg border px-4 py-3">
+                <div key={a.id} className="rounded-lg border px-3 py-2">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-medium text-sm">{a.title}</div>

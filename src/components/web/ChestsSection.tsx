@@ -125,7 +125,7 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
         />
       )}
 
-      <section className="rounded-2xl border bg-white mb-10 overflow-hidden">
+      <section className="rounded-2xl border bg-white overflow-hidden">
         <button
           onClick={() => setIsOpen((v) => !v)}
           className="w-full flex items-center justify-between gap-3 p-6 text-left"

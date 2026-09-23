@@ -759,6 +759,7 @@ function buildAchievementsResponse(userId) {
       target,
       complete,
       claimed: claimedIds.has(definition.id),
+      collectionId: definition.collectionId,
     };
   });
 }

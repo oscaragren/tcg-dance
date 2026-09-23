@@ -166,6 +166,8 @@ export type Achievement = {
   target: number;
   complete: boolean;
   claimed: boolean;
+  /** Set for achievements scoped to one collection; absent for global ones. */
+  collectionId?: string;
 };
 
 export type ClaimAchievementResponse = {
