@@ -207,7 +207,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
           <SmCollectionDisclaimer className="mb-6" />
 
           {/* Kistor takes 2/3 of the row, the filters take the remaining 1/3. */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
               <ChestsSection onCollected={loadCollection} />
             </div>

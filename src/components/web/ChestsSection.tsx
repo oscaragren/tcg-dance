@@ -1,4 +1,3 @@
-import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
@@ -33,7 +32,6 @@ type ChestsSectionProps = {
 
 export function ChestsSection({ onCollected }: ChestsSectionProps) {
   const [data, setData] = useState<ChestsResponse | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -125,27 +123,21 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
         />
       )}
 
-      <section className="rounded-2xl border bg-white overflow-hidden">
-        <button
-          onClick={() => setIsOpen((v) => !v)}
-          className="w-full flex items-center justify-between gap-3 p-6 text-left"
-        >
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Kistor</h2>
-            <span className="text-xs text-gray-400">
-              {data.chests.length} / {data.slots} platser
+      <section className="md:h-full rounded-2xl border bg-white overflow-hidden">
+        <div className="flex items-center gap-2 p-6 pb-0">
+          <h2 className="text-lg font-semibold">Kistor</h2>
+          <span className="text-xs text-gray-400">
+            {data.chests.length} / {data.slots} platser
+          </span>
+          {readyCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold">
+              {readyCount}
             </span>
-            {readyCount > 0 && (
-              <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold">
-                {readyCount}
-              </span>
-            )}
-          </div>
-          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-        </button>
+          )}
+        </div>
 
-        {isOpen && (
-          <div className="px-6 pb-6 space-y-4">
+        {(
+          <div className="px-6 pb-6 pt-4 space-y-4">
             <p className="text-sm text-gray-500">
               Kistor köps i <Link to="/handel" className="text-purple-600 hover:underline">Handel</Link> och låses upp
               efter en väntetid. Innehållet samlas in här.
