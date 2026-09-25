@@ -621,6 +621,15 @@ app.post("/api/announcements/seen", authed, (request, response) => {
 
 const ALLOWED_PACK_QUANTITIES = [1, 5, 10];
 
+function isPackOnSale(pack, now = Date.now()) {
+  if (!pack || pack.purchasable === false) return false;
+  if (pack.releaseAt) {
+    const releaseMs = Date.parse(pack.releaseAt);
+    if (Number.isFinite(releaseMs) && now < releaseMs) return false;
+  }
+  return true;
+}
+
 app.post("/api/game/buy-pack", authed, (request, response) => {
   const collectionId = String(request.body?.collectionId ?? "").trim();
   if (!collectionId) {
@@ -640,8 +649,10 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
     return;
   }
   // A collection can be fully live (cards, Samling, trading, upgrades, chests)
-  // before its pack goes on sale — pack.purchasable: false holds back only this.
-  if (collection.pack?.purchasable === false) {
+  // before its pack goes on sale. pack.purchasable: false holds it back
+  // indefinitely; pack.releaseAt (ISO time) opens sales automatically at that
+  // moment — the server's clock decides, not the client's.
+  if (!isPackOnSale(collection.pack)) {
     response.status(400).json({ message: "Det här packet går inte att köpa än." });
     return;
   }

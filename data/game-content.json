@@ -2008,7 +2008,7 @@
         "label": "SM 21-25-pack",
         "cardCount": 5,
         "price": 100,
-        "purchasable": false,
+        "releaseAt": "2026-09-25T15:00:00+02:00",
         "rarityChances": {
           "special": 0,
           "legendary": 0.05,

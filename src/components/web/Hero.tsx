@@ -2,16 +2,18 @@ import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import { cards } from "../../data/cards";
 import { featuredCollection, isPackPurchasable } from "../../data/packs";
+import { useNow } from "../../utils/useNow";
 
 // The start page talks about the newest collection only.
 const featuredCards  = cards.filter((c) => c.collectionId === featuredCollection?.id);
 const legendaryCount = featuredCards.filter((c) => c.rarity === "legendary").length;
 const totalCount     = featuredCards.length;
 const collectionName = featuredCollection?.label ?? "SM 2026";
-const collectionStatus =
-  featuredCollection && !isPackPurchasable(featuredCollection) ? "Ny kollektion" : "Nu tillgänglig";
 
 export function Hero() {
+  const now = useNow();
+  const collectionStatus =
+    featuredCollection && !isPackPurchasable(featuredCollection, now) ? "Ny kollektion" : "Nu tillgänglig";
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-gray-50 to-white py-20 md:py-32">
       <div className="container mx-auto px-6">

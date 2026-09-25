@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import type { CollectionConfig } from "../../data/buildCardCatalog";
 import { CardPoolRemaining } from "./CardPoolRemaining";
-import { isPackPurchasable } from "../../data/packs";
+import { isPackPurchasable, packReleaseLabel } from "../../data/packs";
+import { useNow } from "../../utils/useNow";
 
 type FeaturedCollectionProps = {
   collection: CollectionConfig;
@@ -24,7 +25,9 @@ export function FeaturedCollection({
   const isLoggedIn = onBuy !== undefined;
   const canAfford  = diamonds !== undefined && diamonds >= pack.price;
   // Newest collection may be live before its pack goes on sale.
-  const purchasable = isPackPurchasable(collection);
+  const now = useNow();
+  const purchasable = isPackPurchasable(collection, now);
+  const releaseLabel = packReleaseLabel(collection, now);
 
   return (
     <section className="bg-gradient-to-br from-gray-900 via-purple-950 to-gray-900 py-20">
@@ -48,7 +51,7 @@ export function FeaturedCollection({
                     disabled
                     className="bg-white/10 border border-white/20 text-white/70 font-semibold text-base"
                   >
-                    {pack.label} släpps snart
+                    {releaseLabel ? `${pack.label} · ${releaseLabel}` : `${pack.label} släpps snart`}
                   </Button>
                   <p className="text-xs text-gray-400">
                     Korten finns redan i{" "}

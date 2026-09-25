@@ -6,6 +6,8 @@ export type PackConfig = {
   price: number;
   /** false = the collection is live but its pack can't be bought yet. Defaults to true. */
   purchasable?: boolean;
+  /** ISO time the pack goes on sale, e.g. "2026-09-25T12:00:00+02:00". Enforced server-side. */
+  releaseAt?: string;
   rarityChances: Record<CardRarity, number>;
 };
 

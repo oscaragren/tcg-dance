@@ -4,7 +4,8 @@ import { Button } from "../../components/shared/ui/button";
 import { CardPoolPeek } from "../../components/web/CardPoolPeek";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
-import { collections, dailyDiamonds, isPackPurchasable } from "../../data/packs";
+import { collections, dailyDiamonds, isPackPurchasable, packReleaseLabel } from "../../data/packs";
+import { useNow } from "../../utils/useNow";
 import type { AuthUser } from "../../types/auth";
 import type { DanceCard } from "../../types/danceCard";
 import type { GameState } from "../../types/game";
@@ -24,6 +25,8 @@ export function HandelPage({ currentUser }: HandelPageProps) {
   const [buyingChest, setBuyingChest] = useState<ChestType | null>(null);
   const [chestNotice, setChestNotice] = useState<string | null>(null);
   const [streakBonusAwarded, setStreakBonusAwarded] = useState<number | null>(null);
+  // Ticks so a scheduled pack release unlocks without reloading the page.
+  const now = useNow();
 
   useEffect(() => {
     if (!currentUser) return;
@@ -168,7 +171,8 @@ export function HandelPage({ currentUser }: HandelPageProps) {
               {collections.map((collection) => {
                 const { pack } = collection;
                 // Not-yet-released packs still show all their info — only buying is held back.
-                const purchasable = isPackPurchasable(collection);
+                const purchasable = isPackPurchasable(collection, now);
+                const releaseLabel = packReleaseLabel(collection, now);
                 const canAfford = diamonds >= pack.price;
                 const isBuying = buyingPack === collection.id;
                 return (
@@ -191,7 +195,7 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                         <div className="flex flex-col items-end gap-2 shrink-0">
                           {!purchasable && (
                             <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-medium px-2.5 py-1">
-                              Kommer snart
+                              {releaseLabel ?? "Kommer snart"}
                             </span>
                           )}
                           {/* Scoped to this collection, so each pack card reports its own pool. */}
@@ -206,7 +210,7 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                       <div className="mt-auto space-y-2">
                         {!purchasable ? (
                           <p className="text-sm text-gray-500">
-                            Packet går inte att köpa än. Korten finns redan i{" "}
+                            {releaseLabel ? `${releaseLabel}.` : "Packet går inte att köpa än."} Korten finns redan i{" "}
                             <Link to="/samling" className="text-purple-600 hover:underline">Samling</Link>{" "}
                             och kan fås via kistor och byten.
                           </p>
