@@ -8,6 +8,8 @@ interface CardPlaceholderProps {
   size?: "small" | "medium" | "large";
   name?: string;
   danceStyle?: string;
+  /** e.g. "SM 2024" — shown before the dance style on multi-year collections. */
+  event?: string;
   designKey?: string;
   /** When false, only the card frame is shown (no name/rarity below). */
   showCaption?: boolean;
@@ -26,6 +28,7 @@ export function CardPlaceholder({
   size = "medium",
   name = "Your Card Design",
   danceStyle,
+  event,
   designKey,
   showCaption = true,
   disableLightbox = false,
@@ -95,6 +98,7 @@ export function CardPlaceholder({
   };
 
   const imageUrl = hideDesign ? undefined : resolveCardDesignUrl(designKey);
+  const subtitle = [event, danceStyle].filter(Boolean).join(" · ");
   const isLocked = hideDesign;
   const lightboxDisabled = disableLightbox || isLocked;
 
@@ -102,8 +106,8 @@ export function CardPlaceholder({
     <div className={`${captionWidths[size]} text-center mt-1.5 space-y-0.5`}>
       <div className={`text-[10px] uppercase tracking-wider font-semibold ${isLocked ? "text-gray-400" : rarityCaption[rarity]}`}>{rarity}</div>
       <div className="text-xs text-gray-900 leading-snug font-medium">{name}</div>
-      {danceStyle && (
-        <div className="text-[10px] text-gray-400 leading-tight">{danceStyle}</div>
+      {subtitle && (
+        <div className="text-[10px] text-gray-400 leading-tight">{subtitle}</div>
       )}
     </div>
   ) : null;
@@ -160,8 +164,8 @@ export function CardPlaceholder({
     <div className="mt-5 max-w-lg px-2 text-center">
       <div className="text-sm font-medium uppercase tracking-wider text-white/75">{rarity}</div>
       <div className="mt-1 text-lg font-semibold leading-snug text-white">{name}</div>
-      {danceStyle && (
-        <div className="mt-1 text-sm text-white/60">{danceStyle}</div>
+      {subtitle && (
+        <div className="mt-1 text-sm text-white/60">{subtitle}</div>
       )}
     </div>
   );

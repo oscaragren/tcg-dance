@@ -4,8 +4,7 @@ import { Button } from "../../components/shared/ui/button";
 import { CardPoolPeek } from "../../components/web/CardPoolPeek";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
-import { collections, dailyDiamonds } from "../../data/packs";
-import { upcomingCollection } from "../../data/upcomingCollection";
+import { collections, dailyDiamonds, isPackPurchasable } from "../../data/packs";
 import type { AuthUser } from "../../types/auth";
 import type { DanceCard } from "../../types/danceCard";
 import type { GameState } from "../../types/game";
@@ -168,6 +167,8 @@ export function HandelPage({ currentUser }: HandelPageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {collections.map((collection) => {
                 const { pack } = collection;
+                // Not-yet-released packs still show all their info — only buying is held back.
+                const purchasable = isPackPurchasable(collection);
                 const canAfford = diamonds >= pack.price;
                 const isBuying = buyingPack === collection.id;
                 return (
@@ -187,8 +188,15 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                             <div className="text-sm text-gray-500 mt-1">{collection.description}</div>
                           )}
                         </div>
-                        {/* Scoped to this collection, so each pack card reports its own pool. */}
-                        <CardPoolPeek collectionId={collection.id} label={collection.label} />
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          {!purchasable && (
+                            <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-medium px-2.5 py-1">
+                              Kommer snart
+                            </span>
+                          )}
+                          {/* Scoped to this collection, so each pack card reports its own pool. */}
+                          <CardPoolPeek collectionId={collection.id} label={collection.label} />
+                        </div>
                       </div>
 
                       <div className="text-sm text-gray-500">
@@ -196,18 +204,24 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                       </div>
 
                       <div className="mt-auto space-y-2">
-                        {!canAfford ? (
+                        {!purchasable ? (
+                          <p className="text-sm text-gray-500">
+                            Packet går inte att köpa än. Korten finns redan i{" "}
+                            <Link to="/samling" className="text-purple-600 hover:underline">Samling</Link>{" "}
+                            och kan fås via kistor och byten.
+                          </p>
+                        ) : !canAfford ? (
                           <p className="text-sm text-gray-400">Inte tillräckligt med diamanter.</p>
                         ) : null}
                         <div className="grid grid-cols-3 gap-2">
                           {PACK_QUANTITIES.map((qty) => {
                             const totalCost = pack.price * qty;
-                            const canAffordQty = diamonds >= totalCost;
+                            const canAffordQty = purchasable && diamonds >= totalCost;
                             return (
                               <Button
                                 key={qty}
                                 onClick={() => void handleBuyPack(collection.id, qty)}
-                                disabled={!canAffordQty || isLoadingState || !!buyingPack}
+                                disabled={!purchasable || !canAffordQty || isLoadingState || !!buyingPack}
                                 variant={canAffordQty ? "default" : "outline"}
                                 className={`flex-col h-auto py-2 ${canAffordQty ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" : ""}`}
                               >
@@ -223,40 +237,6 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                 );
               })}
 
-              {/* Coming soon — no real pack behind this yet, so it's a static, disabled tile. */}
-              <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50/60">
-                <div className="h-2 rounded-t-2xl bg-gradient-to-r from-gray-300 to-gray-200" />
-                <div className="p-6 flex flex-col gap-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1">
-                        {upcomingCollection.label}
-                      </div>
-                      <div className="text-2xl font-bold text-gray-400">Kommande pack</div>
-                      <div className="text-sm text-gray-500 mt-1">{upcomingCollection.blurb}</div>
-                    </div>
-                    <span className="shrink-0 inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-medium px-2.5 py-1">
-                      Kommer snart
-                    </span>
-                  </div>
-
-                  <div className="text-sm text-gray-400">Antal kort och pris meddelas snart</div>
-
-                  <div className="mt-auto grid grid-cols-3 gap-2">
-                    {PACK_QUANTITIES.map((qty) => (
-                      <Button
-                        key={qty}
-                        disabled
-                        variant="outline"
-                        className="flex-col h-auto py-2 opacity-60 cursor-not-allowed"
-                      >
-                        <span className="font-semibold">Köp {qty}</span>
-                        <span className="text-[11px] opacity-80">—</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
 
             <SmCollectionDisclaimer />

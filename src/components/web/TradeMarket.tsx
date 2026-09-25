@@ -180,6 +180,7 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                   size="small"
                   name={selectedCard.name}
                   danceStyle={selectedCard.danceStyle}
+                  event={selectedCard.event}
                   designKey={selectedCard.designKey}
                   showCaption
                 />

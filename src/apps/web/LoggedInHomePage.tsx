@@ -4,13 +4,11 @@ import { HeroSection } from "../../components/web/HeroSection";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { PhotographerPromo } from "../../components/web/PhotographerPromo";
 import { Faq } from "../../components/web/Faq";
-import { UpcomingCollectionTeaser } from "../../components/web/UpcomingCollectionTeaser";
 import type { DanceCard } from "../../data/cards";
-import { collections } from "../../data/packs";
+import { featuredCollection, isPackPurchasable } from "../../data/packs";
 import type { GameState } from "../../types/game";
 import { buyPack, claimDailyDiamonds, fetchGameState } from "../../utils/gameApi";
 
-const featuredCollection = collections[collections.length - 1];
 
 type LoggedInHomePageProps = {
   username: string;
@@ -58,7 +56,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   }
 
   async function handleBuyFeaturedPack() {
-    if (!featuredCollection || buyingPack) return;
+    if (!featuredCollection || !isPackPurchasable(featuredCollection) || buyingPack) return;
     setBuyingPack(true);
     setBuyError(null);
     try {
@@ -99,8 +97,6 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
           diamondStreakTarget={gameState?.diamondStreakTarget ?? 7}
           streakBonusAwarded={streakBonusAwarded}
         />
-
-        <UpcomingCollectionTeaser />
 
         {featuredCollection && (
           <FeaturedCollection

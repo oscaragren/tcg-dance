@@ -4,6 +4,8 @@ export type PackConfig = {
   label: string;
   cardCount: number;
   price: number;
+  /** false = the collection is live but its pack can't be bought yet. Defaults to true. */
+  purchasable?: boolean;
   rarityChances: Record<CardRarity, number>;
 };
 
@@ -17,6 +19,10 @@ export type CollectionConfig = {
   /** Pre-built card list — if present, used directly instead of ranking data. */
   cards?: DanceCard[];
   pack: PackConfig;
+  /** Per-collection override of the global copiesPerRarity (server-side). */
+  copiesPerRarity?: Partial<Record<CardRarity, number>>;
+  /** Hand-written achievement table (server-side, see server/achievements.mjs). */
+  achievements?: unknown;
 };
 
 export type GameContentJson = {

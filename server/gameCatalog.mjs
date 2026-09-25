@@ -84,7 +84,24 @@ export async function loadGameCatalog() {
 
   const collections = gameContent.collections ?? [];
   const primaryCollectionId = collections[0]?.id ?? "sm2026";
-  const cards = buildCardCatalog(gameContent, ranking, primaryCollectionId);
+
+  // Every collection contributes its own cards. Bench cards (and the ranking
+  // fallback) only ever belonged to the primary collection, so later
+  // collections are built without them.
+  const cards = [];
+  const seenIds = new Set();
+  const collectionIds = collections.length > 0 ? collections.map((c) => c.id) : [primaryCollectionId];
+  for (const collectionId of collectionIds) {
+    const content = collectionId === primaryCollectionId ? gameContent : { ...gameContent, commonBenchCards: [] };
+    for (const card of buildCardCatalog(content, ranking, collectionId)) {
+      if (seenIds.has(card.id)) {
+        console.warn(`Duplicate card id "${card.id}" in collection ${collectionId} — skipped.`);
+        continue;
+      }
+      seenIds.add(card.id);
+      cards.push(card);
+    }
+  }
 
   return {
     cards,

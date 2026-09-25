@@ -213,6 +213,7 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
                         size="small"
                         name={card.name}
                         danceStyle={card.danceStyle}
+                        event={card.event}
                         designKey={card.designKey}
                         showCaption
                         disableLightbox

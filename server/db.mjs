@@ -126,6 +126,16 @@ db.exec(`
     PRIMARY KEY (user_id, type)
   );
 
+  -- How many packs each player has opened, per collection. Backs the
+  -- "open N packs" achievements; owned_cards can't answer that because cards
+  -- get traded, upgraded away and also arrive from chests.
+  CREATE TABLE IF NOT EXISTS packs_opened (
+    user_id       TEXT NOT NULL REFERENCES users(id),
+    collection_id TEXT NOT NULL,
+    count         INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, collection_id)
+  );
+
   -- News shown from the megaphone dropdown in the header, newest first.
   -- Managed from the admin panel: publish (insert) and remove (delete).
   CREATE TABLE IF NOT EXISTS announcements (

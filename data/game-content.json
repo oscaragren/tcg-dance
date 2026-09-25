@@ -1998,6 +1998,2930 @@
         }
       ],
       "shortLabel": "SM26"
+    },
+    {
+      "id": "sm2125",
+      "label": "SM 21-25",
+      "shortLabel": "SM 21-25",
+      "description": "Alla finaler från SM 2021 till SM 2025.",
+      "pack": {
+        "label": "SM 21-25-pack",
+        "cardCount": 5,
+        "price": 100,
+        "purchasable": false,
+        "rarityChances": {
+          "special": 0,
+          "legendary": 0.05,
+          "epic": 0.15,
+          "rare": 0.3,
+          "common": 0.5
+        }
+      },
+      "copiesPerRarity": {
+        "legendary": 10,
+        "epic": 20,
+        "rare": 40,
+        "common": 230,
+        "special": 1
+      },
+      "achievements": {
+        "packsOpened": [
+          {
+            "target": 1,
+            "reward": 10
+          },
+          {
+            "target": 25,
+            "reward": 50
+          },
+          {
+            "target": 100,
+            "reward": 200
+          },
+          {
+            "target": 500,
+            "reward": 1000
+          }
+        ],
+        "firstOfRarity": {
+          "rare": 50,
+          "epic": 150,
+          "legendary": 1000
+        },
+        "allOfRarity": {
+          "common": 500,
+          "rare": 1000,
+          "epic": 2000,
+          "legendary": 5000
+        },
+        "complete": 10000
+      },
+      "cards": [
+        {
+          "id": "sm2125-SK6",
+          "name": "Legender",
+          "rarity": "special",
+          "collectionId": "sm2125",
+          "designKey": "ID-SK6",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-SK7",
+          "name": "Kramfest 1",
+          "rarity": "special",
+          "collectionId": "sm2125",
+          "designKey": "ID-SK7",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-SK8",
+          "name": "Kramfest 2",
+          "rarity": "special",
+          "collectionId": "sm2125",
+          "designKey": "ID-SK8",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-314",
+          "name": "Benjamin Österlund & Angelica Källström",
+          "rarity": "legendary",
+          "collectionId": "sm2125",
+          "designKey": "ID-314",
+          "club": "UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-315",
+          "name": "Nils Andrén & Bianca Locatelli",
+          "rarity": "legendary",
+          "collectionId": "sm2125",
+          "designKey": "ID-315",
+          "club": "BDF",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-316",
+          "name": "Alma Forsberg & Maja Forsberg",
+          "rarity": "legendary",
+          "collectionId": "sm2125",
+          "designKey": "ID-316",
+          "club": "SOG",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-317",
+          "name": "Jonas Boberg, Cajsa Weinemo & Lena Magnusson",
+          "rarity": "legendary",
+          "collectionId": "sm2125",
+          "designKey": "ID-317",
+          "club": "MÄLAR / DKB",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-318",
+          "name": "Lisa Lundström, Oscar Ågren & Caroline Bejstam",
+          "rarity": "legendary",
+          "collectionId": "sm2125",
+          "designKey": "ID-318",
+          "club": "MÄLAR / NSW",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-319",
+          "name": "Karl Lettenström & Elizabeth Lindström",
+          "rarity": "epic",
+          "collectionId": "sm2125",
+          "designKey": "ID-319",
+          "club": "RS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-320",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "epic",
+          "collectionId": "sm2125",
+          "designKey": "ID-320",
+          "club": "UMDK",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-321",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "epic",
+          "collectionId": "sm2125",
+          "designKey": "ID-321",
+          "club": "MÄLAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-322",
+          "name": "Jacob Berggren & Nathalie Albrigtsen",
+          "rarity": "epic",
+          "collectionId": "sm2125",
+          "designKey": "ID-322",
+          "club": "BDF",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-323",
+          "name": "Conrad Lindström & Cajsa Weinemo",
+          "rarity": "epic",
+          "collectionId": "sm2125",
+          "designKey": "ID-323",
+          "club": "BLÅA / DKB",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-324",
+          "name": "Nicklas Nyberg, Kristina Nyberg Smahel & Marielle Andersson",
+          "rarity": "epic",
+          "collectionId": "sm2125",
+          "designKey": "ID-324",
+          "club": "BDF",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-325",
+          "name": "David Widell & Sara Holmberg",
+          "rarity": "epic",
+          "collectionId": "sm2125",
+          "designKey": "ID-325",
+          "club": "DKB",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-326",
+          "name": "Alex Henriksson Cole & Elin Eriksson",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-326",
+          "club": "RS",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-327",
+          "name": "Jesper Boberg & Veronika Lind",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-327",
+          "club": "BDF / MÄLAR",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-328",
+          "name": "Urban Haglund & Linda Stridkvist",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-328",
+          "club": "JSDK",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-329",
+          "name": "Conrad Lindström & Matilda Lindgren",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-329",
+          "club": "BLÅA / UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-330",
+          "name": "Fredrik Fridh & Katja Fridh",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-330",
+          "club": "LBH",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-332",
+          "name": "Oliver Odenius & Emelie Nordeberg",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-332",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-333",
+          "name": "Nils Andrén & Bianca Locatelli",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-333",
+          "club": "BDF",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-334",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-334",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-335",
+          "name": "Gustav Svensén, Hilda Rosell & Lovisa Svensén",
+          "rarity": "rare",
+          "collectionId": "sm2125",
+          "designKey": "ID-335",
+          "club": "JDC / DKSS",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-336",
+          "name": "Arvid Jönsson & Elin Löfgren",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-336",
+          "club": "HVD",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-337",
+          "name": "Alex Henriksson Cole & Elin Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-337",
+          "club": "RS",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-338",
+          "name": "Valdemar Selgeryd & Amanda Berglind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-338",
+          "club": "ENA",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-339",
+          "name": "Viggo Martinsen & Tyra Lindstedt",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-339",
+          "club": "RS",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-340",
+          "name": "Wilmer Bergqvist & Alicia Jacobsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-340",
+          "club": "ENA",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-341",
+          "name": "Benjamin Österlund & Angelica Källström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-341",
+          "club": "UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-342",
+          "name": "Jesper Boberg & Veronika Lind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-342",
+          "club": "BDF / MÄLAR",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-343",
+          "name": "Karl Lettenström & Elizabeth Lindström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-343",
+          "club": "RS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-344",
+          "name": "Conrad Lindström & Matilda Lindgren",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-344",
+          "club": "BLÅA / UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-345",
+          "name": "Jacob Berggren & Rebecka Hallberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-345",
+          "club": "BDF",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-346",
+          "name": "Jonathan Haug & Emma Danielsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-346",
+          "club": "RS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-347",
+          "name": "David Eriksson & Nathalie Albrigtsen",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-347",
+          "club": "BDF / WETT",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-348",
+          "name": "David Widell & Sara Holmberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-348",
+          "club": "DKB",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-349",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-349",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-350",
+          "name": "Robert Kaland & Jana Sondell",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-350",
+          "club": "CAN / UBSS",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-351",
+          "name": "Martin Carlsson & Mattilda Sundqvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-351",
+          "club": "BDF",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-352",
+          "name": "Fredric Vestin & Camilla Lindström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-352",
+          "club": "UMDK",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-353",
+          "name": "Magnus Vedin & Nina Hammarberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-353",
+          "club": "ALT",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-354",
+          "name": "Nils Andrén & Bianca Locatelli",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-354",
+          "club": "BDF",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-355",
+          "name": "Conrad Lindström & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-355",
+          "club": "BLÅA / DKB",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-356",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-356",
+          "club": "UMDK",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-357",
+          "name": "Tobias Ramberg & Emma Söderlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-357",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-358",
+          "name": "Elias Corlin & Emmy Henriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-358",
+          "club": "MAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-359",
+          "name": "Fredric Vestin & Mollie Ölund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-359",
+          "club": "UMDK / RING",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-360",
+          "name": "Tobias Claesson & Martina Svanbäck",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-360",
+          "club": "MAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-367",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-367",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-370",
+          "name": "Olle Wijk & Ann-Catrin Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-370",
+          "club": "EBBA",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-373",
+          "name": "Nils Andrén & Bianca Locatelli",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-373",
+          "club": "BDF",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-374",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-374",
+          "club": "UMDK",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-375",
+          "name": "Jacob Berggren & Rebecka Hallberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-375",
+          "club": "BDF",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-376",
+          "name": "Tobias Claesson & Martina Svanbäck",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-376",
+          "club": "MAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-378",
+          "name": "Benjamin Österlund, Conrad Lindström & Matilda Lindgren",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-378",
+          "club": "UBSS / BLÅA",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-379",
+          "name": "Pontus Nordin, Anna Bäärnhielm & Anna Morgansdotter",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-379",
+          "club": "UDI",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2021"
+        },
+        {
+          "id": "sm2125-380",
+          "name": "Valdemar Selgeryd & Amanda Berglind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-380",
+          "club": "ENA",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-381",
+          "name": "Alma Forsberg & Maja Forsberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-381",
+          "club": "SOG",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-382",
+          "name": "Felix Freidmann & Lina Granö",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-382",
+          "club": "ENA",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-383",
+          "name": "Linus Freidmann & Cornelia Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-383",
+          "club": "ENA",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-384",
+          "name": "Hjalmar Törnkvist & Stina Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-384",
+          "club": "TROLL / ÖBRK",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-385",
+          "name": "Karl Lettenström & Elizabeth Lindström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-385",
+          "club": "RS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-386",
+          "name": "Conrad Lindström & Matilda Lindgren",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-386",
+          "club": "BLÅA / UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-387",
+          "name": "Jonas Boberg & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-387",
+          "club": "MÄLAR / DKB",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-388",
+          "name": "Tobias Ramberg & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-388",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-389",
+          "name": "David Widell & Sara Holmberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-389",
+          "club": "DKB",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-390",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-390",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-391",
+          "name": "Magnus Vedin & Nina Hammarberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-391",
+          "club": "ALT",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-392",
+          "name": "Krister Eriksson & Karolina Tornberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-392",
+          "club": "ALT",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-393",
+          "name": "Henrik Jansson & Jana Sondell",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-393",
+          "club": "UBSS",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-394",
+          "name": "Daniel Neuman & Johanna Kjellgren",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-394",
+          "club": "ALT / UBSS",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-395",
+          "name": "Conrad Lindström & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-395",
+          "club": "BLÅA / DKB",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-396",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-396",
+          "club": "UMDK",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-397",
+          "name": "Tobias Ramberg & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-397",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-398",
+          "name": "Oscar Ågren & Sofia Ärleskog",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-398",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-399",
+          "name": "Pontus Nordin & Anna Morgansdotter",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-399",
+          "club": "UDI",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-400",
+          "name": "Alex Henriksson Cole & Elin Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-400",
+          "club": "RS",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-401",
+          "name": "Valdemar Selgeryd & Amanda Berglind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-401",
+          "club": "ENA",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-402",
+          "name": "William Johansson & Nellie Stråmo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-402",
+          "club": "ÄDD",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-403",
+          "name": "Prangkaew Ahlstrand & Rebecka Ärlestig",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-403",
+          "club": "UMDK",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-404",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-404",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-405",
+          "name": "Thomas Söderström & Jennie Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-405",
+          "club": "LBS",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-406",
+          "name": "Jimmy Englund & Jenny Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-406",
+          "club": "BDF",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-407",
+          "name": "Olle Wijk & Ann-Catrin Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-407",
+          "club": "EBBA",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-408",
+          "name": "Roger Sundin & Kristina Sundin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-408",
+          "club": "ALT",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-409",
+          "name": "Lars Brunnström & Helén Brunnström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-409",
+          "club": "ALT",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-410",
+          "name": "Nils Andrén & Bianca Locatelli",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-410",
+          "club": "BDF",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-411",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-411",
+          "club": "UMDK",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-412",
+          "name": "Linnéa Aronsson & Linnea Englund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-412",
+          "club": "SSS",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-413",
+          "name": "Tobias Claesson & Martina Svanbäck",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-413",
+          "club": "MÄLAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-414",
+          "name": "Filip Lindqvist & Sofie Svensson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-414",
+          "club": "NSW",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-415",
+          "name": "Einar Varg & Nora Wennerberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-415",
+          "club": "SSS",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-419",
+          "name": "Jonas Boberg, Cajsa Weinemo & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-419",
+          "club": "MÄLAR / DKB",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-420",
+          "name": "Andreas Sundbom, Julia Lauri & Viktoria Björnsson-Spets",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-420",
+          "club": "NSW",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-421",
+          "name": "Amanda Stenman, Hanna Kemi & Lina Stenman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-421",
+          "club": "SDK",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-422",
+          "name": "Pontus Nordin, Anna Bäärnhielm & Anna Morgansdotter",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-422",
+          "club": "UDI",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-423",
+          "name": "Valdemar Selgeryd, Alicia Jacobsson & Amanda Berglind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-423",
+          "club": "ENA",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-424",
+          "name": "Adina Hägglund, Prangkaew Ahlstrand & Rebecka Ärlestig",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-424",
+          "club": "UMDK",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-425",
+          "name": "Gustav Svensén, Hilda Rosell & Lovisa Svensén",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-425",
+          "club": "JDC / DKSS",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2022"
+        },
+        {
+          "id": "sm2125-426",
+          "name": "Felix Freidmann & Lina Granö",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-426",
+          "club": "ENA",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-427",
+          "name": "Hjalmar Törnkvist & Stina Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-427",
+          "club": "ÖBRK",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-428",
+          "name": "Axel Törnblad & Maja Kvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-428",
+          "club": "DSW",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-430",
+          "name": "Joel Domeij & Selma Öström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-430",
+          "club": "RING",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-431",
+          "name": "Noah Videstorm Larsson & Nellie Stråmo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-431",
+          "club": "ÄDD",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-432",
+          "name": "Jesper Boberg & Veronika Lind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-432",
+          "club": "BDF / MÄLAR",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-433",
+          "name": "Jonas Boberg & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-433",
+          "club": "MÄLAR / DKB",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-434",
+          "name": "Jacob Berggren & Nathalie Albrigtsen",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-434",
+          "club": "BDF",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-435",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-435",
+          "club": "UMDK",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-436",
+          "name": "Tobias Ramberg & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-436",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-437",
+          "name": "David Widell & Sara Holmberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-437",
+          "club": "DKB",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-438",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-438",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-439",
+          "name": "Magnus Vedin & Nina Hammarberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-439",
+          "club": "ALT",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-440",
+          "name": "Urban Haglund & Linda Stridkvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-440",
+          "club": "JSDK",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-441",
+          "name": "Krister Eriksson & Karolina Tornberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-441",
+          "club": "ALT",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-442",
+          "name": "Tommy Ogfelt & Linda Göransson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-442",
+          "club": "HVD",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-443",
+          "name": "Conrad Lindström & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-443",
+          "club": "BLÅA / DKB",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-444",
+          "name": "Nils Andrén & Bianca Locatelli",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-444",
+          "club": "BDF",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-445",
+          "name": "Tobias Ramberg & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-445",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-446",
+          "name": "Karl Lettenström & Elizabeth Lindström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-446",
+          "club": "RS",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-447",
+          "name": "Oscar Ågren & Sofia Ärleskog",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-447",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-448",
+          "name": "Felix Freidmann & Lina Granö",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-448",
+          "club": "ENA",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-449",
+          "name": "Melker Svensson & Emilia Hedlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-449",
+          "club": "RS",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-450",
+          "name": "Prangkaew Ahlstrand & Rebecka Ärlestig",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-450",
+          "club": "UMDK",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-451",
+          "name": "William Johansson & Nellie Stråmo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-451",
+          "club": "ÄDD",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-452",
+          "name": "Simon Jonsson & Astrid Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-452",
+          "club": "ENA",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-453",
+          "name": "Isa Elfving & Wilma Lönneborg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-453",
+          "club": "UMDK",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-454",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-454",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-455",
+          "name": "David Widell & Sara Holmberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-455",
+          "club": "DKB",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-456",
+          "name": "Jimmy Englund & Jenny Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-456",
+          "club": "BDF",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-457",
+          "name": "Robin Larsson & Jenny Öhman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-457",
+          "club": "ÄDD",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-458",
+          "name": "Thomas Söderström & Jennie Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-458",
+          "club": "LBS",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-459",
+          "name": "Robert Kaland & Jana Sondell",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-459",
+          "club": "CAN / UBSS",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-460",
+          "name": "Nils Andrén & Bianca Locatelli",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-460",
+          "club": "BDF",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-461",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-461",
+          "club": "UMDK",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-462",
+          "name": "Linnéa Aronsson & Linnea Englund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-462",
+          "club": "SSS",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-463",
+          "name": "Jonatan Lindström & Erika Trygg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-463",
+          "club": "SSS",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-464",
+          "name": "Tobias Claesson & Martina Svanbäck",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-464",
+          "club": "MÄLAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-465",
+          "name": "Bernhard Almskoug & Lova Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-465",
+          "club": "BDF",
+          "danceStyle": "Rock'n'Roll Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-469",
+          "name": "Jonas Boberg, Cajsa Weinemo & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-469",
+          "club": "MÄLAR / DKB",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-470",
+          "name": "Pontus Nordin, Anna Morgansdotter & Fanny Elfving",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-470",
+          "club": "UDI / RING",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-471",
+          "name": "Amanda Stenman, Hanna Åström Kemi & Lina Stenman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-471",
+          "club": "SDK",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-472",
+          "name": "Ludwig Pålsson, Prangkaew Ahlstrand & Rebecka Ärlestig",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-472",
+          "club": "UMDK",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-473",
+          "name": "Gustav Svensén, Hilda Rosell & Lovisa Svensén",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-473",
+          "club": "JDC / DKSS",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-474",
+          "name": "Axel Törnblad, Elise Berglind & Maja Kvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-474",
+          "club": "DSW",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-475",
+          "name": "Leon Lundström, Ester Andersson & Rut Petrén",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-475",
+          "club": "DBB",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-476",
+          "name": "Truls Petrén & Alva Östberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-476",
+          "club": "DBB",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-477",
+          "name": "Hugo Magnusson & Ella Östberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-477",
+          "club": "DBB",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-478",
+          "name": "Isa Elfving & Wilma Lönneborg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-478",
+          "club": "UMDK",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2023"
+        },
+        {
+          "id": "sm2125-479",
+          "name": "Oliver Odenius & Emelie Nordeberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-479",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-480",
+          "name": "Hjalmar Törnkvist & Stina Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-480",
+          "club": "ÖBRK",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-481",
+          "name": "Axel Törnblad & Maja Kvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-481",
+          "club": "DSW",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-482",
+          "name": "William Johansson & Rebecka Ärlestig",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-482",
+          "club": "ÄDD / UMDK",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-483",
+          "name": "Hannes Ardbäck & Selma Lundin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-483",
+          "club": "ENA",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-484",
+          "name": "Benjamin Österlund & Angelica Källström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-484",
+          "club": "UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-485",
+          "name": "Jonas Boberg & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-485",
+          "club": "MÄLAR / DKB",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-486",
+          "name": "Conrad Lindström & Matilda Lindgren",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-486",
+          "club": "BLÅA / UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-487",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-487",
+          "club": "UMDK",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-488",
+          "name": "Tobias Ramberg & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-488",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-489",
+          "name": "Hampus Falk & Fanny Ellström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-489",
+          "club": "RS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-490",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-490",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-491",
+          "name": "Tommy Ogfelt & Linda Göransson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-491",
+          "club": "HVD",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-492",
+          "name": "Daniel Everborn & Susanna Everborn",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-492",
+          "club": "BDF",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-493",
+          "name": "Fredrik Fridh & Katja Fridh",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-493",
+          "club": "LBH",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-494",
+          "name": "Tobbe Sellberg & Hanna Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-494",
+          "club": "GRRC",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-495",
+          "name": "Martin Månsson & Elin Lindström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-495",
+          "club": "NSW",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-496",
+          "name": "Urban Haglund & Linda Stridkvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-496",
+          "club": "JSDK",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-497",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-497",
+          "club": "UMDK",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-498",
+          "name": "Tobias Ramberg & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-498",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-499",
+          "name": "Jonathan Haug & Emma Danielsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-499",
+          "club": "RS",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-500",
+          "name": "Valdemar Selgeryd & Amanda Berglind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-500",
+          "club": "ENA",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-501",
+          "name": "Hampus Falk & Fanny Ellström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-501",
+          "club": "RS",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-502",
+          "name": "William Johansson & Rebecka Ärlestig",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-502",
+          "club": "ÄDD / UMDK",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-503",
+          "name": "Alma Forsberg & Maja Forsberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-503",
+          "club": "SOG",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-504",
+          "name": "Hjalmar Törnkvist & Stina Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-504",
+          "club": "ÖBRK",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-505",
+          "name": "Felix Freidmann & Lina Granö",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-505",
+          "club": "ENA",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-506",
+          "name": "Hannes Ardbäck & Selma Lundin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-506",
+          "club": "ENA",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-507",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-507",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-508",
+          "name": "Axel Engstrand & Emma Linnman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-508",
+          "club": "MAR",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-509",
+          "name": "Jimmy Englund & Johanna Kjellgren",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-509",
+          "club": "DKB / UBSS",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-510",
+          "name": "Robin Larsson & Jenny Öhman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-510",
+          "club": "ÄDD",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-511",
+          "name": "Robert Kaland & Jana Sondell",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-511",
+          "club": "CAN / UBSS",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-512",
+          "name": "Roger Sundin & Kristina Sundin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-512",
+          "club": "ALT",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-513",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-513",
+          "club": "UMDK",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-514",
+          "name": "Jonatan Lindström & Erika Trygg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-514",
+          "club": "SSS",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-515",
+          "name": "Axel Engstrand & Emma Linnman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-515",
+          "club": "MAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-516",
+          "name": "Tobias Claesson & Martina Svanbäck",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-516",
+          "club": "MÄLAR / MAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-517",
+          "name": "Mattias Sandberg & Annelie Damberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-517",
+          "club": "DKB",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-518",
+          "name": "Gustav Svensén & Lovisa Svensén",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-518",
+          "club": "JDC",
+          "danceStyle": "Lindy Hop Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-519",
+          "name": "Truls Petrén & Ester Andersson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-519",
+          "club": "DBB",
+          "danceStyle": "Lindy Hop Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-520",
+          "name": "Rebecka Ärlestig & Wilma Lönneborg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-520",
+          "club": "UMDK",
+          "danceStyle": "Lindy Hop Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-521",
+          "name": "Jonathan Haug, Emma Danielsson & Fanny Ellström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-521",
+          "club": "RS",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-522",
+          "name": "Oscar Ågren, Caroline Bejstam & Lisa Lundström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-522",
+          "club": "MÄLAR / NSW",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-523",
+          "name": "Amanda Stenman, Hanna Åström Kemi & Lina Stenman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-523",
+          "club": "SDK",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-524",
+          "name": "Kim Malmberg, Amanda Hjort & Debbie Lewinter",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-524",
+          "club": "UBSS / NSW",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-525",
+          "name": "Gustav Svensén, Hilda Rosell & Lovisa Svensén",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-525",
+          "club": "JDC / DKSS",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-526",
+          "name": "Hjalmar Törnkvist, Mira Berg & Stina Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-526",
+          "club": "ÖBRK",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-527",
+          "name": "Isa Elfving, Rebecka Ärlestig & Wilma Lönneborg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-527",
+          "club": "UMDK",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-528",
+          "name": "Hugo Magnusson, Alva Östberg & Ella Östberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-528",
+          "club": "DBB",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-529",
+          "name": "Truls Petrén & Alva Östberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-529",
+          "club": "DBB",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-531",
+          "name": "Isa Elfving & Wilma Lönneborg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-531",
+          "club": "UMDK",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-532",
+          "name": "Tobias Claesson & Emmy Henriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-532",
+          "club": "MÄLAR / MAR",
+          "danceStyle": "Rock'n'Roll Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-533",
+          "name": "Bernhard Almskoug & Lova Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-533",
+          "club": "BDF",
+          "danceStyle": "Rock'n'Roll Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-534",
+          "name": "Erik Engström & Marit Lindbom",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-534",
+          "club": "UBSS",
+          "danceStyle": "Rock'n'Roll Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-535",
+          "name": "Andreas Åström & Elise Berglind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-535",
+          "club": "DSW",
+          "danceStyle": "Rock'n'Roll Vuxen",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-536",
+          "name": "Tony Wallin & Tina Wallin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-536",
+          "club": "GRRC",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-537",
+          "name": "Roger Sundin & Kristina Sundin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-537",
+          "club": "ALT",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-538",
+          "name": "Tony Forsberg & Marie Forsberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-538",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-539",
+          "name": "Joacim Moberg & Maria Moberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-539",
+          "club": "DKDM",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-540",
+          "name": "Henrik Andersson & Åsa Andersson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-540",
+          "club": "SPIR",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-541",
+          "name": "Andreas Sundberg & Victoria Sundberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-541",
+          "club": "NSW",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-542",
+          "name": "Tomas Blom, Carin Miehling & Helen Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-542",
+          "club": "MÄLAR",
+          "danceStyle": "Dubbelbugg Grand Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-543",
+          "name": "Orvar Carlsson, Anette Carlsson & Ylva Lindberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-543",
+          "club": "MÄLAR",
+          "danceStyle": "Dubbelbugg Grand Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-544",
+          "name": "Urban Haglund, Linda Bergqvist & Linda Stridkvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-544",
+          "club": "JSDK",
+          "danceStyle": "Dubbelbugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-545",
+          "name": "Kristoffer Lundbom, Emma Rosell & Maria Endelvik",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-545",
+          "club": "DKB / DKSS",
+          "danceStyle": "Dubbelbugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-546",
+          "name": "Robert Wilhelmsson, Camilla Wilhelmsson & Märith Aronsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-546",
+          "club": "RS",
+          "danceStyle": "Dubbelbugg Senior",
+          "event": "SM 2024"
+        },
+        {
+          "id": "sm2125-549",
+          "name": "Axel Törnblad & Maja Kvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-549",
+          "club": "DSW",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-550",
+          "name": "Hannes Ardbäck & Selma Lundin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-550",
+          "club": "ENA",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-551",
+          "name": "Felix Freidmann & Emilia Hedlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-551",
+          "club": "ENA / RS",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-552",
+          "name": "Simon Jonsson & Astrid Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-552",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-553",
+          "name": "Jacob Berggren & Nathalie Albrigtsen",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-553",
+          "club": "BDF",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-554",
+          "name": "Benjamin Österlund & Angelica Källström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-554",
+          "club": "UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-555",
+          "name": "Conrad Lindström & Matilda Lindgren",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-555",
+          "club": "BLÅA / UBSS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-556",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-556",
+          "club": "UMDK",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-557",
+          "name": "Jonas Boberg & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-557",
+          "club": "MÄLAR / DKB",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-558",
+          "name": "Hampus Falk & Fanny Ellström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-558",
+          "club": "RS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-559",
+          "name": "Jonathan Haug & Emma Danielsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-559",
+          "club": "RS",
+          "danceStyle": "Bugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-560",
+          "name": "Henric Stillman & Joanna Stillman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-560",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-561",
+          "name": "Magnus Vedin & Karolina Tornberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-561",
+          "club": "ALT",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-562",
+          "name": "Pontus Nordin & Anna Morgansdotter",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-562",
+          "club": "RS",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-563",
+          "name": "Pontus Johqvist & Caroline Bengtsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-563",
+          "club": "LBH",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-564",
+          "name": "Kristoffer Lundbom & Maria Endelvik",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-564",
+          "club": "DKB",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-565",
+          "name": "Fredrik Fridh & Katja Fridh",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-565",
+          "club": "LBH",
+          "danceStyle": "Bugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-566",
+          "name": "Conrad Lindström & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-566",
+          "club": "BLÅA / DKB",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-567",
+          "name": "Tobias Ramberg & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-567",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-568",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-568",
+          "club": "UMDK",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-569",
+          "name": "Oscar Ågren & Sofia Ärleskog",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-569",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-570",
+          "name": "Valdemar Selgeryd & Amanda Berglind",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-570",
+          "club": "ENA",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-571",
+          "name": "August Selgeryd & Malin Svensson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-571",
+          "club": "ENA / RS",
+          "danceStyle": "Boogie Woogie Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-572",
+          "name": "Oliver Odenius & Emelie Nordeberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-572",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-573",
+          "name": "Simon Jonsson & Astrid Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-573",
+          "club": "MÄLAR",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-574",
+          "name": "Felix Freidmann & Emilia Hedlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-574",
+          "club": "ENA / RS",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-575",
+          "name": "Hannes Ardbäck & Selma Lundin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-575",
+          "club": "ENA",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-576",
+          "name": "Axel Törnblad & Maja Kvist",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-576",
+          "club": "DSW",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-577",
+          "name": "William Johansson & Rebecka Ärlestig",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-577",
+          "club": "ÄDD / UMDK",
+          "danceStyle": "Boogie Woogie Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-578",
+          "name": "David Widell & Sara Holmberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-578",
+          "club": "DKB",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-579",
+          "name": "Pontus Nordin & Anna Morgansdotter",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-579",
+          "club": "RS",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-580",
+          "name": "Fredrik Fridh & Katja Fridh",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-580",
+          "club": "LBH",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-581",
+          "name": "Axel Engstrand & Emma Linnman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-581",
+          "club": "MAR",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-582",
+          "name": "Robert Johnsson & Jana Sondell",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-582",
+          "club": "MÄLAR / UBSS",
+          "danceStyle": "Boogie Woogie Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-583",
+          "name": "Conrad Lindström & Cajsa Weinemo",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-583",
+          "club": "BLÅA / DKB",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-584",
+          "name": "Tobias Ramberg & Lena Magnusson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-584",
+          "club": "MÄLAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-585",
+          "name": "Viktor Edlund & Wilma Edlund",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-585",
+          "club": "UMDK",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-586",
+          "name": "Axel Engstrand & Emma Linnman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-586",
+          "club": "MAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-587",
+          "name": "Jonatan Lindström & Erika Trygg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-587",
+          "club": "SSS",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-588",
+          "name": "Tobias Claesson & Martina Svanbäck",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-588",
+          "club": "MÄLAR / MAR",
+          "danceStyle": "Lindy Hop Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-589",
+          "name": "Oliver Odenius & Emelie Nordeberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-589",
+          "club": "MÄLAR",
+          "danceStyle": "Lindy Hop Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-590",
+          "name": "Gustav Svensén & Lovisa Svensén",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-590",
+          "club": "JDC",
+          "danceStyle": "Lindy Hop Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-591",
+          "name": "Sixten Gauffin & Lisa Vesterberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-591",
+          "club": "ENA / MÄLAR",
+          "danceStyle": "Lindy Hop Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-592",
+          "name": "Jonathan Haug, Emma Danielsson & Fanny Ellström",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-592",
+          "club": "RS",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-593",
+          "name": "Kim Malmberg, Amanda Hjort & Debbie Lewinter",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-593",
+          "club": "UBSS / NSW",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-594",
+          "name": "Elias Corlin, Anna Engstrand & Emma Corlin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-594",
+          "club": "MAR",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-595",
+          "name": "Linus Derehed, Emelie Engqvist & Kajsa Risberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-595",
+          "club": "LBH",
+          "danceStyle": "Dubbelbugg Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-596",
+          "name": "Hjalmar Törnkvist, Mira Berg & Stina Eriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-596",
+          "club": "ÖBRK",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-597",
+          "name": "Hugo Magnusson, Alva Östberg & Ella Östberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-597",
+          "club": "DBB",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-598",
+          "name": "Isa Elfving, Rebecka Ärlestig & Wilma Lönneborg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-598",
+          "club": "UMDK",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-599",
+          "name": "William Klasson, Cornelia Klasson & Maja Persson Klahr",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-599",
+          "club": "HVD",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-600",
+          "name": "Hannes Store Malefors, Clara Store Malefors & Stina Jonsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-600",
+          "club": "MÄLAR",
+          "danceStyle": "Dubbelbugg Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-601",
+          "name": "Mattias Plichta & Alexandra Baranava",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-601",
+          "club": "LBH",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-602",
+          "name": "Sebastian Brisjö & Elin Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-602",
+          "club": "LBH",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-603",
+          "name": "Leo Holmström & Hilda Rosell",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-603",
+          "club": "DSW / DKSS",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-604",
+          "name": "Truls Petrén & Alva Östberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-604",
+          "club": "DBB",
+          "danceStyle": "Rock'n'Roll Junior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-605",
+          "name": "Tobias Claesson & Emmy Henriksson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-605",
+          "club": "MÄLAR / MAR",
+          "danceStyle": "Rock'n'Roll Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-607",
+          "name": "Erik Engström & Marit Lindbom",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-607",
+          "club": "UBSS",
+          "danceStyle": "Rock'n'Roll Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-608",
+          "name": "Bernhard Almskoug & Lova Johansson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-608",
+          "club": "BDF",
+          "danceStyle": "Rock'n'Roll Vuxen",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-609",
+          "name": "Björn Åkesson & Annika Borg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-609",
+          "club": "GÅS",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-610",
+          "name": "Tony Wallin & Tina Wallin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-610",
+          "club": "GRRC",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-611",
+          "name": "Roger Sundin & Kristina Sundin",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-611",
+          "club": "ALT",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-612",
+          "name": "Daniel Rolin & Golda Einstein",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-612",
+          "club": "BDF",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-613",
+          "name": "Christoffer Nilsson & Christina Edwinsdotter Ardnor",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-613",
+          "club": "UMDK",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-614",
+          "name": "Magnus Söderberg & Susanne Söderberg",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-614",
+          "club": "MÄLAR",
+          "danceStyle": "Bugg Grand Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-615",
+          "name": "Pontus Nordin, Anna Morgansdotter & Martina Nilsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-615",
+          "club": "RS",
+          "danceStyle": "Dubbelbugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-616",
+          "name": "Kristoffer Lundbom, Emma Rosell & Maria Endelvik",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-616",
+          "club": "DKB / DKSS",
+          "danceStyle": "Dubbelbugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-617",
+          "name": "Jennie Johansson, Theres Nylund & Åsa Boman",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-617",
+          "club": "LBS",
+          "danceStyle": "Dubbelbugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-618",
+          "name": "Robert Wilhelmsson, Camilla Wilhelmsson & Märith Aronsson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-618",
+          "club": "RS",
+          "danceStyle": "Dubbelbugg Senior",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-619",
+          "name": "Lillemor Jensen Sedig & Zanna Petersson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-619",
+          "club": "DKB",
+          "danceStyle": "Bugg Rullstol 1&2",
+          "event": "SM 2025"
+        },
+        {
+          "id": "sm2125-621",
+          "name": "Jax Lif Pedersen & Nadja Pettersson",
+          "rarity": "common",
+          "collectionId": "sm2125",
+          "designKey": "ID-621",
+          "club": "ÖBRK",
+          "danceStyle": "Bugg Rullstol 1&2",
+          "event": "SM 2025"
+        }
+      ]
     }
   ],
   "commonBenchCards": []

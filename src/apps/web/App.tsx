@@ -24,9 +24,8 @@ import { TopplistaPage } from "./TopplistaPage";
 import { PlayerCollectionPage } from "./PlayerCollectionPage";
 import { TradeMarketPage } from "./TradeMarketPage";
 import { AdminPage } from "./AdminPage";
-import { collections } from "../../data/packs";
+import { featuredCollection } from "../../data/packs";
 
-const featuredCollection = collections[collections.length - 1];
 
 function LandingPage() {
   return (

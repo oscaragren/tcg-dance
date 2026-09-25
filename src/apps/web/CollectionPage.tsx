@@ -8,8 +8,7 @@ import { Button } from "../../components/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity, type DanceCard } from "../../data/cards";
-import { collections } from "../../data/packs";
-import { upcomingCollection } from "../../data/upcomingCollection";
+import { collections, isPackPurchasable } from "../../data/packs";
 import { fetchGameState, fetchMyCardsForTrade } from "../../utils/gameApi";
 
 type RarityFilter = "all" | CardRarity;
@@ -27,10 +26,11 @@ type CollectionPageProps = {
 export function CollectionPage({ userEmail }: CollectionPageProps) {
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
   // Drives both the card grid and Prestationer below — "all" shows every
-  // collection, a collection id scopes both to it, "tba" is the placeholder.
+  // collection, a collection id scopes both to it.
   const [activeCollectionId, setActiveCollectionId] = useState<string>("all");
   const [danceStyleFilter, setDanceStyleFilter] = useState<string>("all");
   const [clubFilter, setClubFilter] = useState<string>("all");
+  const [eventFilter, setEventFilter] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
   const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
   const [forTradeIds, setForTradeIds] = useState<Set<string>>(new Set());
@@ -83,6 +83,12 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
     [filterableCards],
   );
 
+  // Championship year ("SM 2024"), only set on multi-year collections.
+  const eventOptions = useMemo(
+    () => Array.from(new Set(filterableCards.map((c) => c.event).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "sv")),
+    [filterableCards],
+  );
+
   // Not scoped by collection — cardsForCollection() below slices this
   // further per active tab.
   const visibleCards = useMemo(() => {
@@ -90,11 +96,15 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
     if (rarityFilter !== "all") candidateCards = candidateCards.filter((c) => c.rarity === rarityFilter);
     if (danceStyleFilter !== "all") candidateCards = candidateCards.filter((c) => c.danceStyle === danceStyleFilter);
     if (clubFilter !== "all") candidateCards = candidateCards.filter((c) => splitClubs(c.club).includes(clubFilter));
+    if (eventFilter !== "all") candidateCards = candidateCards.filter((c) => c.event === eventFilter);
     return [...candidateCards].sort((a, b) => {
       const d = rarityOrder[a.rarity] - rarityOrder[b.rarity];
-      return d !== 0 ? d : a.name.localeCompare(b.name, "sv");
+      if (d !== 0) return d;
+      const byName = a.name.localeCompare(b.name, "sv");
+      // The same couple can appear once per year — keep those in year order.
+      return byName !== 0 ? byName : (a.event ?? "").localeCompare(b.event ?? "", "sv");
     });
-  }, [ownedCards, showAll, rarityFilter, danceStyleFilter, clubFilter]);
+  }, [ownedCards, showAll, rarityFilter, danceStyleFilter, clubFilter, eventFilter]);
 
   function cardsForCollection(collectionId: string) {
     return collectionId === "all" ? visibleCards : visibleCards.filter((c) => c.collectionId === collectionId);
@@ -129,6 +139,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                   size="small"
                   name={card.name}
                   danceStyle={card.danceStyle}
+                  event={card.event}
                   designKey={card.designKey}
                   showCaption
                   hideDesign={!isOwned}
@@ -246,6 +257,22 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                   </select>
                 </div>
               )}
+              {eventOptions.length > 1 && (
+                <div>
+                  <label htmlFor="event-filter" className="block text-sm text-gray-600 mb-2">Visa år</label>
+                  <select
+                    id="event-filter"
+                    value={eventFilter}
+                    onChange={(e) => setEventFilter(e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="all">Alla år</option>
+                    {eventOptions.map((ev) => (
+                      <option key={ev} value={ev}>{ev}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {clubOptions.length > 1 && (
                 <div>
                   <label htmlFor="club-filter" className="block text-sm text-gray-600 mb-2">Visa förening</label>
@@ -268,12 +295,11 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
           <Tabs value={activeCollectionId} onValueChange={setActiveCollectionId} className="mt-3">
             <TabsList>
               {collections.map((c) => (
-                <TabsTrigger key={c.id} value={c.id}>{c.label}</TabsTrigger>
+                <TabsTrigger key={c.id} value={c.id} className="gap-1.5">
+                  {c.label}
+                  {!isPackPurchasable(c) && <Badge variant="secondary">Nytt</Badge>}
+                </TabsTrigger>
               ))}
-              <TabsTrigger value="tba" className="gap-1.5">
-                {upcomingCollection.label}
-                <Badge variant="secondary">Kommer snart</Badge>
-              </TabsTrigger>
               <TabsTrigger value="all">Alla</TabsTrigger>
             </TabsList>
 
@@ -290,14 +316,6 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                 {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
               </TabsContent>
             ))}
-
-            <TabsContent value="tba" className="mt-4">
-              <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
-                <div className="text-4xl mb-3" aria-hidden>🔒</div>
-                <h2 className="text-xl font-semibold mb-2">{upcomingCollection.tagline} är på väg</h2>
-                <p className="text-gray-500 max-w-md mx-auto">{upcomingCollection.blurb}</p>
-              </div>
-            </TabsContent>
           </Tabs>
         </div>
       </div>

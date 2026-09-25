@@ -42,7 +42,14 @@ app.use(cookieParser());
 
 // ── Pool sync ─────────────────────────────────────────────────────────────────
 
-function syncCardPool(allCards, copiesPerRarity) {
+// A collection may override the global copies-per-rarity (e.g. SM 21-25 has
+// 230 of each common); anything it doesn't set falls back to the global value.
+function copiesFor(card, copiesPerRarity, collectionsMap) {
+  const own = collectionsMap.get(card.collectionId)?.copiesPerRarity;
+  return own?.[card.rarity] ?? copiesPerRarity[card.rarity] ?? 10;
+}
+
+function syncCardPool(allCards, copiesPerRarity, collectionsMap) {
   const existingPool = new Map(
     db.prepare("SELECT card_id, collection_id, rarity, total_copies FROM card_pool").all().map((r) => [r.card_id, r]),
   );
@@ -59,7 +66,7 @@ function syncCardPool(allCards, copiesPerRarity) {
 
   db.transaction(() => {
     for (const card of allCards) {
-      const total = copiesPerRarity[card.rarity] ?? 10;
+      const total = copiesFor(card, copiesPerRarity, collectionsMap);
       const existing = existingPool.get(card.id);
       if (!existing) {
         const alreadyOwned = stmtCountOwned.get(card.id).n;
@@ -82,7 +89,7 @@ function syncCardPool(allCards, copiesPerRarity) {
 const { cards: allCards, collections, dailyDiamonds, copiesPerRarity } = await loadGameCatalog();
 const cardById = new Map(allCards.map((c) => [c.id, c]));
 const collectionsMap = new Map(collections.map((c) => [c.id, c]));
-syncCardPool(allCards, copiesPerRarity);
+syncCardPool(allCards, copiesPerRarity, collectionsMap);
 
 const achievementDefinitions = buildAchievementDefinitions(allCards, collections);
 const achievementById = new Map(achievementDefinitions.map((a) => [a.id, a]));
@@ -632,6 +639,13 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
     response.status(400).json({ message: "Ogiltigt antal pack." });
     return;
   }
+  // A collection can be fully live (cards, Samling, trading, upgrades, chests)
+  // before its pack goes on sale — pack.purchasable: false holds back only this.
+  if (collection.pack?.purchasable === false) {
+    response.status(400).json({ message: "Det här packet går inte att köpa än." });
+    return;
+  }
+
   const totalPrice = collection.pack.price * quantity;
 
   ensurePlayerState(request.auth.userId);
@@ -655,6 +669,10 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
     ).run(totalPrice, JSON.stringify(pulledCards), request.auth.userId);
     const stmtInsertCard = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
     for (const card of pulledCards) stmtInsertCard.run(request.auth.userId, card.id);
+    db.prepare(
+      `INSERT INTO packs_opened (user_id, collection_id, count) VALUES (?, ?, ?)
+       ON CONFLICT (user_id, collection_id) DO UPDATE SET count = count + excluded.count`,
+    ).run(request.auth.userId, collectionId, quantity);
   })();
 
   response.json({ pulledCards, state: buildStateResponse(request.auth.userId) });
@@ -740,16 +758,26 @@ app.post("/api/game/upgrade", authed, (request, response) => {
 
 // ── Achievements ──────────────────────────────────────────────────────────────
 
+/** { [collectionId]: packs opened } for one player. */
+function packsOpenedFor(userId) {
+  const result = {};
+  for (const row of db.prepare("SELECT collection_id, count FROM packs_opened WHERE user_id = ?").all(userId)) {
+    result[row.collection_id] = row.count;
+  }
+  return result;
+}
+
 function buildAchievementsResponse(userId) {
   const ownedCardIdSet = new Set(
     db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?").all(userId).map((r) => r.card_id),
   );
+  const packsOpened = packsOpenedFor(userId);
   const claimedIds = new Set(
     db.prepare("SELECT achievement_id FROM achievement_claims WHERE user_id = ?").all(userId).map((r) => r.achievement_id),
   );
 
   return achievementDefinitions.map((definition) => {
-    const { progress, target, complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards);
+    const { progress, target, complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards, packsOpened);
     return {
       id: definition.id,
       title: definition.title,
@@ -780,7 +808,7 @@ app.post("/api/achievements/:id/claim", authed, (request, response) => {
   const ownedCardIdSet = new Set(
     db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?").all(userId).map((r) => r.card_id),
   );
-  const { complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards);
+  const { complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards, packsOpenedFor(userId));
   if (!complete) { response.status(400).json({ message: "Prestationen är inte klar än." }); return; }
 
   ensurePlayerState(userId);
@@ -1917,6 +1945,7 @@ app.delete("/api/admin/users/:id", requireAdmin, (request, response) => {
     db.prepare("DELETE FROM chest_slots WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM chest_type_slots WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM achievement_claims WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM packs_opened WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM password_reset_tokens WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM trades WHERE sender_user_id = ? OR receiver_user_id = ?").run(userId, userId);
     db.prepare("DELETE FROM player_state WHERE user_id = ?").run(userId);

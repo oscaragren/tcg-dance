@@ -179,6 +179,7 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                             size="small"
                             name={card.name}
                             danceStyle={card.danceStyle}
+                            event={card.event}
                             designKey={card.designKey}
                             showCaption
                           />

@@ -1029,6 +1029,7 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
                     size="small"
                     name={card?.name ?? cardId}
                     danceStyle={card?.danceStyle}
+                    event={card?.event}
                     designKey={card?.designKey}
                     showCaption
                   />

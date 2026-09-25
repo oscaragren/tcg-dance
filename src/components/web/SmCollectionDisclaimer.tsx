@@ -38,6 +38,9 @@ export function SmCollectionDisclaimer({ className = "" }: { className?: string 
             </a>
             !
           </p>
+          <p className="mt-2 text-sm leading-relaxed text-gray-600">
+            SM 21-25 innehåller alla finaler från SM 2021 till SM 2025.
+          </p>
         </div>
       )}
     </section>

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import type { CollectionConfig } from "../../data/buildCardCatalog";
 import { CardPoolRemaining } from "./CardPoolRemaining";
+import { isPackPurchasable } from "../../data/packs";
 
 type FeaturedCollectionProps = {
   collection: CollectionConfig;
@@ -22,6 +23,8 @@ export function FeaturedCollection({
   const { pack } = collection;
   const isLoggedIn = onBuy !== undefined;
   const canAfford  = diamonds !== undefined && diamonds >= pack.price;
+  // Newest collection may be live before its pack goes on sale.
+  const purchasable = isPackPurchasable(collection);
 
   return (
     <section className="bg-gradient-to-br from-gray-900 via-purple-950 to-gray-900 py-20">
@@ -38,7 +41,22 @@ export function FeaturedCollection({
                 <p className="text-gray-300 text-lg mb-6">{collection.description}</p>
               )}
 
-              {isLoggedIn ? (
+              {isLoggedIn && !purchasable ? (
+                <div className="space-y-3">
+                  <Button
+                    size="lg"
+                    disabled
+                    className="bg-white/10 border border-white/20 text-white/70 font-semibold text-base"
+                  >
+                    {pack.label} släpps snart
+                  </Button>
+                  <p className="text-xs text-gray-400">
+                    Korten finns redan i{" "}
+                    <Link to="/samling" className="text-purple-300 hover:text-purple-200 underline">Samling</Link>{" "}
+                    och kan fås via kistor och byten.
+                  </p>
+                </div>
+              ) : isLoggedIn ? (
                 <div className="space-y-3">
                   <div className="text-gray-300 text-sm">
                     Du har <span className="text-white font-semibold">{diamonds}</span> ◆

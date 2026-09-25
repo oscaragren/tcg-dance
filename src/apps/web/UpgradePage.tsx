@@ -5,7 +5,6 @@ import { UpgradePickerModal } from "../../components/web/UpgradePickerModal";
 import { UpgradeRevealModal } from "../../components/web/UpgradeRevealModal";
 import { cards } from "../../data/cards";
 import { collections } from "../../data/packs";
-import { upcomingCollection } from "../../data/upcomingCollection";
 import type { AuthUser } from "../../types/auth";
 import type { CardRarity, DanceCard } from "../../types/danceCard";
 import { upgradeCardsRequired, upgradeTierTarget, type CardPoolInfo, type GameState } from "../../types/game";
@@ -152,33 +151,6 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
                 </div>
               ))}
 
-              {/* Coming soon — same conversion rates, no real cards behind it yet. */}
-              <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50/60 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-lg font-semibold text-gray-400">{upcomingCollection.label}</h2>
-                  <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-medium px-2.5 py-1">
-                    Kommer snart
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {(["common", "rare", "epic"] as CardRarity[]).map((rarity) => {
-                    const targetRarity = upgradeTierTarget[rarity];
-                    if (!targetRarity) return null;
-                    const required = upgradeCardsRequired[rarity] ?? 0;
-                    return (
-                      <div key={rarity} className="rounded-lg border px-4 py-3 opacity-60">
-                        <div className="text-sm font-medium">
-                          {RARITY_LABEL[rarity]} → {RARITY_LABEL[targetRarity]}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">0/{required} kort</div>
-                        <Button size="sm" className="mt-3 w-full" variant="outline" disabled>
-                          Kommer snart
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           )}
         </div>

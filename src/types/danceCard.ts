@@ -9,6 +9,8 @@ export interface DanceCard {
   club?: string;
   /** Dance style, e.g. "Bugg", "Lindy Hop". */
   danceStyle?: string;
+  /** Which championship the card is from, e.g. "SM 2024". Set on multi-year collections. */
+  event?: string;
   /** Matches image stem under data/designs, e.g. "ID-001" */
   designKey?: string;
   /** Vote4Dance position within its tier (if sourced from Vote4Dance). */

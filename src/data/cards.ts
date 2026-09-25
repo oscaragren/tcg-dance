@@ -10,10 +10,10 @@ export function cardById(id: string): DanceCard | undefined {
   return cards.find((card) => card.id === id);
 }
 
-const primaryCollectionId = (gameContent as GameContentJson).collections?.[0]?.id ?? "sm2026";
+const content = gameContent as GameContentJson;
+const collectionIds = content.collections?.length ? content.collections.map((c) => c.id) : ["sm2026"];
 
-export const cards: DanceCard[] = buildCardCatalog(
-  gameContent as GameContentJson,
-  vote4danceRanking as Vote4DanceRankingJson,
-  primaryCollectionId,
+// Every collection's cards, in collection order — mirrors server/gameCatalog.mjs.
+export const cards: DanceCard[] = collectionIds.flatMap((collectionId) =>
+  buildCardCatalog(content, vote4danceRanking as Vote4DanceRankingJson, collectionId),
 );

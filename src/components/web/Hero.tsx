@@ -1,11 +1,15 @@
 import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import { cards } from "../../data/cards";
-import { collections } from "../../data/packs";
+import { featuredCollection, isPackPurchasable } from "../../data/packs";
 
-const legendaryCount = cards.filter((c) => c.rarity === "legendary").length;
-const totalCount     = cards.length;
-const collectionName = collections[0]?.label ?? "SM 2026";
+// The start page talks about the newest collection only.
+const featuredCards  = cards.filter((c) => c.collectionId === featuredCollection?.id);
+const legendaryCount = featuredCards.filter((c) => c.rarity === "legendary").length;
+const totalCount     = featuredCards.length;
+const collectionName = featuredCollection?.label ?? "SM 2026";
+const collectionStatus =
+  featuredCollection && !isPackPurchasable(featuredCollection) ? "Ny kollektion" : "Nu tillgänglig";
 
 export function Hero() {
   return (
@@ -14,7 +18,7 @@ export function Hero() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 text-purple-700 text-sm mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-            {collectionName} · Nu tillgänglig
+            {collectionName} · {collectionStatus}
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-gray-900 via-purple-800 to-blue-900 bg-clip-text text-transparent">
