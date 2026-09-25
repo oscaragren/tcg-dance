@@ -16,6 +16,8 @@ type HeroSectionProps = {
   diamondStreakTarget?: number;
   /** Set right after a claim that completed the streak, for a one-off callout. */
   streakBonusAwarded?: number | null;
+  /** Server's amount for today's claim (an event may raise it). */
+  dailyDiamondsToday?: number;
 };
 
 export function HeroSection({
@@ -29,7 +31,10 @@ export function HeroSection({
   diamondStreak = 0,
   diamondStreakTarget = 7,
   streakBonusAwarded = null,
+  dailyDiamondsToday,
 }: HeroSectionProps) {
+  const todaysAmount = dailyDiamondsToday ?? dailyDiamonds;
+  const isBoosted = todaysAmount > dailyDiamonds;
   return (
     <section className="relative w-full border-b bg-white">
       <div className="container mx-auto px-6 py-10 md:py-14">
@@ -48,7 +53,9 @@ export function HeroSection({
               <span className="text-2xl text-blue-400 font-bold">◆</span>
             </div>
             <p className="text-xs text-gray-400">
-              Du får {dailyDiamonds} ◆ gratis varje dag.
+              {isBoosted
+                ? `Idag får du ${todaysAmount} ◆ istället för ${dailyDiamonds} ◆!`
+                : `Du får ${dailyDiamonds} ◆ gratis varje dag.`}
             </p>
             {!isLoading && (
               <p className="text-xs text-amber-600 mt-1">
@@ -66,7 +73,7 @@ export function HeroSection({
               disabled={!canClaim || isLoading || isClaiming}
               className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white w-full mb-1.5"
             >
-              {isClaiming ? "Hämtar..." : canClaim ? `Hämta ${dailyDiamonds} ◆` : "Diamanter hämtade idag"}
+              {isClaiming ? "Hämtar..." : canClaim ? `Hämta ${todaysAmount} ◆` : "Diamanter hämtade idag"}
             </Button>
             {!isLoading && (
               <p className="text-[11px] text-gray-400 mb-6">

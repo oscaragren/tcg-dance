@@ -96,6 +96,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
           diamondStreak={gameState?.diamondStreak ?? 0}
           diamondStreakTarget={gameState?.diamondStreakTarget ?? 7}
           streakBonusAwarded={streakBonusAwarded}
+          dailyDiamondsToday={gameState?.dailyDiamondsToday}
         />
 
         {featuredCollection && (

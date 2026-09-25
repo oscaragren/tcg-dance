@@ -5,6 +5,8 @@ export type GameState = {
   diamonds: number;
   lastDailyClaimDate: string | null;
   canClaimDailyDiamonds: boolean;
+  /** Today's daily claim before any streak bonus — higher during events. */
+  dailyDiamondsToday?: number;
   lastOpenedCards: DanceCard[];
   /** Consecutive days the daily diamonds have been claimed with no gap. */
   diamondStreak: number;

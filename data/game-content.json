@@ -1,5 +1,17 @@
 {
   "dailyDiamonds": 150,
+  "events": [
+    {
+      "id": "lordag-2026-09-26",
+      "label": "Lördagsbonus",
+      "startsAt": "2026-09-26T00:00:00+02:00",
+      "endsAt": "2026-09-27T00:00:00+02:00",
+      "dailyDiamonds": 800,
+      "chestWaitHours": {
+        "gold": 3
+      }
+    }
+  ],
   "copiesPerRarity": {
     "legendary": 5,
     "epic": 20,

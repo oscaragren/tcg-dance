@@ -86,7 +86,7 @@ function syncCardPool(allCards, copiesPerRarity, collectionsMap) {
 
 // ── Startup: load catalog once ────────────────────────────────────────────────
 
-const { cards: allCards, collections, dailyDiamonds, copiesPerRarity } = await loadGameCatalog();
+const { cards: allCards, collections, dailyDiamonds, copiesPerRarity, events } = await loadGameCatalog();
 const cardById = new Map(allCards.map((c) => [c.id, c]));
 const collectionsMap = new Map(collections.map((c) => [c.id, c]));
 syncCardPool(allCards, copiesPerRarity, collectionsMap);
@@ -390,14 +390,45 @@ const authed = [requireAuth, requireCompleteProfile];
 
 // ── Game helpers ──────────────────────────────────────────────────────────────
 
+// Game days follow Swedish time: the daily diamonds reset at 00:00 in
+// Stockholm (CET/CEST), not at 00:00 UTC. sv-SE formats dates as YYYY-MM-DD.
+const stockholmDate = new Intl.DateTimeFormat("sv-SE", {
+  timeZone: "Europe/Stockholm",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return stockholmDate.format(new Date());
 }
 
 function yesterdayIso() {
-  const d = new Date();
+  // Step back one calendar day from today's Stockholm date. Doing the
+  // arithmetic on the date string (as UTC noon) sidesteps DST entirely.
+  const d = new Date(`${todayIso()}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() - 1);
   return d.toISOString().slice(0, 10);
+}
+
+// ── Time-limited events (game-content.json "events") ─────────────────────────
+// Each event has startsAt/endsAt (ISO, inclusive start, exclusive end) and may
+// override the daily diamond amount and/or chest wait times while it runs.
+
+/** The event running at `now`, if any (first match wins). */
+function activeEvent(now = Date.now()) {
+  return (
+    events.find((e) => {
+      const start = Date.parse(e.startsAt);
+      const end = Date.parse(e.endsAt);
+      return Number.isFinite(start) && Number.isFinite(end) && now >= start && now < end;
+    }) ?? null
+  );
+}
+
+/** Today's normal daily claim (before any streak bonus). */
+function dailyDiamondsNow(now = Date.now()) {
+  return activeEvent(now)?.dailyDiamonds ?? dailyDiamonds;
 }
 
 const STARTING_DIAMONDS = 500;
@@ -431,6 +462,7 @@ function buildStateResponse(userId) {
     diamonds: state.diamonds,
     lastDailyClaimDate: state.last_daily_claim_date,
     canClaimDailyDiamonds: state.last_daily_claim_date !== todayIso(),
+    dailyDiamondsToday: dailyDiamondsNow(),
     lastOpenedCards: JSON.parse(state.last_opened_cards),
     diamondStreak: state.diamond_streak,
     diamondStreakTarget: DIAMOND_STREAK_TARGET,
@@ -570,7 +602,9 @@ app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
     streak = 0; // paid out — next claim starts a fresh 7-day run
   }
 
-  const diamondsAwarded = dailyDiamonds + streakBonusAwarded;
+  // During an event the base claim changes (e.g. 800 instead of 150); the
+  // streak bonus is still paid on top.
+  const diamondsAwarded = dailyDiamondsNow() + streakBonusAwarded;
 
   db.prepare(
     "UPDATE player_state SET diamonds = diamonds + ?, last_daily_claim_date = ?, diamond_streak = ? WHERE user_id = ?",
@@ -1549,14 +1583,40 @@ function buildChestsResponse(userId) {
       id: c.id,
       label: c.label,
       price: c.price,
-      waitHours: c.waitMs / HOUR_MS,
+      waitHours: chestWaitMs(c.id) / HOUR_MS,
       diamondMin: c.diamonds.min,
       diamondMax: c.diamonds.max,
     })),
   };
 }
 
+/** Wait time for a chest bought at `now` — an event may shorten it. */
+function chestWaitMs(type, now = Date.now()) {
+  const base = CHEST_TYPES[type].waitMs;
+  const eventHours = activeEvent(now)?.chestWaitHours?.[type];
+  return eventHours != null ? Math.min(base, eventHours * HOUR_MS) : base;
+}
+
+// When an event shortens a chest type, chests already running at the event
+// start are capped too: nothing of that type may finish later than
+// event start + the event's wait. Idempotent (only ever moves ready_at
+// earlier), so it's safe to run on every chest request and on a timer.
+// ready_at is stored as toISOString(), so string comparison is time order.
+function applyEventChestCaps(now = Date.now()) {
+  const event = activeEvent(now);
+  if (!event?.chestWaitHours) return;
+  const start = Date.parse(event.startsAt);
+  for (const [type, hours] of Object.entries(event.chestWaitHours)) {
+    const cap = new Date(start + hours * HOUR_MS).toISOString();
+    db.prepare("UPDATE chests SET ready_at = ? WHERE type = ? AND bought_at < ? AND ready_at > ?")
+      .run(cap, type, new Date(start).toISOString(), cap);
+  }
+}
+applyEventChestCaps();
+setInterval(() => applyEventChestCaps(), 60 * 1000).unref();
+
 app.get("/api/game/chests", authed, (request, response) => {
+  applyEventChestCaps();
   response.json(buildChestsResponse(request.auth.userId));
 });
 
@@ -1592,7 +1652,7 @@ app.post("/api/game/chests/buy", authed, (request, response) => {
         userId,
         config.id,
         new Date(now).toISOString(),
-        new Date(now + config.waitMs).toISOString(),
+        new Date(now + chestWaitMs(config.id, now)).toISOString(),
       );
     })();
   } catch (err) {
@@ -1644,6 +1704,7 @@ app.post("/api/game/chests/buy-slot", authed, (request, response) => {
 
 app.post("/api/game/chests/:id/collect", authed, (request, response) => {
   const userId = request.auth.userId;
+  applyEventChestCaps();
   const chest = db.prepare("SELECT * FROM chests WHERE id = ?").get(request.params.id);
 
   if (!chest || chest.user_id !== userId) {

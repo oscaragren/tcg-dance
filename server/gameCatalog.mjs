@@ -107,6 +107,7 @@ export async function loadGameCatalog() {
     cards,
     collections,
     dailyDiamonds: gameContent.dailyDiamonds ?? 150,
+    events: Array.isArray(gameContent.events) ? gameContent.events : [],
     copiesPerRarity: gameContent.copiesPerRarity ?? { legendary: 3, epic: 7, rare: 15, common: 40 },
   };
 }

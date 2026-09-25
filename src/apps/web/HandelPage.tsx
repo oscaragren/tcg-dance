@@ -148,7 +148,7 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                   {isClaiming
                     ? "Hämtar..."
                     : canClaim
-                      ? `Hämta ${dailyDiamonds} gratis ◆`
+                      ? `Hämta ${gameState?.dailyDiamondsToday ?? dailyDiamonds} gratis ◆`
                       : "Diamanter hämtade idag"}
                 </Button>
                 {!isLoadingState && (
