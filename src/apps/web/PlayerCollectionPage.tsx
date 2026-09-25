@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
+import { collections } from "../../data/packs";
 import type { AuthUser } from "../../types/auth";
 import type { PlayerProfile } from "../../types/game";
 import { getPlayerProfile } from "../../utils/gameApi";
@@ -16,6 +18,8 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
   const [onlyForTrade, setOnlyForTrade] = useState(false);
+  // Same tabs as Samling: one per collection plus "Alla".
+  const [activeCollectionId, setActiveCollectionId] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,13 +63,28 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
 
   const visibleCards = useMemo(() => {
     let list = cards.filter((c) => (ownedCounts[c.id] ?? 0) > 0);
+    if (activeCollectionId !== "all") list = list.filter((c) => c.collectionId === activeCollectionId);
     if (rarityFilter !== "all") list = list.filter((c) => c.rarity === rarityFilter);
     if (onlyForTrade) list = list.filter((c) => (forTradeCounts[c.id] ?? 0) > 0);
     return [...list].sort((a, b) => {
       const d = rarityOrder[a.rarity] - rarityOrder[b.rarity];
-      return d !== 0 ? d : a.name.localeCompare(b.name, "sv");
+      if (d !== 0) return d;
+      const byName = a.name.localeCompare(b.name, "sv");
+      // The same couple can appear once per year — keep those in year order.
+      return byName !== 0 ? byName : (a.event ?? "").localeCompare(b.event ?? "", "sv");
     });
-  }, [ownedCounts, forTradeCounts, rarityFilter, onlyForTrade]);
+  }, [ownedCounts, forTradeCounts, rarityFilter, onlyForTrade, activeCollectionId]);
+
+  // Unique cards owned per collection, shown on each tab.
+  const uniqueOwnedByCollection = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const card of cards) {
+      if ((ownedCounts[card.id] ?? 0) > 0 && card.collectionId) {
+        result[card.collectionId] = (result[card.collectionId] ?? 0) + 1;
+      }
+    }
+    return result;
+  }, [ownedCounts]);
 
   if (!currentUser) {
     return (
@@ -161,6 +180,18 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                   </label>
                 </div>
               </div>
+
+              <Tabs value={activeCollectionId} onValueChange={setActiveCollectionId} className="mb-4">
+                <TabsList>
+                  {collections.map((c) => (
+                    <TabsTrigger key={c.id} value={c.id} className="gap-1.5">
+                      {c.label}
+                      <span className="text-xs text-gray-400">{uniqueOwnedByCollection[c.id] ?? 0}</span>
+                    </TabsTrigger>
+                  ))}
+                  <TabsTrigger value="all">Alla</TabsTrigger>
+                </TabsList>
+              </Tabs>
 
               {visibleCards.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
