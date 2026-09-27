@@ -182,6 +182,8 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                   danceStyle={selectedCard.danceStyle}
                   event={selectedCard.event}
                   designKey={selectedCard.designKey}
+                  hideDesign
+                  lockedLabel={isMissing ? "Saknas" : "Dold"}
                   showCaption
                 />
                 {isMissing && (

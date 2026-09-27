@@ -21,6 +21,8 @@ interface CardPlaceholderProps {
    * design stays secret until the card is actually owned.
    */
   hideDesign?: boolean;
+  /** Text under the "?" when the design is hidden. Defaults to "Saknas". */
+  lockedLabel?: string;
 }
 
 export function CardPlaceholder({
@@ -33,6 +35,7 @@ export function CardPlaceholder({
   showCaption = true,
   disableLightbox = false,
   hideDesign = false,
+  lockedLabel = "Saknas",
 }: CardPlaceholderProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const titleId = useId();
@@ -118,7 +121,7 @@ export function CardPlaceholder({
         ?
       </span>
       <span className="px-2 text-center text-[9px] uppercase tracking-wider text-white/30">
-        Saknas
+        {lockedLabel}
       </span>
     </div>
   );
