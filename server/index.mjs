@@ -1765,9 +1765,21 @@ const TRADE_CLEANUP_INTERVAL_MS = 1000 * 60 * 60 * 24; // varje dygn
 
 function clearOldTradeHistory() {
   const cutoff = new Date(Date.now() - TRADE_HISTORY_MAX_AGE_MS).toISOString();
-  db.prepare(
-    "DELETE FROM trades WHERE status != 'pending' AND created_at < ?",
-  ).run(cutoff);
+  const staleWhere = "status != 'pending' AND created_at < ?";
+  try {
+    db.transaction(() => {
+      // Counter-offers point at the trade they answer via counter_of_trade_id.
+      // Detach any surviving trade from a parent we're about to delete, or the
+      // self-referencing foreign key blocks the DELETE.
+      db.prepare(
+        `UPDATE trades SET counter_of_trade_id = NULL
+         WHERE counter_of_trade_id IN (SELECT id FROM trades WHERE ${staleWhere})`,
+      ).run(cutoff);
+      db.prepare(`DELETE FROM trades WHERE ${staleWhere}`).run(cutoff);
+    })();
+  } catch (err) {
+    console.error("Trade history cleanup failed:", err);
+  }
 }
 
 clearOldTradeHistory();
