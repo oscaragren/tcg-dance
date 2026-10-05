@@ -1994,6 +1994,34 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
   });
 });
 
+// Every special card in the live catalog with whoever currently owns a copy.
+// Special cards are one-offs, so this answers "who has them?" at a glance —
+// including cards nobody owns yet (owners: []).
+app.get("/api/admin/special-cards", requireAdmin, (_request, response) => {
+  const ownersStmt = db.prepare(`
+    SELECT u.id, u.username, u.first_name, u.last_name, COUNT(*) AS n
+    FROM owned_cards oc
+    JOIN users u ON u.id = oc.user_id
+    WHERE oc.card_id = ?
+    GROUP BY u.id
+    ORDER BY u.username COLLATE NOCASE
+  `);
+  const rows = livePoolRows().filter((r) => r.rarity === "special");
+  response.json(rows.map((r) => ({
+    cardId: r.card_id,
+    collectionId: r.collection_id,
+    total: r.total_copies,
+    remaining: r.copies_remaining,
+    owners: ownersStmt.all(r.card_id).map((o) => ({
+      id: o.id,
+      username: o.username,
+      firstName: o.first_name ?? null,
+      lastName: o.last_name ?? null,
+      count: o.n,
+    })),
+  })));
+});
+
 app.get("/api/admin/pool", requireAdmin, (_request, response) => {
   response.json(livePoolRows().map((r) => ({
     cardId: r.card_id,

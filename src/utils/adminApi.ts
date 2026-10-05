@@ -88,6 +88,14 @@ export type AdminPoolEntry = {
   bought: number;
 };
 
+export type AdminSpecialCard = {
+  cardId: string;
+  collectionId: string;
+  total: number;
+  remaining: number;
+  owners: { id: string; username: string; firstName: string | null; lastName: string | null; count: number }[];
+};
+
 /** Why a trade or a pair of accounts was singled out. */
 export type AdminTradeFlag = "gift" | "lopsided" | "very_lopsided" | "exclusive_pair";
 
@@ -190,6 +198,10 @@ export async function fetchAdminUserDetail(userId: string): Promise<AdminUserDet
 
 export async function fetchAdminPool(): Promise<AdminPoolEntry[]> {
   return adminRequest<AdminPoolEntry[]>("/api/admin/pool", { method: "GET" });
+}
+
+export async function fetchAdminSpecialCards(): Promise<AdminSpecialCard[]> {
+  return adminRequest<AdminSpecialCard[]>("/api/admin/special-cards", { method: "GET" });
 }
 
 export async function fetchAdminTrades(): Promise<AdminTrade[]> {

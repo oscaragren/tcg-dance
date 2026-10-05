@@ -14,6 +14,7 @@ import {
   fetchAdminAnnouncements,
   fetchAdminOverview,
   fetchAdminPool,
+  fetchAdminSpecialCards,
   fetchAdminTradePairs,
   fetchAdminTrades,
   fetchAdminUserDetail,
@@ -21,6 +22,7 @@ import {
   type AdminAnnouncement,
   type AdminOverview,
   type AdminPoolEntry,
+  type AdminSpecialCard,
   type AdminTrade,
   type AdminTradeFlag,
   type AdminTradePair,
@@ -169,6 +171,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pool, setPool] = useState<AdminPoolEntry[]>([]);
+  const [specialCards, setSpecialCards] = useState<AdminSpecialCard[]>([]);
   const [trades, setTrades] = useState<AdminTrade[]>([]);
   const [tradePairs, setTradePairs] = useState<AdminTradePair[]>([]);
   const [announcements, setAnnouncements] = useState<AdminAnnouncement[]>([]);
@@ -191,10 +194,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     Promise.all([
       fetchAdminOverview(), fetchAdminUsers(), fetchAdminPool(),
-      fetchAdminTrades(), fetchAdminTradePairs(), fetchAdminAnnouncements(),
+      fetchAdminTrades(), fetchAdminTradePairs(), fetchAdminAnnouncements(), fetchAdminSpecialCards(),
     ])
-      .then(([o, u, p, t, tp, a]) => {
+      .then(([o, u, p, t, tp, a, sc]) => {
         setOverview(o); setUsers(u); setPool(p); setTrades(t); setTradePairs(tp); setAnnouncements(a);
+        setSpecialCards([...sc].sort((x, y) => cardName(x.cardId).localeCompare(cardName(y.cardId), "sv")));
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda admin-data."));
   }, []);
@@ -662,6 +666,63 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
             {/* Card pool */}
             <TabsContent value="pool" className="space-y-6 pt-2">
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-gray-700">
+                  Specialkort — ägare
+                  <span className="ml-2 font-normal text-gray-400">
+                    ({specialCards.filter((c) => c.owners.length > 0).length} av {specialCards.length} har en ägare)
+                  </span>
+                </h2>
+                <div className="rounded-xl border bg-white overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-gray-500">
+                      <tr>
+                        <th className="text-left px-4 py-2">Kort</th>
+                        <th className="text-left px-4 py-2">Ägare</th>
+                        <th className="text-right px-4 py-2">Kvar i poolen</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {specialCards.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                            Det finns inga specialkort i katalogen.
+                          </td>
+                        </tr>
+                      ) : (
+                        specialCards.map((c) => (
+                          <tr key={c.cardId}>
+                            <td className="px-4 py-2 font-medium">{cardName(c.cardId)}</td>
+                            <td className="px-4 py-2">
+                              {c.owners.length === 0 ? (
+                                <span className="text-gray-400">Ingen ännu</span>
+                              ) : (
+                                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                  {c.owners.map((o) => (
+                                    <button
+                                      key={o.id}
+                                      onClick={() => void openUser(o.id)}
+                                      className="text-purple-600 hover:text-purple-800 underline"
+                                    >
+                                      {o.username}
+                                      {o.firstName && o.lastName && (
+                                        <span className="text-gray-500"> ({o.firstName} {o.lastName})</span>
+                                      )}
+                                      {o.count > 1 && <span className="text-gray-500"> ×{o.count}</span>}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-right text-gray-500">{c.remaining} / {c.total}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-gray-700">Per raritet</h2>
                 <div className="rounded-xl border bg-white overflow-hidden">
