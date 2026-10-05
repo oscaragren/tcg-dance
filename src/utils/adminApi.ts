@@ -22,6 +22,8 @@ export type AdminUser = {
   diamonds: number;
   totalCards: number;
   uniqueCards: number;
+  /** ISO end time while banned, else null. */
+  bannedUntil: string | null;
 };
 
 /** One trade from the inspected player's point of view. */
@@ -52,6 +54,8 @@ export type AdminUserDetail = {
     firstName: string | null;
     lastName: string | null;
     createdAt: string;
+    bannedUntil: string | null;
+    banReason: string | null;
   };
   state: {
     diamonds: number;
@@ -210,6 +214,21 @@ export async function fetchAdminTrades(): Promise<AdminTrade[]> {
 
 export async function fetchAdminTradePairs(): Promise<AdminTradePair[]> {
   return adminRequest<AdminTradePair[]>("/api/admin/trade-pairs", { method: "GET" });
+}
+
+export async function banAdminUser(
+  userId: string,
+  days: number,
+  reason: string,
+): Promise<{ bannedUntil: string; reason: string | null; cancelledTrades: number }> {
+  return adminRequest(`/api/admin/users/${userId}/ban`, {
+    method: "POST",
+    body: JSON.stringify({ days, reason }),
+  });
+}
+
+export async function unbanAdminUser(userId: string): Promise<void> {
+  await adminRequest<unknown>(`/api/admin/users/${userId}/ban`, { method: "DELETE" });
 }
 
 export async function deleteAdminUser(userId: string): Promise<void> {

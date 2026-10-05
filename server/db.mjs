@@ -191,6 +191,17 @@ for (const column of ["first_name", "last_name"]) {
   }
 }
 
+// Temporary bans (admin-set). banned_until is an ISO timestamp; a ban is
+// active while it lies in the future, so an expired ban needs no cleanup job.
+for (const column of ["banned_until", "ban_reason"]) {
+  const exists =
+    db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('users') WHERE name = ?").get(column).n > 0;
+  if (!exists) {
+    db.exec(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
+    console.log(`Migrated users: added ${column} column.`);
+  }
+}
+
 // Add diamond_streak column if upgrading from an older schema
 {
   const exists =

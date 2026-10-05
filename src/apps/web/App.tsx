@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { Header } from "../../components/web/Header";
+import { BanBanner } from "../../components/web/BanBanner";
 import { Hero } from "../../components/web/Hero";
 import { FeaturedCollection } from "../../components/web/FeaturedCollection";
 import { HowItWorks } from "../../components/web/HowItWorks";
@@ -180,6 +181,13 @@ export default function App() {
         diamonds={diamonds}
         hasReadyChest={hasReadyChest}
       />
+      {currentUser?.bannedUntil && (
+        <BanBanner
+          bannedUntil={currentUser.bannedUntil}
+          reason={currentUser.banReason}
+          onExpired={() => { fetchCurrentUser().then(setCurrentUser).catch(() => {}); }}
+        />
+      )}
       <Routes>
         <Route path="/"         element={<HomePage currentUser={currentUser} />} />
         <Route path="/samling"      element={<CollectionPage userEmail={currentUser?.email ?? null} />} />

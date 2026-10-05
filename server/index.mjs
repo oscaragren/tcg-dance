@@ -101,7 +101,21 @@ console.log(`Card pool ready — ${allCards.length} cards (${rarityBreakdown}) a
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
+// Returns { until, reason } while the user's ban is still running, else null.
+// Expired bans are simply ignored rather than cleared, so nothing has to run
+// at the moment a ban ends.
+function activeBan(user) {
+  if (!user?.banned_until) return null;
+  if (Date.parse(user.banned_until) <= Date.now()) return null;
+  return { until: user.banned_until, reason: user.ban_reason ?? null };
+}
+
+function isUserBanned(userId) {
+  return Boolean(activeBan(db.prepare("SELECT banned_until FROM users WHERE id = ?").get(userId)));
+}
+
 function publicUser(user) {
+  const ban = activeBan(user);
   return {
     id: user.id,
     username: user.username,
@@ -112,6 +126,10 @@ function publicUser(user) {
     // The frontend gates the whole app on this flag. It is derived rather than
     // stored so it can never drift out of sync with the columns themselves.
     profileComplete: Boolean(user.first_name && user.last_name),
+    // Set while a ban is running. The frontend shows a countdown banner; the
+    // server enforces it via requireNotBanned.
+    bannedUntil: ban?.until ?? null,
+    banReason: ban?.reason ?? null,
   };
 }
 
@@ -386,7 +404,33 @@ function requireCompleteProfile(request, response, next) {
   next();
 }
 
-const authed = [requireAuth, requireCompleteProfile];
+// A banned player keeps read-only access: every GET still works so they can
+// look at their collection, the market and other players, but anything that
+// changes state (packs, chests, daily diamonds, trades, achievements, "vill
+// byta" marks) is refused until the ban runs out.
+const BAN_ALLOWED_WRITES = new Set(["/api/announcements/seen"]);
+
+function formatBanDate(iso) {
+  return new Date(iso).toLocaleString("sv-SE", {
+    timeZone: "Europe/Stockholm", dateStyle: "long", timeStyle: "short",
+  });
+}
+
+function requireNotBanned(request, response, next) {
+  if (request.method === "GET" || BAN_ALLOWED_WRITES.has(request.path)) { next(); return; }
+  const ban = activeBan(
+    db.prepare("SELECT banned_until, ban_reason FROM users WHERE id = ?").get(request.auth.userId),
+  );
+  if (!ban) { next(); return; }
+  response.status(403).json({
+    code: "BANNED",
+    message: `Ditt konto är avstängt till ${formatBanDate(ban.until)}. Du kan titta men inte spela.`,
+    bannedUntil: ban.until,
+    reason: ban.reason,
+  });
+}
+
+const authed = [requireAuth, requireCompleteProfile, requireNotBanned];
 
 // ── Game helpers ──────────────────────────────────────────────────────────────
 
@@ -1022,7 +1066,10 @@ app.get("/api/users/:userId/profile", authed, (request, response) => {
     .map((r) => r.card_id);
 
   const owned = ownedCountMap(user.id);
-  const cardsForTrade = db
+  // A banned player's "vill byta" marks are kept but hidden from others until
+  // the ban ends (they still see their own).
+  const hideMarks = user.id !== request.auth.userId && isUserBanned(user.id);
+  const cardsForTrade = hideMarks ? [] : db
     .prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?")
     .all(user.id)
     .map((r) => ({ cardId: r.card_id, quantity: Math.min(r.quantity, owned.get(r.card_id) ?? 0) }))
@@ -1087,7 +1134,11 @@ app.post("/api/game/cards-for-trade", authed, (request, response) => {
 
 app.get("/api/users/:userId/cards-for-trade", authed, (request, response) => {
   // Only return cards that are both marked for trade AND still owned, capped at
-  // the owned count.
+  // the owned count. Hidden entirely while that player is banned.
+  if (request.params.userId !== request.auth.userId && isUserBanned(request.params.userId)) {
+    response.json({ cards: [] });
+    return;
+  }
   const owned = ownedCountMap(request.params.userId);
   const rows = db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(request.params.userId);
   const cards = rows
@@ -1107,14 +1158,16 @@ const RARITY_SORT = { special: 0, legendary: 1, epic: 2, rare: 3, common: 4 };
 function liveMarketRows() {
   const rows = db
     .prepare(
-      `SELECT f.user_id, f.card_id, f.quantity, u.username,
+      `SELECT f.user_id, f.card_id, f.quantity, u.username, u.banned_until,
               (SELECT COUNT(*) FROM owned_cards o WHERE o.user_id = f.user_id AND o.card_id = f.card_id) AS owned
        FROM cards_for_trade f
        JOIN users u ON u.id = f.user_id`,
     )
     .all();
 
+  // Banned players' listings are kept but left off the market until the ban ends.
   return rows
+    .filter((r) => !activeBan(r))
     .map((r) => ({
       userId: r.user_id,
       username: r.username,
@@ -1187,6 +1240,9 @@ function validateTradeProposal({
   if (receiverUserId === senderId) return { status: 400, message: "Du kan inte handla med dig själv." };
   if (!db.prepare("SELECT 1 FROM users WHERE id = ?").get(receiverUserId)) {
     return { status: 404, message: "Mottagaren hittades inte." };
+  }
+  if (isUserBanned(receiverUserId)) {
+    return { status: 400, message: "Spelaren är avstängd och kan inte ta emot byten just nu." };
   }
   if (offeredCardIds.length === 0 && offeredDiamonds === 0) {
     return { status: 400, message: "Du måste erbjuda minst ett kort eller diamanter." };
@@ -1844,6 +1900,7 @@ app.get("/api/admin/overview", requireAdmin, (_request, response) => {
 app.get("/api/admin/users", requireAdmin, (_request, response) => {
   const rows = db.prepare(`
     SELECT u.id, u.username, u.email, u.created_at, u.first_name, u.last_name,
+           u.banned_until, u.ban_reason,
            COALESCE(ps.diamonds, 0) AS diamonds,
            (SELECT COUNT(*) FROM owned_cards oc WHERE oc.user_id = u.id) AS total_cards,
            (SELECT COUNT(DISTINCT oc.card_id) FROM owned_cards oc WHERE oc.user_id = u.id) AS unique_cards
@@ -1861,6 +1918,7 @@ app.get("/api/admin/users", requireAdmin, (_request, response) => {
     diamonds: r.diamonds,
     totalCards: r.total_cards,
     uniqueCards: r.unique_cards,
+    bannedUntil: activeBan(r)?.until ?? null,
   })));
 });
 
@@ -1870,9 +1928,10 @@ app.get("/api/admin/users", requireAdmin, (_request, response) => {
 app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
   const userId = request.params.id;
   const user = db
-    .prepare("SELECT id, username, email, created_at, first_name, last_name FROM users WHERE id = ?")
+    .prepare("SELECT id, username, email, created_at, first_name, last_name, banned_until, ban_reason FROM users WHERE id = ?")
     .get(userId);
   if (!user) { response.status(404).json({ message: "Användaren hittades inte." }); return; }
+  const ban = activeBan(user);
 
   const state = db.prepare("SELECT * FROM player_state WHERE user_id = ?").get(userId);
 
@@ -1956,6 +2015,8 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
       firstName: user.first_name ?? null,
       lastName: user.last_name ?? null,
       createdAt: user.created_at,
+      bannedUntil: ban?.until ?? null,
+      banReason: ban?.reason ?? null,
     },
     state: {
       diamonds: state?.diamonds ?? 0,
@@ -1997,6 +2058,48 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
 // Every special card in the live catalog with whoever currently owns a copy.
 // Special cards are one-offs, so this answers "who has them?" at a glance —
 // including cards nobody owns yet (owners: []).
+// Temporary ban: read-only access for `days` days. Banning also cancels every
+// pending trade the player is part of (sent or received) so nothing can be
+// settled with them while they are out; their "vill byta" marks are kept but
+// hidden. Re-banning an already-banned player replaces the end date.
+const MAX_BAN_DAYS = 365;
+app.post("/api/admin/users/:id/ban", requireAdmin, (request, response) => {
+  const userId = request.params.id;
+  const days = Number(request.body?.days);
+  const reason = String(request.body?.reason ?? "").trim().slice(0, 300) || null;
+  if (!Number.isFinite(days) || days <= 0 || days > MAX_BAN_DAYS) {
+    response.status(400).json({ message: `Ange ett antal dagar mellan 1 och ${MAX_BAN_DAYS}.` });
+    return;
+  }
+  if (!db.prepare("SELECT 1 FROM users WHERE id = ?").get(userId)) {
+    response.status(404).json({ message: "Användaren hittades inte." });
+    return;
+  }
+
+  const bannedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+  const cancelledTrades = db.transaction(() => {
+    db.prepare("UPDATE users SET banned_until = ?, ban_reason = ? WHERE id = ?").run(bannedUntil, reason, userId);
+    return db
+      .prepare(
+        "UPDATE trades SET status = 'cancelled' WHERE status = 'pending' AND (sender_user_id = ? OR receiver_user_id = ?)",
+      )
+      .run(userId, userId).changes;
+  })();
+
+  response.json({ bannedUntil, reason, cancelledTrades });
+});
+
+app.delete("/api/admin/users/:id/ban", requireAdmin, (request, response) => {
+  const result = db
+    .prepare("UPDATE users SET banned_until = NULL, ban_reason = NULL WHERE id = ?")
+    .run(request.params.id);
+  if (result.changes === 0) {
+    response.status(404).json({ message: "Användaren hittades inte." });
+    return;
+  }
+  response.status(204).end();
+});
+
 app.get("/api/admin/special-cards", requireAdmin, (_request, response) => {
   const ownersStmt = db.prepare(`
     SELECT u.id, u.username, u.first_name, u.last_name, COUNT(*) AS n

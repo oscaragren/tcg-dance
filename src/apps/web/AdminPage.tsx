@@ -8,6 +8,8 @@ import {
   adminLogin,
   adminLogout,
   adminMe,
+  banAdminUser,
+  unbanAdminUser,
   createAdminAnnouncement,
   deleteAdminAnnouncement,
   deleteAdminUser,
@@ -398,7 +400,17 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           onClick={() => void openUser(u.id)}
                           className="cursor-pointer hover:bg-gray-50 transition-colors"
                         >
-                          <td className="px-4 py-2 font-medium">{u.username}</td>
+                          <td className="px-4 py-2 font-medium">
+                            {u.username}
+                            {u.bannedUntil && (
+                              <span
+                                className="ml-2 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700"
+                                title={`Avstängd till ${formatDate(u.bannedUntil)}`}
+                              >
+                                Avstängd
+                              </span>
+                            )}
+                          </td>
                           <td className="px-4 py-2">
                             {u.firstName && u.lastName
                               ? u.firstName + " " + u.lastName
@@ -830,6 +842,19 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             <div className="p-5 overflow-y-auto space-y-8">
+              {selectedUser && (
+                <BanControl
+                  key={selectedUser.user.id}
+                  userId={selectedUser.user.id}
+                  username={selectedUser.user.username}
+                  bannedUntil={selectedUser.user.bannedUntil}
+                  banReason={selectedUser.user.banReason}
+                  onChanged={(bannedUntil) => {
+                    setUsers((prev) => prev.map((u) => (u.id === selectedUser.user.id ? { ...u, bannedUntil } : u)));
+                    void openUser(selectedUser.user.id);
+                  }}
+                />
+              )}
               {selectedUser && <UserDetail detail={selectedUser} />}
             </div>
           </div>
@@ -866,6 +891,154 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       )}
     </main>
+  );
+}
+
+const BAN_PRESETS = [
+  { label: "1 dag", days: 1 },
+  { label: "1 vecka", days: 7 },
+  { label: "1 månad", days: 30 },
+];
+
+/**
+ * Ban / lift-ban panel at the top of the player modal. A ban makes the account
+ * read-only for the chosen number of days, cancels its pending trades and
+ * hides its "vill byta" cards from the market (enforced server-side).
+ */
+function BanControl({
+  userId,
+  username,
+  bannedUntil,
+  banReason,
+  onChanged,
+}: {
+  userId: string;
+  username: string;
+  bannedUntil: string | null;
+  banReason: string | null;
+  onChanged: (bannedUntil: string | null) => void;
+}) {
+  const [days, setDays] = useState(7);
+  const [reason, setReason] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function handleBan() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await banAdminUser(userId, days, reason.trim());
+      setConfirming(false);
+      setReason("");
+      setNotice(
+        result.cancelledTrades > 0
+          ? `${result.cancelledTrades} pågående byte(n) avbröts.`
+          : "Inga pågående byten att avbryta.",
+      );
+      onChanged(result.bannedUntil);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Kunde inte stänga av spelaren.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUnban() {
+    setBusy(true);
+    setError(null);
+    try {
+      await unbanAdminUser(userId);
+      setNotice("Avstängningen är hävd.");
+      onChanged(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Kunde inte häva avstängningen.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (bannedUntil) {
+    return (
+      <section className="rounded-xl border border-red-200 bg-red-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1 text-sm text-red-800">
+          <div className="font-semibold">Avstängd till {formatDate(bannedUntil)}</div>
+          {banReason && <div className="text-red-700">Anledning: {banReason}</div>}
+          {notice && <div className="text-red-600 text-xs mt-1">{notice}</div>}
+          {error && <div className="text-red-600 text-xs mt-1">{error}</div>}
+        </div>
+        <Button variant="outline" onClick={() => void handleUnban()} disabled={busy}>
+          {busy ? "Häver..." : "Häv avstängning"}
+        </Button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border p-4 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-sm font-semibold text-gray-700">Stäng av spelare</h4>
+        {notice && <span className="text-xs text-gray-500">{notice}</span>}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {BAN_PRESETS.map((p) => (
+          <button
+            key={p.days}
+            onClick={() => setDays(p.days)}
+            className={`rounded-full border px-3 py-1 text-sm ${
+              days === p.days ? "border-red-600 bg-red-50 text-red-700 font-medium" : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+        <label className="flex items-center gap-1.5 text-sm text-gray-600">
+          <input
+            type="number"
+            min={1}
+            max={365}
+            value={days}
+            onChange={(e) => setDays(Math.max(1, Math.min(365, Number(e.target.value) || 1)))}
+            className="w-20 rounded-md border px-2 py-1"
+          />
+          dagar
+        </label>
+      </div>
+      <input
+        type="text"
+        value={reason}
+        maxLength={300}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Anledning (visas för spelaren, valfritt)"
+        className="w-full rounded-md border px-3 py-2 text-sm"
+      />
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      {confirming ? (
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 space-y-2">
+          <p>
+            Stäng av <strong>{username}</strong> i {days} {days === 1 ? "dag" : "dagar"}? Kontot blir skrivskyddat,
+            alla pågående byten avbryts och kort märkta "vill byta" döljs från marknaden tills avstängningen är slut.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirming(false)} disabled={busy}>Avbryt</Button>
+            <Button
+              onClick={() => void handleBan()}
+              disabled={busy}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {busy ? "Stänger av..." : "Stäng av"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end">
+          <Button onClick={() => setConfirming(true)} className="bg-red-600 hover:bg-red-700 text-white">
+            Stäng av i {days} {days === 1 ? "dag" : "dagar"}
+          </Button>
+        </div>
+      )}
+    </section>
   );
 }
 
