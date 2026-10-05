@@ -46,6 +46,48 @@ export type AdminUserTrade = {
   flags: AdminTradeFlag[];
 };
 
+export type AdminUpgrade = {
+  id: number;
+  collectionId: string;
+  fromRarity: string;
+  toRarity: string;
+  /** One entry per copy used up. */
+  consumedCardIds: string[];
+  resultCardId: string;
+  createdAt: string;
+};
+
+export type AdminLeader = { id: string; username: string; value: number; percent?: number };
+
+export type AdminStats = {
+  days: number;
+  /** When logging of upgrades / economy events began (null = nothing logged yet). */
+  since: { upgrades: string | null; events: string | null };
+  totals: {
+    players: number;
+    newPlayers7d: number;
+    activeToday: number;
+    active7d: number;
+    bannedNow: number;
+    packsOpened: number;
+    packsPerPlayer: number;
+    upgrades: number;
+    trades: number;
+    tradesAccepted: number;
+    tradesPending: number;
+    acceptanceRate: number | null;
+    diamondsInCirculation: number;
+    cardsOwned: number;
+  };
+  daily: { date: string; signups: number; activePlayers: number; packs: number; upgrades: number; trades: number }[];
+  diamondFlow: { daily: number; chestRewards: number; packs: number; chests: number; slots: number };
+  upgradesByTier: { from: string; to: string; count: number; cardsPerUpgrade: number }[];
+  leaders: Record<"packs" | "upgrades" | "trades" | "diamonds" | "collection", AdminLeader[]>;
+  topCards: { cardId: string; rarity: string; copies: number; owners: number }[];
+  soldOutCards: number;
+  recentUpgrades: (AdminUpgrade & { user: { id: string; username: string } })[];
+};
+
 export type AdminUserDetail = {
   user: {
     id: string;
@@ -81,6 +123,8 @@ export type AdminUserDetail = {
   achievements: { id: string; title: string; reward: number | null; claimedAt: string }[];
   trades: AdminUserTrade[];
   partners: { id: string; username: string; acceptedTrades: number; netValue: number; flaggedTrades: number }[];
+  packsOpened: number;
+  upgrades: AdminUpgrade[];
 };
 
 export type AdminPoolEntry = {
@@ -206,6 +250,10 @@ export async function fetchAdminPool(): Promise<AdminPoolEntry[]> {
 
 export async function fetchAdminSpecialCards(): Promise<AdminSpecialCard[]> {
   return adminRequest<AdminSpecialCard[]>("/api/admin/special-cards", { method: "GET" });
+}
+
+export async function fetchAdminStats(days: number): Promise<AdminStats> {
+  return adminRequest<AdminStats>(`/api/admin/stats?days=${days}`, { method: "GET" });
 }
 
 export async function fetchAdminTrades(): Promise<AdminTrade[]> {

@@ -1,8 +1,9 @@
-import { AlertTriangle, Layers, Megaphone, Repeat, Search, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, Layers, Megaphone, Repeat, Search, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
+import { AdminStatsPanel, UpgradeRow } from "../../components/web/AdminStats";
 import { cardById, rarityOrder } from "../../data/cards";
 import {
   adminLogin,
@@ -361,6 +362,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <TabsTrigger value="pool" className="gap-1.5">
                   <Layers className="w-3.5 h-3.5" /> Kortpool
                 </TabsTrigger>
+                <TabsTrigger value="stats" className="gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5" /> Statistik
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -677,6 +681,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </TabsContent>
 
             {/* Card pool */}
+            <TabsContent value="stats">
+              <AdminStatsPanel onOpenUser={(id) => void openUser(id)} />
+            </TabsContent>
+
             <TabsContent value="pool" className="space-y-6 pt-2">
               <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-gray-700">
@@ -1052,7 +1060,7 @@ const TRADE_STATUS_LABEL: Record<string, string> = {
 
 /** Full picture of one player: balance, collection, chests, trades, partners. */
 function UserDetail({ detail }: { detail: AdminUserDetail }) {
-  const { state, totals, rarityCounts, cards, chests, achievements, trades, partners } = detail;
+  const { state, totals, rarityCounts, cards, chests, achievements, trades, partners, upgrades, packsOpened } = detail;
 
   // Rarest first, then alphabetically — the interesting cards sort to the top.
   // rarityOrder is a rank map (special 0 … common 4), so lower sorts first.
@@ -1084,6 +1092,8 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
         />
         <StatCard label="Byten" value={totals.trades} />
         <StatCard label="Genomförda byten" value={totals.tradesAccepted} />
+        <StatCard label="Paket öppnade" value={packsOpened} />
+        <StatCard label="Uppgraderingar" value={upgrades.length} hint="loggade sedan statistiken infördes" />
       </section>
 
       <p className="text-xs text-gray-500 -mt-4">
@@ -1125,6 +1135,30 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      {/* Upgrade history */}
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold">Uppgraderingar ({upgrades.length})</h4>
+        {upgrades.length === 0 ? (
+          <p className="text-sm text-gray-500">Inga loggade uppgraderingar.</p>
+        ) : (
+          <div className="rounded-xl border overflow-x-auto max-h-80 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-500 sticky top-0">
+                <tr>
+                  <th className="text-left px-4 py-2">Tid</th>
+                  <th className="text-left px-4 py-2">Nivå</th>
+                  <th className="text-left px-4 py-2">Fick</th>
+                  <th className="text-left px-4 py-2">Använde</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {upgrades.map((u) => <UpgradeRow key={u.id} upgrade={u} />)}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

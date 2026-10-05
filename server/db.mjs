@@ -146,6 +146,39 @@ db.exec(`
   );
 `);
 
+// Activity logs for the admin statistics page. Both only start filling from
+// the release that added them — nothing before that was ever recorded.
+db.exec(`
+  -- One row per card upgrade (e.g. 20 commons -> 1 rare).
+  CREATE TABLE IF NOT EXISTS upgrades (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id            TEXT NOT NULL REFERENCES users(id),
+    collection_id      TEXT NOT NULL,
+    from_rarity        TEXT NOT NULL,
+    to_rarity          TEXT NOT NULL,
+    consumed_card_ids  TEXT NOT NULL,  -- JSON array, one entry per copy used up
+    result_card_id     TEXT NOT NULL,
+    created_at         TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_upgrades_user ON upgrades(user_id);
+  CREATE INDEX IF NOT EXISTS idx_upgrades_created ON upgrades(created_at);
+
+  -- Lightweight timeline of economy actions: 'pack' (quantity packs bought for
+  -- diamonds), 'daily' (diamonds claimed), 'chest_buy' (diamonds spent),
+  -- 'chest_open' (diamonds won, quantity = cards won).
+  CREATE TABLE IF NOT EXISTS game_events (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id        TEXT NOT NULL REFERENCES users(id),
+    type           TEXT NOT NULL,
+    collection_id  TEXT,
+    quantity       INTEGER NOT NULL DEFAULT 0,
+    diamonds       INTEGER NOT NULL DEFAULT 0,
+    created_at     TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_game_events_created ON game_events(created_at);
+  CREATE INDEX IF NOT EXISTS idx_game_events_user ON game_events(user_id);
+`);
+
 // Add collection_id column if upgrading from an older schema
 const hasCollectionId =
   db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('card_pool') WHERE name='collection_id'").get().n > 0;

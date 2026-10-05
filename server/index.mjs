@@ -653,6 +653,7 @@ app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
   db.prepare(
     "UPDATE player_state SET diamonds = diamonds + ?, last_daily_claim_date = ?, diamond_streak = ? WHERE user_id = ?",
   ).run(diamondsAwarded, todayIso(), streak, request.auth.userId);
+  logGameEvent(request.auth.userId, "daily", { diamonds: diamondsAwarded });
 
   response.json({
     diamondsAwarded,
@@ -762,10 +763,19 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
       `INSERT INTO packs_opened (user_id, collection_id, count) VALUES (?, ?, ?)
        ON CONFLICT (user_id, collection_id) DO UPDATE SET count = count + excluded.count`,
     ).run(request.auth.userId, collectionId, quantity);
+    logGameEvent(request.auth.userId, "pack", { collectionId, quantity, diamonds: totalPrice });
   })();
 
   response.json({ pulledCards, state: buildStateResponse(request.auth.userId) });
 });
+
+const stmtLogEvent = db.prepare(
+  "INSERT INTO game_events (user_id, type, collection_id, quantity, diamonds, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+);
+// Appends one row to the economy timeline the admin statistics page reads.
+function logGameEvent(userId, type, { collectionId = null, quantity = 0, diamonds = 0 } = {}) {
+  stmtLogEvent.run(userId, type, collectionId, quantity, diamonds, new Date().toISOString());
+}
 
 app.post("/api/game/upgrade", authed, (request, response) => {
   const userId = request.auth.userId;
@@ -838,6 +848,13 @@ app.post("/api/game/upgrade", authed, (request, response) => {
 
     db.prepare("UPDATE card_pool SET copies_remaining = copies_remaining - 1 WHERE card_id = ?").run(targetCardId);
     db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)").run(userId, targetCardId);
+    db.prepare(
+      `INSERT INTO upgrades (user_id, collection_id, from_rarity, to_rarity, consumed_card_ids, result_card_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      userId, collectionId, rarity, targetRarity,
+      JSON.stringify(rowsToDelete.map((r) => r.card_id)), targetCardId, new Date().toISOString(),
+    );
 
     return cardById.get(targetCardId);
   })();
@@ -1710,6 +1727,7 @@ app.post("/api/game/chests/buy", authed, (request, response) => {
         new Date(now).toISOString(),
         new Date(now + chestWaitMs(config.id, now)).toISOString(),
       );
+      logGameEvent(userId, "chest_buy", { collectionId: config.id, diamonds: config.price });
     })();
   } catch (err) {
     response.status(400).json({ message: err.message });
@@ -1749,6 +1767,7 @@ app.post("/api/game/chests/buy-slot", authed, (request, response) => {
         type,
         new Date().toISOString(),
       );
+      logGameEvent(userId, "slot_buy", { collectionId: type, diamonds: price });
     })();
   } catch (err) {
     response.status(400).json({ message: err.message });
@@ -1798,6 +1817,7 @@ app.post("/api/game/chests/:id/collect", authed, (request, response) => {
       db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(diamondsAwarded, userId);
       const stmtInsertCard = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
       for (const cardId of wonCardIds) stmtInsertCard.run(userId, cardId);
+      logGameEvent(userId, "chest_open", { collectionId: chest.type, quantity: wonCardIds.length, diamonds: diamondsAwarded });
     })();
   } catch (err) {
     response.status(409).json({ message: err.message });
@@ -2052,6 +2072,11 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
     })),
     trades,
     partners: [...partners.values()].sort((a, b) => b.acceptedTrades - a.acceptedTrades),
+    packsOpened: db.prepare("SELECT COALESCE(SUM(count), 0) AS n FROM packs_opened WHERE user_id = ?").get(userId).n,
+    upgrades: db
+      .prepare("SELECT * FROM upgrades WHERE user_id = ? ORDER BY created_at DESC")
+      .all(userId)
+      .map(publicUpgrade),
   });
 });
 
@@ -2098,6 +2123,197 @@ app.delete("/api/admin/users/:id/ban", requireAdmin, (request, response) => {
     return;
   }
   response.status(204).end();
+});
+
+// ── Admin statistics ─────────────────────────────────────────────────────────
+
+function publicUpgrade(row) {
+  return {
+    id: row.id,
+    collectionId: row.collection_id,
+    fromRarity: row.from_rarity,
+    toRarity: row.to_rarity,
+    consumedCardIds: JSON.parse(row.consumed_card_ids),
+    resultCardId: row.result_card_id,
+    createdAt: row.created_at,
+  };
+}
+
+// Calendar day in Swedish time, so "today" in the charts matches the admin's.
+function stockholmDay(iso) {
+  return new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" });
+}
+
+// Everything for the "Statistik" tab in one call. Computed on demand — the
+// tables are small, and an on-demand report can never be stale. Upgrades and
+// game_events only exist from the release that introduced them, so `since`
+// tells the UI from when those numbers are complete.
+app.get("/api/admin/stats", requireAdmin, (request, response) => {
+  const days = Math.min(90, Math.max(7, Number(request.query.days) || 30));
+  const now = Date.now();
+  const DAY = 24 * 60 * 60 * 1000;
+  const windowStart = new Date(now - days * DAY).toISOString();
+  const weekStart = new Date(now - 7 * DAY).toISOString();
+  const today = stockholmDay(new Date(now).toISOString());
+
+  const users = db.prepare("SELECT id, username, created_at, banned_until FROM users").all();
+  const usernameById = new Map(users.map((u) => [u.id, u.username]));
+  const events = db.prepare("SELECT user_id, type, quantity, diamonds, created_at FROM game_events WHERE created_at >= ?").all(windowStart);
+  const upgradesInWindow = db.prepare("SELECT user_id, created_at FROM upgrades WHERE created_at >= ?").all(windowStart);
+  const tradesInWindow = db.prepare("SELECT sender_user_id, status, created_at FROM trades WHERE created_at >= ?").all(windowStart);
+
+  // ── Daily series (oldest first) ──
+  const daily = new Map();
+  for (let i = days - 1; i >= 0; i--) {
+    const day = stockholmDay(new Date(now - i * DAY).toISOString());
+    daily.set(day, { date: day, signups: 0, activePlayers: new Set(), packs: 0, upgrades: 0, trades: 0 });
+  }
+  const bucket = (iso) => daily.get(stockholmDay(iso));
+  for (const u of users) { const b = bucket(u.created_at); if (b) b.signups++; }
+  for (const e of events) {
+    const b = bucket(e.created_at);
+    if (!b) continue;
+    b.activePlayers.add(e.user_id);
+    if (e.type === "pack") b.packs += e.quantity;
+  }
+  for (const u of upgradesInWindow) {
+    const b = bucket(u.created_at);
+    if (b) { b.upgrades++; b.activePlayers.add(u.user_id); }
+  }
+  for (const t of tradesInWindow) {
+    const b = bucket(t.created_at);
+    if (b) { b.trades++; b.activePlayers.add(t.sender_user_id); }
+  }
+
+  // "Active" = did anything logged: an economy event, an upgrade or sent a trade.
+  // Today's count also includes anyone whose daily-diamond claim is dated today,
+  // which works even before game_events existed.
+  const activeIn = (sinceIso) => {
+    const ids = new Set();
+    for (const e of events) if (e.created_at >= sinceIso) ids.add(e.user_id);
+    for (const u of upgradesInWindow) if (u.created_at >= sinceIso) ids.add(u.user_id);
+    for (const t of tradesInWindow) if (t.created_at >= sinceIso) ids.add(t.sender_user_id);
+    return ids;
+  };
+  const activeToday = new Set([...(daily.get(today)?.activePlayers ?? [])]);
+  for (const r of db.prepare("SELECT user_id FROM player_state WHERE last_daily_claim_date = ?").all(todayIso())) {
+    activeToday.add(r.user_id);
+  }
+
+  // ── Totals ──
+  const tradeCounts = Object.fromEntries(
+    db.prepare("SELECT status, COUNT(*) AS n FROM trades GROUP BY status").all().map((r) => [r.status, r.n]),
+  );
+  const accepted = tradeCounts.accepted ?? 0;
+  const rejected = tradeCounts.rejected ?? 0;
+  const packsOpened = db.prepare("SELECT COALESCE(SUM(count), 0) AS n FROM packs_opened").get().n;
+  const diamondRow = db.prepare("SELECT COALESCE(SUM(diamonds), 0) AS total FROM player_state").get();
+
+  const totals = {
+    players: users.length,
+    newPlayers7d: users.filter((u) => u.created_at >= weekStart).length,
+    activeToday: activeToday.size,
+    active7d: activeIn(weekStart).size,
+    bannedNow: users.filter((u) => activeBan(u)).length,
+    packsOpened,
+    packsPerPlayer: users.length ? Math.round((packsOpened / users.length) * 10) / 10 : 0,
+    upgrades: db.prepare("SELECT COUNT(*) AS n FROM upgrades").get().n,
+    trades: Object.values(tradeCounts).reduce((a, b) => a + b, 0),
+    tradesAccepted: accepted,
+    tradesPending: tradeCounts.pending ?? 0,
+    // Of the offers someone actually answered, how many were accepted.
+    acceptanceRate: accepted + rejected > 0 ? Math.round((accepted / (accepted + rejected)) * 100) : null,
+    diamondsInCirculation: diamondRow.total,
+    cardsOwned: db.prepare("SELECT COUNT(*) AS n FROM owned_cards").get().n,
+  };
+
+  // ── Diamond flow in the window ──
+  const flow = { daily: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
+  for (const e of events) {
+    if (e.type === "daily") flow.daily += e.diamonds;
+    else if (e.type === "chest_open") flow.chestRewards += e.diamonds;
+    else if (e.type === "pack") flow.packs += e.diamonds;
+    else if (e.type === "chest_buy") flow.chests += e.diamonds;
+    else if (e.type === "slot_buy") flow.slots += e.diamonds;
+  }
+
+  // ── Upgrades by tier (all time) ──
+  const tierCounts = new Map(
+    db.prepare("SELECT from_rarity, COUNT(*) AS n FROM upgrades GROUP BY from_rarity").all().map((r) => [r.from_rarity, r.n]),
+  );
+  const upgradesByTier = Object.entries(TIER_UPGRADE_TARGET).map(([from, to]) => ({
+    from, to, count: tierCounts.get(from) ?? 0, cardsPerUpgrade: UPGRADE_CARDS_REQUIRED[from],
+  }));
+
+  // ── Leaderboards (top 10) ──
+  const withName = (rows) => rows.map((r) => ({ id: r.user_id, username: usernameById.get(r.user_id) ?? "?", value: r.n }));
+  const liveCardCount = allCards.length;
+  const leaders = {
+    packs: withName(db.prepare(
+      "SELECT user_id, SUM(count) AS n FROM packs_opened GROUP BY user_id ORDER BY n DESC LIMIT 10",
+    ).all()),
+    upgrades: withName(db.prepare(
+      "SELECT user_id, COUNT(*) AS n FROM upgrades GROUP BY user_id ORDER BY n DESC LIMIT 10",
+    ).all()),
+    trades: withName(db.prepare(`
+      SELECT user_id, COUNT(*) AS n FROM (
+        SELECT sender_user_id AS user_id FROM trades WHERE status = 'accepted'
+        UNION ALL
+        SELECT receiver_user_id FROM trades WHERE status = 'accepted'
+      ) GROUP BY user_id ORDER BY n DESC LIMIT 10
+    `).all()),
+    diamonds: withName(db.prepare(
+      "SELECT user_id, diamonds AS n FROM player_state ORDER BY diamonds DESC LIMIT 10",
+    ).all()),
+    // Unique cards owned, counted against the live catalog only.
+    collection: (() => {
+      const counts = new Map();
+      for (const r of db.prepare("SELECT DISTINCT user_id, card_id FROM owned_cards").all()) {
+        if (cardById.has(r.card_id)) counts.set(r.user_id, (counts.get(r.user_id) ?? 0) + 1);
+      }
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([id, n]) => ({
+          id, username: usernameById.get(id) ?? "?", value: n,
+          percent: liveCardCount ? Math.round((n / liveCardCount) * 1000) / 10 : 0,
+        }));
+    })(),
+  };
+
+  // ── Most-owned non-common cards ──
+  const topCards = db.prepare(`
+    SELECT oc.card_id, COUNT(*) AS copies, COUNT(DISTINCT oc.user_id) AS owners
+    FROM owned_cards oc
+    JOIN card_pool p ON p.card_id = oc.card_id
+    WHERE p.rarity != 'common'
+    GROUP BY oc.card_id ORDER BY copies DESC LIMIT 10
+  `).all().filter((r) => cardById.has(r.card_id)).map((r) => ({
+    cardId: r.card_id, rarity: cardById.get(r.card_id).rarity, copies: r.copies, owners: r.owners,
+  }));
+
+  const soldOut = livePoolRows().filter((r) => r.copies_remaining <= 0).length;
+
+  const recentUpgrades = db
+    .prepare("SELECT * FROM upgrades ORDER BY created_at DESC LIMIT 50")
+    .all()
+    .map((r) => ({ ...publicUpgrade(r), user: { id: r.user_id, username: usernameById.get(r.user_id) ?? "?" } }));
+
+  response.json({
+    days,
+    since: {
+      upgrades: db.prepare("SELECT MIN(created_at) AS t FROM upgrades").get().t,
+      events: db.prepare("SELECT MIN(created_at) AS t FROM game_events").get().t,
+    },
+    totals,
+    daily: [...daily.values()].map((d) => ({ ...d, activePlayers: d.activePlayers.size })),
+    diamondFlow: flow,
+    upgradesByTier,
+    leaders,
+    topCards,
+    soldOutCards: soldOut,
+    recentUpgrades,
+  });
 });
 
 app.get("/api/admin/special-cards", requireAdmin, (_request, response) => {
@@ -2161,6 +2377,8 @@ app.delete("/api/admin/users/:id", requireAdmin, (request, response) => {
     db.prepare("DELETE FROM chest_type_slots WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM achievement_claims WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM packs_opened WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM upgrades WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM game_events WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM password_reset_tokens WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM trades WHERE sender_user_id = ? OR receiver_user_id = ?").run(userId, userId);
     db.prepare("DELETE FROM player_state WHERE user_id = ?").run(userId);
