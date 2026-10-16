@@ -10,6 +10,16 @@
       "chestWaitHours": {
         "gold": 3
       }
+    },
+    {
+      "id": "lordag-2026-10-17",
+      "label": "Lördagsbonus",
+      "startsAt": "2026-10-17T00:00:00+02:00",
+      "endsAt": "2026-10-18T00:00:00+02:00",
+      "dailyDiamonds": 800,
+      "chestWaitHours": {
+        "gold": 3
+      }
     }
   ],
   "copiesPerRarity": {
