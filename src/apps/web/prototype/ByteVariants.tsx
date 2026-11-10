@@ -12,7 +12,7 @@ import { CardThumb, NewBadge, Sheet, useStore } from "./kit";
 
 // ── Shared ───────────────────────────────────────────────────────────────────
 
-function totals(list: DanceCard[]) {
+export function totals(list: DanceCard[]) {
   const by: Partial<Record<CardRarity, number>> = {};
   list.forEach((c) => { by[c.rarity] = (by[c.rarity] ?? 0) + 1; });
   const order: CardRarity[] = ["special", "legendary", "epic", "rare", "common"];
@@ -20,7 +20,7 @@ function totals(list: DanceCard[]) {
   return parts.length ? parts.join(" + ") : "inget";
 }
 
-function useBuilder() {
+export function useBuilder() {
   const s = useStore();
   const seed = s.builder!;
   const them = otherPlayers.find((p) => p.id === seed.playerId)!;
@@ -44,20 +44,20 @@ function useBuilder() {
   const giveCards = give.map((id) => cards.find((c) => c.id === id)!);
   return { them, get, give, theirs, mine, diamonds, setDiamonds, getCards, giveCards, toggleGet: (id: string) => toggle(get, setGet, id), toggleGive: (id: string) => toggle(give, setGive, id), send, close: () => s.set({ builder: null }) };
 }
-type B = ReturnType<typeof useBuilder>;
+export type B = ReturnType<typeof useBuilder>;
 
-function TheirBadge({ c }: { b: B; c: DanceCard }) {
+export function TheirBadge({ c }: { b: B; c: DanceCard }) {
   const s = useStore();
   return <NewBadge isNew={!s.owned[c.id]} have={s.owned[c.id]} />;
 }
-function MyBadge({ b, c }: { b: B; c: DanceCard }) {
+export function MyBadge({ b, c }: { b: B; c: DanceCard }) {
   return <NewBadge isNew={!b.them.owned[c.id]} have={b.them.owned[c.id]} />;
 }
-function NotForTrade({ b, c }: { b: B; c: DanceCard }) {
+export function NotForTrade({ b, c }: { b: B; c: DanceCard }) {
   return (b.them.owned[c.id] ?? 0) < 2 ? <div className="text-[10px] text-red-600">Inte till byte</div> : null;
 }
 
-function Summary({ b, sticky = true }: { b: B; sticky?: boolean }) {
+export function Summary({ b, sticky = true }: { b: B; sticky?: boolean }) {
   return (
     <div className={`${sticky ? "sticky bottom-14 z-20" : ""} border-t bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]`}>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm">
@@ -70,7 +70,7 @@ function Summary({ b, sticky = true }: { b: B; sticky?: boolean }) {
   );
 }
 
-function DiamondInput({ b }: { b: B }) {
+export function DiamondInput({ b }: { b: B }) {
   return (
     <label className="flex h-12 items-center justify-between rounded-xl border px-3 text-sm">
       <span>Lägg till Diamonds</span>
@@ -88,7 +88,7 @@ function BuilderHeader({ b, title }: { b: B; title?: string }) {
   );
 }
 
-function MinaByten() {
+export function MinaByten() {
   const s = useStore();
   return (
     <div className="space-y-4 p-4">
@@ -119,7 +119,7 @@ function MinaByten() {
   );
 }
 
-function SokSpelare() {
+export function SokSpelare() {
   const s = useStore();
   const [q, setQ] = useState("");
   return (
@@ -154,7 +154,7 @@ function ByteShell({ Matchningar, Builder }: { Matchningar: () => JSX.Element; B
   );
 }
 
-function useMatches() {
+export function useMatches() {
   const s = useStore();
   return useMemo(() => computeMatches(s.owned, s.keep), [s.owned, s.keep]);
 }

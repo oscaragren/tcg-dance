@@ -137,7 +137,7 @@ export function TopBar() {
   );
 }
 
-const TABS: { id: Screen; label: string; Icon: typeof Home }[] = [
+export const TABS: { id: Screen; label: string; Icon: typeof Home }[] = [
   { id: "hem", label: "Hem", Icon: Home },
   { id: "butik", label: "Butik", Icon: ShoppingBag },
   { id: "samling", label: "Samling", Icon: Layers },
@@ -213,12 +213,22 @@ export function Bar({ value, total, className = "bg-gradient-to-r from-purple-60
 
 // ── Sheets ───────────────────────────────────────────────────────────────────
 
+/** How sheets render. Phone: bottom sheet. Desktop variants pick dialog or side panel. */
+export type SheetModeT = "bottom" | "dialog" | "side";
+export const SheetMode = createContext<SheetModeT>("bottom");
+
 export function Sheet({ open, onClose, children, title, full }: { open: boolean; onClose: () => void; children: ReactNode; title?: string; full?: boolean }) {
+  const mode = useContext(SheetMode);
   if (!open) return null;
+  const box = mode === "dialog"
+    ? `relative m-auto flex w-full flex-col rounded-2xl bg-white shadow-2xl ${full ? "h-[85vh] max-w-4xl" : "max-h-[85vh] max-w-md"}`
+    : mode === "side"
+      ? "absolute bottom-0 right-0 top-0 flex w-[420px] flex-col border-l bg-white shadow-2xl"
+      : `absolute bottom-0 flex w-full max-w-[390px] flex-col rounded-t-2xl bg-white shadow-2xl ${full ? "top-6" : "max-h-[88vh]"}`;
   return (
-    <div className="fixed inset-0 z-50 flex justify-center">
-      <button className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Stäng" />
-      <div className={`absolute bottom-0 flex w-full max-w-[390px] flex-col rounded-t-2xl bg-white shadow-2xl ${full ? "top-6" : "max-h-[88vh]"}`}>
+    <div className={`fixed inset-0 z-50 flex ${mode === "bottom" ? "justify-center" : "p-6"}`}>
+      <button className={`absolute inset-0 ${mode === "side" ? "bg-black/10" : "bg-black/40"}`} onClick={onClose} aria-label="Stäng" />
+      <div className={box}>
         <div className="flex items-center justify-between border-b px-4 py-2">
           <span className="font-semibold">{title}</span>
           <button onClick={onClose} className="grid h-11 w-11 place-items-center text-gray-500" aria-label="Stäng"><X className="h-5 w-5" /></button>
@@ -304,7 +314,7 @@ export function Toast() {
 
 // ── Variant switcher (prototype chrome, not part of the design) ─────────────
 
-export function VariantSwitcher({ keys, names, current, onChange }: { keys: string[]; names: Record<string, string>; current: string; onChange: (k: string) => void }) {
+export function VariantSwitcher({ keys, names, current, onChange, bottom = "bottom-[68px]", extra }: { keys: string[]; names: Record<string, string>; current: string; onChange: (k: string) => void; bottom?: string; extra?: ReactNode }) {
   const i = Math.max(0, keys.indexOf(current));
   const step = (d: number) => onChange(keys[(i + d + keys.length) % keys.length]);
   useEffect(() => {
@@ -318,10 +328,11 @@ export function VariantSwitcher({ keys, names, current, onChange }: { keys: stri
     return () => window.removeEventListener("keydown", onKey);
   });
   return (
-    <div className="fixed bottom-[68px] left-1/2 z-[70] flex -translate-x-1/2 items-center gap-1 rounded-full border-2 border-yellow-300 bg-black px-1 py-1 font-mono text-xs text-yellow-200 shadow-xl">
+    <div className={`fixed ${bottom} left-1/2 z-[70] flex -translate-x-1/2 items-center gap-1 rounded-full border-2 border-yellow-300 bg-black px-1 py-1 font-mono text-xs text-yellow-200 shadow-xl`}>
       <button onClick={() => step(-1)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10" aria-label="Föregående variant"><ChevronLeft className="h-4 w-4" /></button>
       <span className="whitespace-nowrap px-1">{keys[i]} · {names[keys[i]]}</span>
       <button onClick={() => step(1)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-white/10" aria-label="Nästa variant"><ChevronRight className="h-4 w-4" /></button>
+      {extra}
     </div>
   );
 }
@@ -334,3 +345,9 @@ export function SectionTitle({ children, right }: { children: ReactNode; right?:
     </div>
   );
 }
+
+/** Page container shared by all desktop variants: the one width rule. */
+export function Page({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <main className={`mx-auto w-full max-w-[1280px] px-6 py-6 ${className}`}>{children}</main>;
+}
+

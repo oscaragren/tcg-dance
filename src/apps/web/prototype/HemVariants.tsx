@@ -7,9 +7,9 @@ import { ChevronDown, ChevronRight, Gift, Repeat, Sparkles, Trophy } from "lucid
 import { activeEvent, collections, fmtMin, otherPlayers, weeklyGoals } from "./data";
 import { Bar, Sheet, SectionTitle, useActions, useProgress, useStore } from "./kit";
 
-type WaitItem = { id: string; icon: string; title: string; sub?: string; cta: string; act: () => void };
+export type WaitItem = { id: string; icon: string; title: string; sub?: string; cta: string; act: () => void };
 
-function useWaiting(): WaitItem[] {
+export function useWaiting(): WaitItem[] {
   const s = useStore();
   const a = useActions();
   const items: WaitItem[] = [];
@@ -21,7 +21,7 @@ function useWaiting(): WaitItem[] {
   return items;
 }
 
-function StreakTrack({ step, compact }: { step: number; compact?: boolean }) {
+export function StreakTrack({ step, compact }: { step: number; compact?: boolean }) {
   return (
     <div className="flex items-center gap-1">
       {Array.from({ length: 7 }, (_, i) => (
@@ -33,7 +33,7 @@ function StreakTrack({ step, compact }: { step: number; compact?: boolean }) {
   );
 }
 
-function EventSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function EventSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Sheet open={open} onClose={onClose} title={`Event: ${activeEvent.name}`}>
       <p className="text-sm text-gray-600">Slutar om <b>{activeEvent.endsIn}</b></p>
@@ -46,11 +46,11 @@ function EventSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-function liveCollections() {
+export function liveCollections() {
   return collections;
 }
 
-function TopRows({ n = 3 }: { n?: number }) {
+export function TopRows({ n = 3 }: { n?: number }) {
   return (
     <>
       {otherPlayers.slice(0, n).map((p) => (
@@ -66,7 +66,7 @@ function TopRows({ n = 3 }: { n?: number }) {
   );
 }
 
-function ProgressRow({ id, label }: { id: string; label: string }) {
+export function ProgressRow({ id, label }: { id: string; label: string }) {
   const p = useProgress(id);
   const s = useStore();
   return (
@@ -150,7 +150,7 @@ function HemA() {
 // Dashboard density: everything above the fold on a 390×844 screen.
 // Väntar på dig as a horizontal strip; progress and goals as tiles.
 
-function Ring({ have, total, label }: { have: number; total: number; label: string }) {
+export function Ring({ have, total, label }: { have: number; total: number; label: string }) {
   const pct = total ? have / total : 0;
   const r = 26, c = 2 * Math.PI * r;
   return (
@@ -167,7 +167,7 @@ function Ring({ have, total, label }: { have: number; total: number; label: stri
   );
 }
 
-function RingFor({ id, label }: { id: string; label: string }) {
+export function RingFor({ id, label }: { id: string; label: string }) {
   const p = useProgress(id);
   const s = useStore();
   return <button onClick={() => s.go("samling")}><Ring have={p.have} total={p.total} label={label} /></button>;

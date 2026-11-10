@@ -9,9 +9,9 @@ import {
 } from "./data";
 import { Bar, CardThumb, Sheet, useProgress, useStore } from "./kit";
 
-type Filter = "alla" | "saknas" | "dubbletter";
+export type Filter = "alla" | "saknas" | "dubbletter";
 
-function useSamling() {
+export function useSamling() {
   const s = useStore();
   const [col, setCol] = useState(collections[collections.length - 1].id);
   const [filter, setFilter] = useState<Filter>("alla");
@@ -29,7 +29,7 @@ function useSamling() {
   return { col, setCol, filter, setFilter, rarity, setRarity, q, setQ, all, list };
 }
 
-function CollectionPills({ col, setCol }: { col: string; setCol: (c: string) => void }) {
+export function CollectionPills({ col, setCol }: { col: string; setCol: (c: string) => void }) {
   return (
     <div className="flex gap-2 overflow-x-auto">
       {collections.map((c) => (
@@ -39,7 +39,7 @@ function CollectionPills({ col, setCol }: { col: string; setCol: (c: string) => 
   );
 }
 
-function FilterChips({ filter, setFilter }: { filter: Filter; setFilter: (f: Filter) => void }) {
+export function FilterChips({ filter, setFilter }: { filter: Filter; setFilter: (f: Filter) => void }) {
   return (
     <div className="flex gap-1.5">
       {(["alla", "saknas", "dubbletter"] as Filter[]).map((f) => (
@@ -49,14 +49,14 @@ function FilterChips({ filter, setFilter }: { filter: Filter; setFilter: (f: Fil
   );
 }
 
-const milestones = [
+export const milestones = [
   { label: "Första Rare", done: true }, { label: "Första Epic", done: true }, { label: "Första Legendary", done: false },
   { label: "Alla Common", done: false }, { label: "Hela samlingen · 5 000 💎", done: false },
 ];
 
 // ── Upgrade logic (shared), UI differs per variant ──────────────────────────
 
-function useUpgrade(col: string) {
+export function useUpgrade(col: string) {
   const s = useStore();
   const [from, setFrom] = useState<CardRarity | null>(null);
   const [sel, setSel] = useState<Record<string, number>>({});
@@ -106,7 +106,7 @@ function RarityPicker({ u }: { u: ReturnType<typeof useUpgrade> }) {
   );
 }
 
-function UpgradeFooter({ u }: { u: ReturnType<typeof useUpgrade> }) {
+export function UpgradeFooter({ u }: { u: ReturnType<typeof useUpgrade> }) {
   const ok = u.rule && u.total === u.rule.cost;
   return (
     <div className="border-t bg-white p-3">

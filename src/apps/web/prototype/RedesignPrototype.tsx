@@ -15,6 +15,7 @@ import { byteVariants } from "./ByteVariants";
 import { hemVariants } from "./HemVariants";
 import { samlingVariants } from "./SamlingVariants";
 import { otherPlayers } from "./data";
+import { DesktopPrototype } from "./DesktopPrototype";
 import { CardSheet, PhoneFrame, StoreProvider, TabBar, Toast, TopBar, VariantSwitcher, type Screen } from "./kit";
 
 type VariantMap = Record<string, { name: string; C: () => JSX.Element }>;
@@ -29,7 +30,7 @@ function Topplista() {
   );
 }
 
-export function RedesignPrototype() {
+function PhonePrototype() {
   const [params, setParams] = useSearchParams();
   const screen = (params.get("skarm") as Screen) ?? "hem";
   const variants = SCREENS[screen];
@@ -53,4 +54,11 @@ export function RedesignPrototype() {
       </PhoneFrame>
     </StoreProvider>
   );
+}
+
+/** ?vy=desktop|mobil forces a view; otherwise ≥1024px gets the desktop prototype (ticket #19). */
+export function RedesignPrototype() {
+  const [params] = useSearchParams();
+  const vy = params.get("vy") ?? (window.innerWidth >= 1024 ? "desktop" : "mobil");
+  return vy === "desktop" ? <DesktopPrototype /> : <PhonePrototype />;
 }

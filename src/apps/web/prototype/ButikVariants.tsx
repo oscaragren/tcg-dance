@@ -8,7 +8,7 @@ import { CardThumb, NewBadge, Sheet, SectionTitle, useActions, useStore } from "
 import { resolveCardDesignUrl } from "../../../data/cardDesignUrls";
 import { cardsIn } from "./data";
 
-function usePack() {
+export function usePack() {
   const s = useStore();
   const [opened, setOpened] = useState<{ cards: DanceCard[]; before: Record<string, number> } | null>(null);
   const buy = (collectionId: string) => {
@@ -35,12 +35,12 @@ function usePack() {
   return { buy, sheet };
 }
 
-function coverArt(collectionId: string, n = 3) {
+export function coverArt(collectionId: string, n = 3) {
   return cardsIn(collectionId).filter((c) => c.rarity === "legendary" || c.rarity === "epic").slice(0, n)
     .map((c) => resolveCardDesignUrl(c.designKey)).filter(Boolean) as string[];
 }
 
-function ChestSlots({ compact }: { compact?: boolean }) {
+export function ChestSlots({ compact }: { compact?: boolean }) {
   const s = useStore();
   const a = useActions();
   return (
@@ -74,7 +74,7 @@ function ChestSlots({ compact }: { compact?: boolean }) {
   );
 }
 
-function buyChest(s: ReturnType<typeof useStore>, id: string) {
+export function buyChest(s: ReturnType<typeof useStore>, id: string) {
   const item = chestShop.find((c) => c.id === id)!;
   const free = s.chests.find((c) => c.readyInMin === null);
   if (!free) return s.say("Alla platser är fulla");
