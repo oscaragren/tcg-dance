@@ -26,6 +26,8 @@ import { PlayerCollectionPage } from "./PlayerCollectionPage";
 import { TradeMarketPage } from "./TradeMarketPage";
 import { AdminPage } from "./AdminPage";
 import { featuredCollection } from "../../data/packs";
+// PROTOTYPE — throwaway key-screen prototype, dev only. Remove before merging.
+import { RedesignPrototype } from "./prototype/RedesignPrototype";
 
 
 function LandingPage() {
@@ -146,6 +148,11 @@ export default function App() {
     setPendingTradeCount(0);
     setDiamonds(null);
     setHasReadyChest(false);
+  }
+
+  // PROTOTYPE — dev-only throwaway route, renders without the real Header/Footer.
+  if (import.meta.env.DEV && location.pathname.startsWith("/prototyp/skarmar")) {
+    return <RedesignPrototype />;
   }
 
   if (isAuthLoading) {
