@@ -102,7 +102,10 @@ db.exec(`
     user_id   TEXT NOT NULL REFERENCES users(id),
     type      TEXT NOT NULL,
     bought_at TEXT NOT NULL,
-    ready_at  TEXT NOT NULL
+    ready_at  TEXT NOT NULL,
+    -- The payout table (game-content.json "chestPayouts") this Chest was bought
+    -- under. Chests that predate payout tables are 'v1'.
+    payout_table TEXT NOT NULL DEFAULT 'v1'
   );
 
   CREATE INDEX IF NOT EXISTS idx_chests_user ON chests(user_id);
@@ -211,6 +214,14 @@ const hasCollectionId =
 if (!hasCollectionId) {
   db.exec("ALTER TABLE card_pool ADD COLUMN collection_id TEXT NOT NULL DEFAULT 'sm2026'");
   console.log("Migrated card_pool: added collection_id column.");
+}
+
+// Add payout_table column to chests if upgrading from an older schema
+const hasPayoutTable =
+  db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('chests') WHERE name='payout_table'").get().n > 0;
+if (!hasPayoutTable) {
+  db.exec("ALTER TABLE chests ADD COLUMN payout_table TEXT NOT NULL DEFAULT 'v1'");
+  console.log("Migrated chests: added payout_table column.");
 }
 
 // Add quantity column to cards_for_trade if upgrading from an older schema

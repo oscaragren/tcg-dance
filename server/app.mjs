@@ -90,7 +90,7 @@ function syncCardPool(allCards, copiesPerRarity, collectionsMap) {
 
 // ── Startup: load catalog once ────────────────────────────────────────────────
 
-const { cards: allCards, collections, dailyDiamonds, copiesPerRarity, events, weeklyGoals = [] } = (catalog ?? (await loadGameCatalog()));
+const { cards: allCards, collections, dailyDiamonds, copiesPerRarity, events, chestPayouts, weeklyGoals = [] } = (catalog ?? (await loadGameCatalog()));
 const cardById = new Map(allCards.map((c) => [c.id, c]));
 const collectionsMap = new Map(collections.map((c) => [c.id, c]));
 syncCardPool(allCards, copiesPerRarity, collectionsMap);
@@ -1687,7 +1687,6 @@ const CHEST_TYPES = {
     label: "Bronskista",
     price: 10,
     waitMs: 1 * HOUR_MS,
-    diamonds: { min: 15, max: 30, step: 5 },
     // Each roll is independent.
     cardRolls: [
       { rarity: "common", chance: 0.25 },
@@ -1699,7 +1698,6 @@ const CHEST_TYPES = {
     label: "Silverkista",
     price: 25,
     waitMs: 5 * HOUR_MS,
-    diamonds: { min: 50, max: 100, step: 5 },
     cardRolls: [
       { rarity: "common", chance: 0.25 },
       { rarity: "common", chance: 0.25 },
@@ -1711,7 +1709,6 @@ const CHEST_TYPES = {
     label: "Guldkista",
     price: 50,
     waitMs: 12 * HOUR_MS,
-    diamonds: { min: 100, max: 250, step: 5 },
     cardRolls: [
       { rarity: "common", chance: 0.25 },
       { rarity: "common", chance: 0.25 },
@@ -1770,6 +1767,13 @@ function universalSlotsUsed(held, dedicated) {
 function canStoreChest(type, held, dedicated) {
   const next = { ...held, [type]: (held[type] ?? 0) + 1 };
   return universalSlotsUsed(next, dedicated) <= FREE_CHEST_SLOTS;
+}
+
+/** The payout range for a Chest type under a payout table (default: the current one). */
+function chestPayout(type, tableId = chestPayouts.current) {
+  const range = chestPayouts.tables[tableId]?.[type];
+  if (!range) throw new Error(`No payout for ${type} Chests in payout table "${tableId}".`);
+  return range;
 }
 
 function rollDiamonds({ min, max, step }) {
@@ -1849,8 +1853,8 @@ function buildChestsResponse(userId) {
       label: c.label,
       price: c.price,
       waitHours: chestWaitMs(c.id) / HOUR_MS,
-      diamondMin: c.diamonds.min,
-      diamondMax: c.diamonds.max,
+      diamondMin: chestPayout(c.id).min,
+      diamondMax: chestPayout(c.id).max,
     })),
   };
 }
@@ -1911,12 +1915,13 @@ app.post("/api/game/chests/buy", authed, (request, response) => {
 
       const now = clock.now();
       db.prepare("UPDATE player_state SET diamonds = diamonds - ? WHERE user_id = ?").run(config.price, userId);
-      db.prepare("INSERT INTO chests (id, user_id, type, bought_at, ready_at) VALUES (?, ?, ?, ?, ?)").run(
+      db.prepare("INSERT INTO chests (id, user_id, type, bought_at, ready_at, payout_table) VALUES (?, ?, ?, ?, ?, ?)").run(
         crypto.randomUUID(),
         userId,
         config.id,
         new Date(now).toISOString(),
         new Date(now + chestWaitMs(config.id, now)).toISOString(),
+        chestPayouts.current,
       );
       logGameEvent(userId, "chest_buy", { collectionId: config.id, diamonds: config.price });
     })();
@@ -1988,7 +1993,7 @@ app.post("/api/game/chests/:id/collect", authed, (request, response) => {
     return;
   }
 
-  const diamondsAwarded = rollDiamonds(config.diamonds);
+  const diamondsAwarded = rollDiamonds(chestPayout(chest.type, chest.payout_table));
   let wonCardIds = [];
 
   try {

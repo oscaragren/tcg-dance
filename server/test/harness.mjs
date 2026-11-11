@@ -38,6 +38,13 @@ export const TEST_CATALOG = {
   dailyDiamonds: 150,
   copiesPerRarity: { common: 10, rare: 5, epic: 2, legendary: 1, special: 1 },
   events: [],
+  chestPayouts: {
+    current: "v2",
+    tables: {
+      v1: { bronze: { min: 15, max: 30, step: 5 }, silver: { min: 50, max: 100, step: 5 }, gold: { min: 100, max: 250, step: 5 } },
+      v2: { bronze: { min: 10, max: 20, step: 5 }, silver: { min: 30, max: 45, step: 5 }, gold: { min: 50, max: 100, step: 5 } },
+    },
+  },
   weeklyGoals: [
     { id: "packs", kind: "packsOpened", title: "Öppna 5 Packs", target: 5, reward: 100 },
     { id: "new-cards", kind: "newCards", title: "Få 3 nya kort", target: 3, reward: 100 },
