@@ -145,8 +145,8 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                       </Button>
                       <span className="text-xs text-secondary">
                         {forTradeTotal > 0
-                          ? `${forTradeTotal} kort märkta "vill byta"`
-                          : `Inga kort märkta "vill byta"`}
+                          ? `${forTradeTotal} kort tillgängliga för byte`
+                          : `Inga kort tillgängliga för byte`}
                       </span>
                     </div>
                   )}
@@ -176,7 +176,7 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                       onChange={(e) => setOnlyForTrade(e.target.checked)}
                       className="h-4 w-4 rounded border-hairline-strong text-text focus:ring-accent"
                     />
-                    Visa bara kort märkta "vill byta"
+                    Visa bara kort tillgängliga för byte
                   </label>
                 </div>
               </div>

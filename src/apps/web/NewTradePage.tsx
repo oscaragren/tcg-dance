@@ -447,7 +447,7 @@ function CardPickerPanel({
                   />
                   {wanted > 0 && (
                     <div
-                      title="Markerat som vill byta"
+                      title="Tillgängligt för byte"
                       className="absolute top-1.5 left-1.5 z-10 bg-accent text-accent-on text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none"
                     >
                       ⇄

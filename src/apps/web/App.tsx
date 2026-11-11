@@ -17,7 +17,6 @@ import { LoggedInHomePage } from "./LoggedInHomePage";
 import { ButikPage } from "./ButikPage";
 import { TradePage } from "./TradePage";
 import { NewTradePage } from "./NewTradePage";
-import { MarkForTradePage } from "./MarkForTradePage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
 import { PrivacyPage } from "./PrivacyPage";
 import { UpgradePage } from "./UpgradePage";
@@ -191,7 +190,7 @@ export default function App() {
       <Routes>
         <Route path="/"         element={<HomePage currentUser={currentUser} />} />
         <Route path="/samling"      element={<CollectionPage userEmail={currentUser?.email ?? null} />} />
-        <Route path="/samling/byte" element={<MarkForTradePage currentUser={currentUser} />} />
+        <Route path="/samling/byte" element={<Navigate to="/samling" replace />} />
         <Route path="/butik"    element={<ButikPage currentUser={currentUser} />} />
         <Route path="/handel"   element={<Navigate to="/butik" replace />} />
         <Route path="/uppgradering" element={<UpgradePage currentUser={currentUser} />} />

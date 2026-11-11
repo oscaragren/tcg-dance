@@ -73,14 +73,10 @@ export async function buyPack(collectionId: string, quantity = 1): Promise<BuyPa
   });
 }
 
-export async function fetchMyCardsForTrade(): Promise<CardForTrade[]> {
-  return requestJson<CardForTrade[]>("/api/game/cards-for-trade", { method: "GET" });
-}
-
-export async function saveCardsForTrade(items: CardForTrade[]): Promise<CardForTrade[]> {
-  return requestJson<CardForTrade[]>("/api/game/cards-for-trade", {
-    method: "POST",
-    body: JSON.stringify({ items }),
+export async function setCardKept(cardId: string, keep: boolean): Promise<{ cardId: string; keep: boolean }> {
+  return requestJson<{ cardId: string; keep: boolean }>(`/api/game/keep/${encodeURIComponent(cardId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ keep }),
   });
 }
 

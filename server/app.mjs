@@ -588,9 +588,14 @@ function buildStateResponse(userId) {
     .prepare("SELECT card_id FROM owned_cards WHERE user_id = ?")
     .all(userId)
     .map((r) => r.card_id);
+  const keptCardIds = db
+    .prepare("SELECT card_id FROM kept_cards WHERE user_id = ?")
+    .all(userId)
+    .map((r) => r.card_id);
 
   return {
     ownedCardIds,
+    keptCardIds,
     diamonds: state.diamonds,
     lastDailyClaimDate: state.last_daily_claim_date,
     canClaimDailyDiamonds: state.last_daily_claim_date !== todayIso(),
@@ -1263,15 +1268,10 @@ app.get("/api/users/:userId/profile", authed, (request, response) => {
     .all(user.id)
     .map((r) => r.card_id);
 
-  const owned = ownedCountMap(user.id);
-  // A banned player's "vill byta" marks are kept but hidden from others until
+  // A banned player's Available for Trade Copies are hidden from others until
   // the ban ends (they still see their own).
   const hideMarks = user.id !== request.auth.userId && isUserBanned(user.id);
-  const cardsForTrade = hideMarks ? [] : db
-    .prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?")
-    .all(user.id)
-    .map((r) => ({ cardId: r.card_id, quantity: Math.min(r.quantity, owned.get(r.card_id) ?? 0) }))
-    .filter((r) => r.quantity > 0);
+  const cardsForTrade = hideMarks ? [] : availableForTrade(user.id);
 
   response.json({
     // Real names are shown on the player's collection page. Null only for
@@ -1295,54 +1295,47 @@ function ownedCountMap(userId) {
   return new Map(rows.map((r) => [r.card_id, r.n]));
 }
 
-// Marked-for-trade cards for the current user, each capped at how many copies
-// they still own.
-app.get("/api/game/cards-for-trade", authed, (request, response) => {
-  const owned = ownedCountMap(request.auth.userId);
-  const rows = db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(request.auth.userId);
-  const result = rows
-    .map((r) => ({ cardId: r.card_id, quantity: Math.min(r.quantity, owned.get(r.card_id) ?? 0) }))
-    .filter((r) => r.quantity > 0);
-  response.json(result);
-});
-
-// Replace the user's entire marked-for-trade set with the provided quantities.
-app.post("/api/game/cards-for-trade", authed, (request, response) => {
-  const userId = request.auth.userId;
-  const items = Array.isArray(request.body?.items) ? request.body.items : [];
-  const owned = ownedCountMap(userId);
-
-  const clean = [];
-  for (const item of items) {
-    const cardId = String(item?.cardId ?? "").trim();
-    const ownedCount = owned.get(cardId) ?? 0;
-    if (!cardId || ownedCount <= 0) continue;
-    const quantity = Math.max(0, Math.min(ownedCount, Math.floor(Number(item?.quantity ?? 0))));
-    if (quantity > 0) clean.push({ cardId, quantity });
+// Available for Trade (GLOSSARY): every Copy beyond the first, unless the player
+// has set the Card to Behåll. Derived, never stored.
+function availableForTrade(userId) {
+  const kept = new Set(
+    db.prepare("SELECT card_id FROM kept_cards WHERE user_id = ?").all(userId).map((r) => r.card_id),
+  );
+  const result = [];
+  for (const [cardId, owned] of ownedCountMap(userId)) {
+    if (kept.has(cardId) || owned < 2) continue;
+    result.push({ cardId, quantity: owned - 1 });
   }
+  return result;
+}
 
-  db.transaction(() => {
-    db.prepare("DELETE FROM cards_for_trade WHERE user_id = ?").run(userId);
-    const ins = db.prepare("INSERT INTO cards_for_trade (user_id, card_id, quantity) VALUES (?, ?, ?)");
-    for (const c of clean) ins.run(userId, c.cardId, c.quantity);
-  })();
-
-  response.json(clean);
+// Set or clear Behåll for a Card the player owns.
+app.put("/api/game/keep/:cardId", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const cardId = String(request.params.cardId);
+  if (!cardById.has(cardId)) {
+    response.status(404).json({ message: "Okänt kort." });
+    return;
+  }
+  if (typeof request.body?.keep !== "boolean") {
+    response.status(400).json({ message: "keep måste vara true eller false." });
+    return;
+  }
+  if (request.body.keep) {
+    db.prepare("INSERT OR IGNORE INTO kept_cards (user_id, card_id) VALUES (?, ?)").run(userId, cardId);
+  } else {
+    db.prepare("DELETE FROM kept_cards WHERE user_id = ? AND card_id = ?").run(userId, cardId);
+  }
+  response.json({ cardId, keep: request.body.keep });
 });
 
 app.get("/api/users/:userId/cards-for-trade", authed, (request, response) => {
-  // Only return cards that are both marked for trade AND still owned, capped at
-  // the owned count. Hidden entirely while that player is banned.
+  // Hidden entirely while that player is banned.
   if (request.params.userId !== request.auth.userId && isUserBanned(request.params.userId)) {
     response.json({ cards: [] });
     return;
   }
-  const owned = ownedCountMap(request.params.userId);
-  const rows = db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(request.params.userId);
-  const cards = rows
-    .map((r) => ({ cardId: r.card_id, quantity: Math.min(r.quantity, owned.get(r.card_id) ?? 0) }))
-    .filter((r) => r.quantity > 0);
-  response.json({ cards });
+  response.json({ cards: availableForTrade(request.params.userId) });
 });
 
 const RARITY_SORT = { special: 0, legendary: 1, epic: 2, rare: 3, common: 4 };
@@ -1351,28 +1344,18 @@ const RARITY_SORT = { special: 0, legendary: 1, epic: 2, rare: 3, common: 4 };
 // Two ways to find a trade besides searching for a username: search for a
 // specific card and see who offers it, or browse every player's shelf.
 
-// Every marked-for-trade row in the game, capped at what the owner still owns.
-// Shared by both market endpoints so the "still owned" rule lives in one place.
+// Every Available for Trade Copy in the game, per player. Shared by both market
+// endpoints so the rule lives in one place.
 function liveMarketRows() {
-  const rows = db
-    .prepare(
-      `SELECT f.user_id, f.card_id, f.quantity, u.username, u.banned_until,
-              (SELECT COUNT(*) FROM owned_cards o WHERE o.user_id = f.user_id AND o.card_id = f.card_id) AS owned
-       FROM cards_for_trade f
-       JOIN users u ON u.id = f.user_id`,
-    )
-    .all();
-
-  // Banned players' listings are kept but left off the market until the ban ends.
-  return rows
-    .filter((r) => !activeBan(r))
-    .map((r) => ({
-      userId: r.user_id,
-      username: r.username,
-      cardId: r.card_id,
-      quantity: Math.min(r.quantity, r.owned),
-    }))
-    .filter((r) => r.quantity > 0 && cardById.has(r.cardId));
+  const rows = [];
+  for (const u of db.prepare("SELECT id, username, banned_until FROM users").all()) {
+    // Banned players' Copies are left off the market until the ban ends.
+    if (activeBan(u)) continue;
+    for (const c of availableForTrade(u.id)) {
+      if (cardById.has(c.cardId)) rows.push({ userId: u.id, username: u.username, cardId: c.cardId, quantity: c.quantity });
+    }
+  }
+  return rows;
 }
 
 // Which players offer a given card. Excludes the caller — you cannot trade with
@@ -1455,9 +1438,9 @@ function validateTradeProposal({
       return { status: 400, message: "Du äger inte alla erbjudna kort." };
     }
   }
-  // Any card the receiver actually owns may be asked for. The "vill byta" marks
-  // are a signal of willingness (and what the market lists), not a gate: the
-  // receiver still has to accept, so an unmarked request costs them nothing but
+  // Any card the receiver actually owns may be asked for. Available for Trade
+  // is a signal of willingness (and what the market lists), not a gate: the
+  // receiver still has to accept, so an unlisted request costs them nothing but
   // a decline. Applies to counter-offers too, which share this function.
   for (const [cardId, need] of tallyIds(requestedCardIds)) {
     if (stmtCountOwned.get(receiverUserId, cardId).n < need) {
@@ -1621,14 +1604,11 @@ app.post("/api/trade/:id/accept", authed, (request, response) => {
       const stmtDel = db.prepare("DELETE FROM owned_cards WHERE id = (SELECT id FROM owned_cards WHERE user_id = ? AND card_id = ? LIMIT 1)");
       const newFor = { [userId]: 0, [senderId]: 0 };
 
-      const stmtDelForTrade = db.prepare("DELETE FROM cards_for_trade WHERE user_id = ? AND card_id = ?");
       for (const cardId of offeredCardIds) {
         stmtDel.run(senderId, cardId); if (grantCard(userId, cardId)) newFor[userId] += 1;
-        stmtDelForTrade.run(senderId, cardId);
       }
       for (const cardId of requestedCardIds) {
         stmtDel.run(userId, cardId); if (grantCard(senderId, cardId)) newFor[senderId] += 1;
-        stmtDelForTrade.run(userId, cardId);
       }
 
       if (row.offered_diamonds > 0) {
@@ -2195,10 +2175,7 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
   const ownedRows = db
     .prepare("SELECT card_id, COUNT(*) AS count FROM owned_cards WHERE user_id = ? GROUP BY card_id")
     .all(userId);
-  const markedForTrade = new Map(
-    db.prepare("SELECT card_id, quantity FROM cards_for_trade WHERE user_id = ?").all(userId)
-      .map((r) => [r.card_id, r.quantity]),
-  );
+  const available = new Map(availableForTrade(userId).map((r) => [r.cardId, r.quantity]));
 
   const rarityCounts = {};
   let totalCards = 0;
@@ -2283,7 +2260,7 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
     totals: {
       totalCards,
       uniqueCards: ownedRows.length,
-      markedForTrade: [...markedForTrade.values()].reduce((sum, n) => sum + n, 0),
+      markedForTrade: [...available.values()].reduce((sum, n) => sum + n, 0),
       chests: chestRows.length,
       chestSlots: FREE_CHEST_SLOTS + dedicatedSlots.size,
       // Which dedicated slots they have bought, in a stable order.
@@ -2297,8 +2274,7 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
     cards: ownedRows.map((r) => ({
       cardId: r.card_id,
       count: r.count,
-      // Capped at what they actually own, same rule the trade routes apply.
-      markedForTrade: Math.min(markedForTrade.get(r.card_id) ?? 0, r.count),
+      markedForTrade: available.get(r.card_id) ?? 0,
     })),
     chests: chestRows.map((row) => publicChest(row, dedicatedSlots.has(row.type) ? row.type : "free")),
     achievements: claimedRows.map((r) => ({
@@ -2322,8 +2298,8 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
 // including cards nobody owns yet (owners: []).
 // Temporary ban: read-only access for `days` days. Banning also cancels every
 // pending trade the player is part of (sent or received) so nothing can be
-// settled with them while they are out; their "vill byta" marks are kept but
-// hidden. Re-banning an already-banned player replaces the end date.
+// settled with them while they are out; their Behåll settings are kept and their
+// Available for Trade Copies are hidden. Re-banning an already-banned player replaces the end date.
 const MAX_BAN_DAYS = 365;
 app.post("/api/admin/users/:id/ban", requireAdmin, (request, response) => {
   const userId = request.params.id;
@@ -2611,7 +2587,7 @@ app.delete("/api/admin/users/:id", requireAdmin, (request, response) => {
     }
 
     db.prepare("DELETE FROM owned_cards WHERE user_id = ?").run(userId);
-    db.prepare("DELETE FROM cards_for_trade WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM kept_cards WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM chests WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM chest_slots WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM chest_type_slots WHERE user_id = ?").run(userId);

@@ -9,7 +9,7 @@ import { Button } from "../../components/shared/ui/button";
 import { cards, type CardRarity, type DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
 import { rarityColor, rarityLabel } from "../../data/rarity";
-import { fetchCollectionProgress, fetchGameState, fetchTrophies } from "../../utils/gameApi";
+import { fetchCollectionProgress, fetchGameState, fetchTrophies, setCardKept } from "../../utils/gameApi";
 import type { CollectionProgress, Trophy } from "../../types/game";
 
 type View = "alla" | "saknas" | "dubbletter";
@@ -32,18 +32,19 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<DanceCard | null>(null);
   const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
+  const [keptCardIds, setKeptCardIds] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<CollectionProgress | null>(null);
   const [trophies, setTrophies] = useState<Trophy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userEmail) { setOwnedCardIds([]); return; }
+    if (!userEmail) { setOwnedCardIds([]); setKeptCardIds(new Set()); return; }
     let cancelled = false;
     setIsLoading(true);
     setError(null);
     Promise.all([fetchGameState(), fetchTrophies()])
-      .then(([state, t]) => { if (!cancelled) { setOwnedCardIds(state.ownedCardIds); setTrophies(t); } })
+      .then(([state, t]) => { if (!cancelled) { setOwnedCardIds(state.ownedCardIds); setKeptCardIds(new Set(state.keptCardIds)); setTrophies(t); } })
       .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "Kunde inte ladda samlingen."); })
       .finally(() => { if (!cancelled) setIsLoading(false); });
     return () => { cancelled = true; };
@@ -242,12 +243,22 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
 
         <AchievementsSection collectionId={collectionId} />
 
-        <div>
-          <Button asChild size="sm" variant="outline"><Link to="/samling/byte">⇄ Välj kort du vill byta</Link></Button>
-        </div>
       </div>
 
-      {selected && <CardSheet card={selected} copies={copies.get(selected.id) ?? 0} onClose={() => setSelected(null)} />}
+      {selected && (
+        <CardSheet
+          card={selected}
+          copies={copies.get(selected.id) ?? 0}
+          kept={keptCardIds.has(selected.id)}
+          onToggleKept={(keep) => {
+            const cardId = selected.id;
+            const apply = (k: boolean) => setKeptCardIds((prev) => { const next = new Set(prev); if (k) next.add(cardId); else next.delete(cardId); return next; });
+            apply(keep);
+            setCardKept(cardId, keep).catch(() => apply(!keep));
+          }}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </main>
   );
 }

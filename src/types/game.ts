@@ -2,6 +2,8 @@ import type { CardRarity, DanceCard } from "./danceCard";
 
 export type GameState = {
   ownedCardIds: string[];
+  /** Cards the player has set to Behåll (kept out of Trades). */
+  keptCardIds: string[];
   diamonds: number;
   lastDailyClaimDate: string | null;
   canClaimDailyDiamonds: boolean;

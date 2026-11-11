@@ -10,11 +10,15 @@ type CardSheetProps = {
   card: DanceCard;
   /** Copies of this Card the viewer owns. */
   copies: number;
+  /** Whether the Card is set to Behåll (kept out of Trades). */
+  kept?: boolean;
+  /** Called with the new Behåll value. The toggle only shows when the viewer owns Duplicates. */
+  onToggleKept?: (keep: boolean) => void;
   onClose: () => void;
 };
 
 /** Bottom sheet with a large image, the Rarity and Copies owned. Pure presentation. */
-export function CardSheet({ card, copies, onClose }: CardSheetProps) {
+export function CardSheet({ card, copies, kept = false, onToggleKept, onClose }: CardSheetProps) {
   const titleId = useId();
   const color = rarityColor(card.rarity);
   const owned = copies > 0;
@@ -55,6 +59,12 @@ export function CardSheet({ card, copies, onClose }: CardSheetProps) {
           <span className="font-semibold" style={{ color }}>{rarityPip[card.rarity]} {rarityLabel[card.rarity]}</span>
           <span className="text-text">{copies === 0 ? "Du äger inget ex" : `Du äger ${copies} ex`}</span>
         </div>
+        {copies > 1 && onToggleKept && (
+          <label className="mt-4 flex items-center justify-center gap-2 text-sm text-text">
+            <input type="checkbox" checked={kept} onChange={(e) => onToggleKept(e.target.checked)} className="h-4 w-4" />
+            Behåll (erbjuds inte till byte)
+          </label>
+        )}
       </div>
     </div>,
     document.body,

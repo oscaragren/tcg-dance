@@ -66,10 +66,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_trades_sender   ON trades(sender_user_id);
   CREATE INDEX IF NOT EXISTS idx_trades_receiver ON trades(receiver_user_id);
 
-  CREATE TABLE IF NOT EXISTS cards_for_trade (
+  -- Behåll: Cards the player keeps out of Trades. Available for Trade is derived
+  -- from Copies owned and this flag (the old hand-marked cards_for_trade is gone).
+  CREATE TABLE IF NOT EXISTS kept_cards (
     user_id TEXT NOT NULL REFERENCES users(id),
     card_id TEXT NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY (user_id, card_id)
   );
 
@@ -224,13 +225,8 @@ if (!hasPayoutTable) {
   console.log("Migrated chests: added payout_table column.");
 }
 
-// Add quantity column to cards_for_trade if upgrading from an older schema
-const hasTradeQuantity =
-  db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('cards_for_trade') WHERE name='quantity'").get().n > 0;
-if (!hasTradeQuantity) {
-  db.exec("ALTER TABLE cards_for_trade ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1");
-  console.log("Migrated cards_for_trade: added quantity column.");
-}
+// Manual "vill byta" marks were replaced by derived availability + Behåll.
+db.exec("DROP TABLE IF EXISTS cards_for_trade");
 
 // Add counter_of_trade_id if upgrading from a schema without counter-offers.
 // Nullable by nature: only counters have a parent. Kept even though the UI shows
