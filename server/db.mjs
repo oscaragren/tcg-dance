@@ -371,6 +371,23 @@ if (db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('game_events') WHERE
   }
 }
 
+// Dismissible Hem banner on an Announcement: optional text, dismissed per player.
+{
+  const exists =
+    db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('announcements') WHERE name = 'banner_text'").get().n > 0;
+  if (!exists) {
+    db.exec("ALTER TABLE announcements ADD COLUMN banner_text TEXT NOT NULL DEFAULT ''");
+    console.log("Migrated announcements: added banner_text column.");
+  }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS announcement_banner_dismissals (
+      user_id         TEXT NOT NULL REFERENCES users(id),
+      announcement_id TEXT NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+      PRIMARY KEY (user_id, announcement_id)
+    );
+  `);
+}
+
 // Add last_seen_announcement_at column if upgrading from an older schema
 {
   const exists =

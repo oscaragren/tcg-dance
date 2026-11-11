@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import type { Announcement } from "../../types/game";
 import { fetchAnnouncements, markAnnouncementsSeen } from "../../utils/gameApi";
 
+/** Dispatched on window (detail: Announcement id) to open the bell feed on one Announcement. */
+export const OPEN_ANNOUNCEMENT_EVENT = "open-announcement";
+
 /** Same cadence as the other header badges (Byte, Samling). */
 const POLL_MS = 60_000;
 
@@ -20,6 +23,7 @@ export function AnnouncementsMenu() {
   const [open, setOpen] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [hasUnseen, setHasUnseen] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,6 +62,21 @@ export function AnnouncementsMenu() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
+
+  // Hem's banner asks the bell to open with its Announcement highlighted.
+  useEffect(() => {
+    function onOpenRequest(event: Event) {
+      const id = (event as CustomEvent<string>).detail;
+      setHighlightId(id);
+      setOpen(true);
+      setHasUnseen((unseen) => {
+        if (unseen) markAnnouncementsSeen().catch(() => {});
+        return false;
+      });
+    }
+    window.addEventListener(OPEN_ANNOUNCEMENT_EVENT, onOpenRequest);
+    return () => window.removeEventListener(OPEN_ANNOUNCEMENT_EVENT, onOpenRequest);
+  }, []);
 
   function handleToggle() {
     setOpen((wasOpen) => {
@@ -98,7 +117,7 @@ export function AnnouncementsMenu() {
           ) : (
             <ul className="max-h-96 overflow-y-auto divide-y">
               {announcements.map((a) => (
-                <li key={a.id} className="px-4 py-3">
+                <li key={a.id} className={`px-4 py-3 ${a.id === highlightId ? "bg-raised" : ""}`}>
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-sm font-semibold text-text">{a.title}</p>
                     <p className="text-[11px] text-tertiary shrink-0">{formatDate(a.createdAt)}</p>

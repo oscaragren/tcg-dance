@@ -968,6 +968,28 @@ app.post("/api/announcements/seen", authed, (request, response) => {
   response.status(204).send();
 });
 
+// The Hem banner: the newest Announcement with banner text this player hasn't dismissed.
+app.get("/api/announcements/banner", authed, (request, response) => {
+  const row = db.prepare(
+    `SELECT a.id, a.banner_text FROM announcements a
+     WHERE a.banner_text <> ''
+       AND NOT EXISTS (SELECT 1 FROM announcement_banner_dismissals d WHERE d.announcement_id = a.id AND d.user_id = ?)
+     ORDER BY a.created_at DESC LIMIT 1`,
+  ).get(request.auth.userId);
+  response.json({ banner: row ? { announcementId: row.id, text: row.banner_text } : null });
+});
+
+app.post("/api/announcements/:id/banner/dismiss", authed, (request, response) => {
+  const exists = db.prepare("SELECT 1 FROM announcements WHERE id = ?").get(request.params.id);
+  if (!exists) {
+    response.status(404).json({ message: "Meddelandet hittades inte." });
+    return;
+  }
+  db.prepare("INSERT OR IGNORE INTO announcement_banner_dismissals (user_id, announcement_id) VALUES (?, ?)")
+    .run(request.auth.userId, request.params.id);
+  response.status(204).send();
+});
+
 const ALLOWED_PACK_QUANTITIES = [1, 5, 10];
 
 function isPackOnSale(pack, now = clock.now()) {
@@ -3648,10 +3670,11 @@ app.get("/api/admin/trade-pairs", requireAdmin, (_request, response) => {
 
 const ANNOUNCEMENT_TITLE_MAX = 80;
 const ANNOUNCEMENT_BODY_MAX = 1000;
+const ANNOUNCEMENT_BANNER_MAX = 100;
 
 app.get("/api/admin/announcements", requireAdmin, (_request, response) => {
-  const rows = db.prepare("SELECT id, title, body, created_at FROM announcements ORDER BY created_at DESC").all();
-  response.json(rows.map((r) => ({ id: r.id, title: r.title, body: r.body, createdAt: r.created_at })));
+  const rows = db.prepare("SELECT id, title, body, banner_text, created_at FROM announcements ORDER BY created_at DESC").all();
+  response.json(rows.map((r) => ({ id: r.id, title: r.title, body: r.body, bannerText: r.banner_text, createdAt: r.created_at })));
 });
 
 app.post("/api/admin/announcements", requireAdmin, (request, response) => {
@@ -3671,13 +3694,39 @@ app.post("/api/admin/announcements", requireAdmin, (request, response) => {
     return;
   }
 
+  const bannerText = String(request.body?.bannerText ?? "").trim();
+  if (bannerText.length > ANNOUNCEMENT_BANNER_MAX) {
+    response.status(400).json({ message: `Bannertexten får vara högst ${ANNOUNCEMENT_BANNER_MAX} tecken.` });
+    return;
+  }
+
   const id = crypto.randomUUID();
   const createdAt = new Date(clock.now()).toISOString();
-  db.prepare("INSERT INTO announcements (id, title, body, created_at) VALUES (?, ?, ?, ?)").run(
-    id, title, body, createdAt,
+  db.prepare("INSERT INTO announcements (id, title, body, banner_text, created_at) VALUES (?, ?, ?, ?, ?)").run(
+    id, title, body, bannerText, createdAt,
   );
 
-  response.status(201).json({ id, title, body, createdAt });
+  response.status(201).json({ id, title, body, bannerText, createdAt });
+});
+
+// Set, change or clear (empty text) the Hem banner. A changed text is a new
+// message, so players who dismissed the old one see it again.
+app.put("/api/admin/announcements/:id/banner", requireAdmin, (request, response) => {
+  const text = String(request.body?.text ?? "").trim();
+  if (text.length > ANNOUNCEMENT_BANNER_MAX) {
+    response.status(400).json({ message: `Bannertexten får vara högst ${ANNOUNCEMENT_BANNER_MAX} tecken.` });
+    return;
+  }
+  const current = db.prepare("SELECT banner_text FROM announcements WHERE id = ?").get(request.params.id);
+  if (!current) {
+    response.status(404).json({ message: "Meddelandet hittades inte." });
+    return;
+  }
+  if (current.banner_text !== text) {
+    db.prepare("UPDATE announcements SET banner_text = ? WHERE id = ?").run(text, request.params.id);
+    db.prepare("DELETE FROM announcement_banner_dismissals WHERE announcement_id = ?").run(request.params.id);
+  }
+  response.json({ id: request.params.id, bannerText: text });
 });
 
 app.delete("/api/admin/announcements/:id", requireAdmin, (request, response) => {

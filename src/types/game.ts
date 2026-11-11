@@ -53,6 +53,12 @@ export type Announcement = {
   createdAt: string;
 };
 
+/** The dismissible Hem banner pointing at an Announcement. */
+export type AnnouncementBanner = {
+  announcementId: string;
+  text: string;
+};
+
 export type AnnouncementsResponse = {
   /** Newest first. */
   announcements: Announcement[];
