@@ -1,13 +1,14 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const workspaceRoot = path.resolve(__dirname, "..");
-const dbPath = process.env.DB_PATH ?? path.join(workspaceRoot, "data", "tcg.db");
-
-const db = new Database(dbPath);
+/**
+ * Open (and migrate) a game database. `filename` may be ":memory:". The
+ * one-time import of the legacy data/*.json files only runs when
+ * `legacyJsonDir` is given, so tests never pick up real player data.
+ */
+export function openDatabase(filename, { legacyJsonDir = null } = {}) {
+const db = new Database(filename);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
@@ -285,9 +286,9 @@ if (!announcementsTableExisted) {
 
 // One-time migration from JSON files
 const isEmpty = db.prepare("SELECT COUNT(*) as n FROM users").get().n === 0;
-if (isEmpty) {
-  const usersPath = path.join(workspaceRoot, "data", "users.json");
-  const statePath = path.join(workspaceRoot, "data", "player-state.json");
+if (isEmpty && legacyJsonDir) {
+  const usersPath = path.join(legacyJsonDir, "users.json");
+  const statePath = path.join(legacyJsonDir, "player-state.json");
 
   const stmtUser = db.prepare(
     "INSERT OR IGNORE INTO users (id, username, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -326,4 +327,5 @@ if (isEmpty) {
   console.log("Migrated existing data from JSON files to SQLite.");
 }
 
-export default db;
+return db;
+}

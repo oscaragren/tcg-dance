@@ -9,7 +9,7 @@ export const collections: CollectionConfig[] = content.collections ?? [];
 
 /**
  * Can this collection's pack be bought at `now`? Mirrors isPackOnSale() in
- * server/index.mjs — the server is the real gate, this only drives the UI.
+ * server/app.mjs — the server is the real gate, this only drives the UI.
  */
 export function isPackPurchasable(collection: CollectionConfig, now: number = Date.now()): boolean {
   const { pack } = collection;
