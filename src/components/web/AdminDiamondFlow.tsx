@@ -16,6 +16,7 @@ const SOURCES: { key: keyof AdminDiamondFlowDay["sources"]; label: string }[] = 
   { key: "chestPayouts", label: "Kistutbetalning" },
   { key: "eventGifts", label: "Eventgåvor" },
   { key: "starterRewards", label: "Kom igång" },
+  { key: "comebackGifts", label: "Comeback" },
   { key: "adminGrants", label: "Admin-gåvor" },
 ];
 const SINKS: { key: keyof AdminDiamondFlowDay["sinks"]; label: string }[] = [
@@ -26,7 +27,7 @@ const SINKS: { key: keyof AdminDiamondFlowDay["sinks"]; label: string }[] = [
 
 const HISTORY_LABEL: Record<string, string> = {
   daily: "Daglig", streak_bonus: "Streak", weekly_goal: "Veckomål", achievement: "Achievement",
-  chest_open: "Kistutbetalning", event_gift: "Eventgåva", admin_grant: "Admin-gåva", starter_step: "Kom igång",
+  chest_open: "Kistutbetalning", event_gift: "Eventgåva", admin_grant: "Admin-gåva", starter_step: "Kom igång", comeback_gift: "Comeback",
   pack: "Pack", chest_buy: "Kista", slot_buy: "Kistplats", trade_diamonds: "Byte (gav bort)",
 };
 

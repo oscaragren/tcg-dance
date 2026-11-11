@@ -228,6 +228,20 @@ db.exec(`
   );
 `);
 
+// Comeback ("Välkommen tillbaka"). A row exists once a player has been seen
+// returning after a long absence. away_since is the date of their last Daily
+// claim before leaving. gift_pending / summary_pending are cleared when the gift
+// is claimed / the summary is dismissed; last_gift_at spaces gifts 30 days apart.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS comeback_state (
+    user_id         TEXT PRIMARY KEY REFERENCES users(id),
+    away_since      TEXT NOT NULL,
+    gift_pending    INTEGER NOT NULL DEFAULT 0,
+    summary_pending INTEGER NOT NULL DEFAULT 0,
+    last_gift_at    TEXT
+  );
+`);
+
 // Top-ups: Copies the admin has added to a Collection's Card pool. bonus_copies
 // is the part of total_copies that came from Top-ups, so the startup pool sync
 // (which resets total_copies to the configured amount) does not undo them.

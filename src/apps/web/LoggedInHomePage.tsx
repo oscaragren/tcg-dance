@@ -3,16 +3,17 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChestRewardModal } from "../../components/web/ChestRewardModal";
 import { DiamondIcon } from "../../components/web/DiamondIcon";
+import { ComebackSheet } from "../../components/web/ComebackSheet";
 import { EventSheet } from "../../components/web/EventSheet";
 import { ProgressRing } from "../../components/web/ProgressRing";
 import { WaitingStrip } from "../../components/web/WaitingStrip";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
-import type { CollectionProgress, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WeeklyGoal } from "../../types/game";
+import type { CollectionProgress, ComebackSummary, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WeeklyGoal } from "../../types/game";
 import {
   acceptTrade, claimAchievement, claimDailyDiamonds, claimWeeklyGoal,
-  claimEventGift, claimStarterPack, claimStarterStep, collectChest, fetchStarter,
-  fetchCollectionProgress, fetchGameState, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
+  claimComebackGift, claimEventGift, claimStarterPack, claimStarterStep, collectChest, fetchStarter,
+  fetchCollectionProgress, fetchComeback, fetchGameState, markComebackSummarySeen, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
 } from "../../utils/gameApi";
 import { useNow } from "../../utils/useNow";
 
@@ -95,6 +96,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const [eventOpen, setEventOpen] = useState(false);
   const [starter, setStarter] = useState<StarterResponse | null>(null);
   const [reward, setReward] = useState<{ label: string; diamonds: number; cards: DanceCard[] } | null>(null);
+  const [comeback, setComeback] = useState<ComebackSummary | null>(null);
   const now = useNow(1000);
 
   const reload = useCallback(async () => {
@@ -103,6 +105,8 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     setStarter(starterState);
     setWaiting(items.items);
     setWeeklyGoals(goals.goals);
+    // Before the Daily claim ends the absence; the server keeps showing it until dismissed.
+    fetchComeback().then((r) => setComeback((prev) => prev ?? r.summary)).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -125,6 +129,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       else if (item.type === "achievement") await claimAchievement(item.id);
       else if (item.type === "weekly_goal") await claimWeeklyGoal(item.id);
       else if (item.type === "event_gift") await claimEventGift(item.id);
+      else if (item.type === "comeback_gift") await claimComebackGift();
       else if (item.type === "starter_step") await claimStarterStep(item.id);
       else if (item.type === "starter_pack") {
         const result = await claimStarterPack();
@@ -160,6 +165,12 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     <main className="mx-auto flex max-w-md flex-col gap-3 py-3">
       {reward && (
         <ChestRewardModal chestLabel={reward.label} diamondsAwarded={reward.diamonds} cards={reward.cards} onClose={() => setReward(null)} />
+      )}
+      {comeback && (
+        <ComebackSheet
+          summary={comeback}
+          onClose={() => { markComebackSummarySeen().catch(() => undefined).finally(() => setComeback(null)); }}
+        />
       )}
       {event && eventOpen && <EventSheet event={event} now={now} onClose={() => setEventOpen(false)} />}
 

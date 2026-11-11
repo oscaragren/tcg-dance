@@ -874,6 +874,8 @@ app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
     response.status(400).json({ message: "Dagliga diamanter redan hämtade." });
     return;
   }
+  // The claim ends the absence, so note the return before the date moves on.
+  syncComeback(request.auth.userId);
 
   let streak = state.diamond_streak + 1;
   let streakBonusAwarded = 0;
@@ -1094,6 +1096,84 @@ app.post("/api/game/starter/:step/claim", authed, (request, response) => {
     response.status(400).json({ message: err.message }); return;
   }
   response.json({ diamondsAwarded: step.reward, starter: buildStarterResponse(userId), state: buildStateResponse(userId) });
+});
+
+// ── Comeback: "Välkommen tillbaka" summary and gift ─────────────────────────
+// A player who returns after COMEBACK_AWAY_DAYS or more without a Daily claim
+// gets a one-time summary of what is new and a COMEBACK_GIFT in "Väntar på dig",
+// at most once per COMEBACK_GIFT_SPACING_DAYS. The return is recorded (in
+// comeback_state) the first time we see it, so claiming the Daily, which moves
+// last_daily_claim_date, cannot lose it.
+
+const COMEBACK_AWAY_DAYS = 14;
+const COMEBACK_GIFT_SPACING_DAYS = 30;
+const COMEBACK_GIFT = 300;
+
+/** Whole days from one YYYY-MM-DD to another. */
+function daysBetweenDates(from, to) {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / (24 * 60 * 60 * 1000));
+}
+
+/** Seam for the "Det här är nytt" sheet (#48): while it is due, the summary stays hidden. */
+function whatsNewSheetDue(_userId) {
+  return false;
+}
+
+/** Records a return if the player is eligible for one; returns their comeback row (or undefined). */
+function syncComeback(userId) {
+  const row = db.prepare("SELECT * FROM comeback_state WHERE user_id = ?").get(userId);
+  if (row?.gift_pending) return row; // an unclaimed return stays as it is
+  const last = db.prepare("SELECT last_daily_claim_date FROM player_state WHERE user_id = ?").get(userId)?.last_daily_claim_date;
+  if (!last || daysBetweenDates(last, todayIso()) < COMEBACK_AWAY_DAYS) return row;
+  if (row?.away_since === last) return row; // this absence was already handled
+  if (row?.last_gift_at && clock.now() - Date.parse(row.last_gift_at) < COMEBACK_GIFT_SPACING_DAYS * 24 * 60 * 60 * 1000) return row;
+  db.prepare(
+    `INSERT INTO comeback_state (user_id, away_since, gift_pending, summary_pending) VALUES (?, ?, 1, ?)
+     ON CONFLICT (user_id) DO UPDATE SET away_since = excluded.away_since, gift_pending = 1, summary_pending = excluded.summary_pending`,
+  ).run(userId, last, whatsNewSheetDue(userId) ? 0 : 1);
+  return db.prepare("SELECT * FROM comeback_state WHERE user_id = ?").get(userId);
+}
+
+function buildComebackSummary(userId, row) {
+  const day = (iso) => stockholmDate.format(new Date(iso));
+  const today = todayIso();
+  const owned = new Set(
+    db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?").all(userId).map((r) => r.card_id),
+  );
+  const newCollections = collections
+    .filter((c) => c.pack?.releaseAt && day(c.pack.releaseAt) > row.away_since && day(c.pack.releaseAt) <= today)
+    .map((c) => {
+      const cards = allCards.filter((card) => card.collectionId === c.id && PROGRESS_RARITIES.includes(card.rarity));
+      return { id: c.id, label: c.label, owned: cards.filter((card) => owned.has(card.id)).length, total: cards.length };
+    });
+  const newEvents = allEvents()
+    .filter((e) => day(e.startsAt) > row.away_since && eventStatus(e) !== "upcoming" && Date.parse(e.endsAt) > clock.now())
+    .map((e) => ({ id: e.id, label: e.label, startsAt: e.startsAt, endsAt: e.endsAt }));
+  return { awayDays: daysBetweenDates(row.away_since, today), collections: newCollections, events: newEvents };
+}
+
+app.get("/api/game/comeback", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const row = syncComeback(userId);
+  response.json({ summary: row?.summary_pending ? buildComebackSummary(userId, row) : null });
+});
+
+app.post("/api/game/comeback/summary-seen", authed, (request, response) => {
+  db.prepare("UPDATE comeback_state SET summary_pending = 0 WHERE user_id = ?").run(request.auth.userId);
+  response.json({ summary: null });
+});
+
+app.post("/api/game/comeback/gift/claim", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const row = syncComeback(userId);
+  if (!row?.gift_pending) { response.status(400).json({ message: "Ingen present att hämta." }); return; }
+  db.transaction(() => {
+    db.prepare("UPDATE comeback_state SET gift_pending = 0, last_gift_at = ? WHERE user_id = ?")
+      .run(new Date(clock.now()).toISOString(), userId);
+    db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(COMEBACK_GIFT, userId);
+    logGameEvent(userId, "comeback_gift", { diamonds: COMEBACK_GIFT });
+  })();
+  response.json({ diamondsAwarded: COMEBACK_GIFT, state: buildStateResponse(userId) });
 });
 
 app.post("/api/game/buy-pack", authed, (request, response) => {
@@ -2344,6 +2424,10 @@ app.get("/api/game/waiting", authed, (request, response) => {
     }
   }
 
+  if (syncComeback(userId)?.gift_pending) {
+    items.push({ type: "comeback_gift", id: "comeback-gift", diamonds: COMEBACK_GIFT });
+  }
+
   const running = activeEvent();
   if (running?.gift && !stmtGiftClaimed.get(running.id, userId)) {
     items.push({ type: "event_gift", id: running.id, label: running.label, gift: running.gift });
@@ -3067,7 +3151,7 @@ function stockholmDay(iso) {
 const DIAMOND_TARGET_PER_ACTIVE_PLAYER = 300;
 const FLOW_SOURCE_BY_TYPE = {
   daily: "daily", streak_bonus: "streak", weekly_goal: "weeklyGoals", achievement: "achievements",
-  chest_open: "chestPayouts", event_gift: "eventGifts", admin_grant: "adminGrants", starter_step: "starterRewards",
+  chest_open: "chestPayouts", event_gift: "eventGifts", admin_grant: "adminGrants", starter_step: "starterRewards", comeback_gift: "comebackGifts",
 };
 const FLOW_SINK_BY_TYPE = { pack: "packs", chest_buy: "chests", slot_buy: "slots" };
 
@@ -3219,7 +3303,7 @@ app.get("/api/admin/stats", requireAdmin, (request, response) => {
   };
 
   // ── Diamond flow in the window ──
-  const flow = { daily: 0, eventGifts: 0, streakBonus: 0, weeklyGoals: 0, achievements: 0, chestRewards: 0, starterRewards: 0, packs: 0, chests: 0, slots: 0 };
+  const flow = { daily: 0, eventGifts: 0, streakBonus: 0, weeklyGoals: 0, achievements: 0, chestRewards: 0, starterRewards: 0, comebackGifts: 0, packs: 0, chests: 0, slots: 0 };
   for (const e of events) {
     if (e.type === "daily") flow.daily += e.diamonds;
     else if (e.type === "event_gift") flow.eventGifts += e.diamonds;
@@ -3228,6 +3312,7 @@ app.get("/api/admin/stats", requireAdmin, (request, response) => {
     else if (e.type === "achievement") flow.achievements += e.diamonds;
     else if (e.type === "chest_open") flow.chestRewards += e.diamonds;
     else if (e.type === "starter_step") flow.starterRewards += e.diamonds;
+    else if (e.type === "comeback_gift") flow.comebackGifts += e.diamonds;
     else if (e.type === "pack") flow.packs += e.diamonds;
     else if (e.type === "chest_buy") flow.chests += e.diamonds;
     else if (e.type === "slot_buy") flow.slots += e.diamonds;
@@ -3378,6 +3463,9 @@ app.delete("/api/admin/users/:id", requireAdmin, (request, response) => {
     db.prepare("DELETE FROM password_reset_tokens WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM trades WHERE sender_user_id = ? OR receiver_user_id = ?").run(userId, userId);
     db.prepare("DELETE FROM player_state WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM comeback_state WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM starter_claims WHERE user_id = ?").run(userId);
+    db.prepare("DELETE FROM starter_state WHERE user_id = ?").run(userId);
     db.prepare("DELETE FROM users WHERE id = ?").run(userId);
   })();
 

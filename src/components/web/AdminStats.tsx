@@ -172,7 +172,7 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
   if (!stats) return <p className="text-sm text-secondary pt-2">Laddar statistik...</p>;
 
   const { totals, diamondFlow: flow } = stats;
-  const earned = flow.daily + flow.eventGifts + flow.streakBonus + flow.weeklyGoals + flow.achievements + flow.chestRewards + flow.starterRewards;
+  const earned = flow.daily + flow.eventGifts + flow.streakBonus + flow.weeklyGoals + flow.achievements + flow.chestRewards + flow.starterRewards + flow.comebackGifts;
   const spent = flow.packs + flow.chests + flow.slots;
 
   return (
@@ -254,6 +254,7 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
           <div className="flex justify-between"><span className="text-text">In: prestationer</span><span className="tabular-nums">+{formatNumber(flow.achievements)}</span></div>
           <div className="flex justify-between"><span className="text-text">In: kistbelöningar</span><span className="tabular-nums">+{formatNumber(flow.chestRewards)}</span></div>
           <div className="flex justify-between"><span className="text-text">In: Kom igång</span><span className="tabular-nums">+{formatNumber(flow.starterRewards)}</span></div>
+          <div className="flex justify-between"><span className="text-text">In: Comeback-gåvor</span><span className="tabular-nums">+{formatNumber(flow.comebackGifts)}</span></div>
           <div className="flex justify-between"><span className="text-text">Ut: paket</span><span className="tabular-nums">−{formatNumber(flow.packs)}</span></div>
           <div className="flex justify-between"><span className="text-text">Ut: kistor</span><span className="tabular-nums">−{formatNumber(flow.chests)}</span></div>
           <div className="flex justify-between"><span className="text-text">Ut: kistplatser</span><span className="tabular-nums">−{formatNumber(flow.slots)}</span></div>

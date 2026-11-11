@@ -301,7 +301,15 @@ export type WaitingItem =
   | { type: "event_gift"; id: string; label: string; gift: EventGift }
   | { type: "daily"; id: "daily"; diamonds: number }
   | { type: "starter_pack"; id: "starter-pack"; collectionId: string; label: string }
-  | { type: "starter_step"; id: string; title: string; reward: number };
+  | { type: "starter_step"; id: string; title: string; reward: number }
+  | { type: "comeback_gift"; id: "comeback-gift"; diamonds: number };
+
+/** The one-time "Välkommen tillbaka" summary for a returning player. */
+export type ComebackSummary = {
+  awayDays: number;
+  collections: { id: string; label: string; owned: number; total: number }[];
+  events: { id: string; label: string; startsAt: string; endsAt: string }[];
+};
 
 export type StarterStep = { id: string; title: string; reward: number; done: boolean; claimed: boolean };
 
