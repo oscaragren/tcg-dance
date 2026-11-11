@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementBanner, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, ComebackSummary, StarterResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
+import type { Achievement, AnnouncementBanner, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, ComebackSummary, StarterResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse, WhatsNewSheet } from "../types/game";
 
 export const MAINTENANCE_EVENT = "tcg:maintenance";
 
@@ -270,6 +270,14 @@ export async function fetchComeback(): Promise<{ summary: ComebackSummary | null
 
 export async function markComebackSummarySeen(): Promise<void> {
   await requestJson<unknown>("/api/game/comeback/summary-seen", { method: "POST" });
+}
+
+export async function fetchWhatsNew(): Promise<{ sheet: WhatsNewSheet | null }> {
+  return requestJson<{ sheet: WhatsNewSheet | null }>("/api/game/whats-new", { method: "GET" });
+}
+
+export async function markWhatsNewSeen(): Promise<void> {
+  await requestJson<unknown>("/api/game/whats-new/seen", { method: "POST" });
 }
 
 export async function claimComebackGift(): Promise<void> {

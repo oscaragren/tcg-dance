@@ -317,6 +317,9 @@ export type ComebackSummary = {
   events: { id: string; label: string; startsAt: string; endsAt: string }[];
 };
 
+/** The one-time "Det här är nytt" sheet for players who existed at the relaunch. Lines show only when > 0. */
+export type WhatsNewSheet = { achievementPayout: number; cancelledTrades: number };
+
 export type StarterStep = { id: string; title: string; reward: number; done: boolean; claimed: boolean };
 
 /** The "Kom igång" checklist and the free Pack of a new player. */

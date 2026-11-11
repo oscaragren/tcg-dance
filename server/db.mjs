@@ -303,6 +303,13 @@ db.exec(`
     migrated_at        TEXT NOT NULL
   );
 `);
+// Players who have dismissed the one-time "Det här är nytt" sheet (#48).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS whats_new_seen (
+    user_id TEXT PRIMARY KEY REFERENCES users(id),
+    seen_at TEXT NOT NULL
+  );
+`);
 if (db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('card_pool') WHERE name='bonus_copies'").get().n === 0) {
   db.exec("ALTER TABLE card_pool ADD COLUMN bonus_copies INTEGER NOT NULL DEFAULT 0");
 }
