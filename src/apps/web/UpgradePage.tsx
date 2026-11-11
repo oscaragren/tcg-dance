@@ -7,8 +7,8 @@ import { cards } from "../../data/cards";
 import { collections } from "../../data/packs";
 import type { AuthUser } from "../../types/auth";
 import type { CardRarity, DanceCard } from "../../types/danceCard";
-import { upgradeCardsRequired, upgradeTierTarget, type CardPoolInfo, type GameState } from "../../types/game";
-import { fetchCardPool, fetchGameState, upgradeCards } from "../../utils/gameApi";
+import { upgradeCardsRequired, upgradeTierTarget, type CollectionAvailability, type GameState } from "../../types/game";
+import { fetchAvailability, fetchGameState, upgradeCards } from "../../utils/gameApi";
 
 type UpgradePageProps = { currentUser: AuthUser | null };
 
@@ -18,7 +18,7 @@ const RARITY_LABEL: Record<CardRarity, string> = {
 
 export function UpgradePage({ currentUser }: UpgradePageProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [poolInfo, setPoolInfo] = useState<CardPoolInfo>({});
+  const [availability, setAvailability] = useState<CollectionAvailability>({});
   const [isLoading, setIsLoading] = useState(!!currentUser);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +27,8 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
 
   useEffect(() => {
     if (!currentUser) return;
-    Promise.all([fetchGameState(), fetchCardPool()])
-      .then(([state, pool]) => { setGameState(state); setPoolInfo(pool); })
+    Promise.all([fetchGameState(), fetchAvailability()])
+      .then(([state, stock]) => { setGameState(state); setAvailability(stock); })
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda speldata."))
       .finally(() => setIsLoading(false));
   }, [currentUser]);
@@ -59,9 +59,7 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
   }
 
   function targetTierHasStock(collectionId: string, targetRarity: CardRarity) {
-    return cards
-      .filter((c) => c.collectionId === collectionId && c.rarity === targetRarity)
-      .some((c) => (poolInfo[c.id]?.copiesRemaining ?? 0) > 0);
+    return availability[collectionId]?.rarityInStock[targetRarity] ?? false;
   }
 
   async function handleConfirmUpgrade(cardIds: string[]) {
@@ -73,8 +71,7 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
       setGameState(response.state);
       setPickerGroup(null);
       setRevealCard(response.upgradedCard);
-      const pool = await fetchCardPool();
-      setPoolInfo(pool);
+      setAvailability(await fetchAvailability());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Kunde inte uppgradera korten.");
     } finally {

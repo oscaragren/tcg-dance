@@ -644,17 +644,23 @@ app.get("/api/game/trophies", authed, (request, response) => {
   );
 });
 
-app.get("/api/game/pool", (_request, response) => {
+// What players may know about the Card pool: whether a Collection is sold out
+// and which Rarities still have Copies. Never how many (admin has /api/admin/pool).
+app.get("/api/game/availability", (_request, response) => {
   const rows = db
-    .prepare("SELECT card_id, collection_id, total_copies, copies_remaining FROM card_pool")
+    .prepare(
+      `SELECT collection_id, rarity, SUM(copies_remaining) AS remaining
+       FROM card_pool GROUP BY collection_id, rarity`,
+    )
     .all();
   const result = {};
+  for (const collection of collections) result[collection.id] = { soldOut: true, rarityInStock: {} };
   for (const row of rows) {
-    result[row.card_id] = {
-      collectionId: row.collection_id,
-      totalCopies: row.total_copies,
-      copiesRemaining: row.copies_remaining,
-    };
+    const entry = result[row.collection_id];
+    if (!entry) continue;
+    const inStock = row.remaining > 0;
+    entry.rarityInStock[row.rarity] = inStock;
+    if (inStock) entry.soldOut = false;
   }
   response.json(result);
 });
@@ -805,6 +811,12 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
   // moment — the server's clock decides, not the client's.
   if (!isPackOnSale(collection.pack)) {
     response.status(400).json({ message: "Det här packet går inte att köpa än." });
+    return;
+  }
+
+  const { total: copiesLeft } = stmtSumAvailableCopies.get(collectionId);
+  if (copiesLeft <= 0) {
+    response.status(400).json({ message: "Slutsålt." });
     return;
   }
 

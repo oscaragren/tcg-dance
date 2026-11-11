@@ -83,7 +83,7 @@ export async function startTestApp({ clock = fakeClock(), random = seededRandom(
   }
 
   return {
-    db, clock, mailer, request, registerPlayer,
+    db, clock, mailer, baseUrl, request, registerPlayer,
     close: () => new Promise((resolve) => { server.close(() => { db.close(); resolve(); }); }),
   };
 }

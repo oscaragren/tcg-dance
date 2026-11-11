@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
-import { CardPoolPeek } from "../../components/web/CardPoolPeek";
+import { ChestsSection } from "../../components/web/ChestsSection";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
 import { collections, isPackPurchasable, packReleaseLabel } from "../../data/packs";
 import { useNow } from "../../utils/useNow";
 import type { AuthUser } from "../../types/auth";
+import type { CollectionConfig } from "../../data/buildCardCatalog";
 import type { DanceCard } from "../../types/danceCard";
-import type { GameState } from "../../types/game";
-import type { ChestsResponse, ChestType } from "../../types/game";
-import { buyChest, buyPack, fetchChests, fetchGameState } from "../../utils/gameApi";
+import type { CollectionAvailability, GameState } from "../../types/game";
+import { buyPack, fetchAvailability, fetchGameState } from "../../utils/gameApi";
+import { cards } from "../../data/cards";
+import { resolveCardDesignUrl } from "../../data/cardDesignUrls";
 import { DiamondIcon } from "../../components/web/DiamondIcon";
 
 type ButikPageProps = { currentUser: AuthUser | null };
@@ -21,9 +23,7 @@ export function ButikPage({ currentUser }: ButikPageProps) {
   const [buyingPack, setBuyingPack] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openedPack, setOpenedPack] = useState<{ label: string; cards: DanceCard[] } | null>(null);
-  const [chests, setChests] = useState<ChestsResponse | null>(null);
-  const [buyingChest, setBuyingChest] = useState<ChestType | null>(null);
-  const [chestNotice, setChestNotice] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<CollectionAvailability>({});
   // Ticks so a scheduled pack release unlocks without reloading the page.
   const now = useNow();
 
@@ -37,25 +37,8 @@ export function ButikPage({ currentUser }: ButikPageProps) {
 
   useEffect(() => {
     if (!currentUser) return;
-    fetchChests().then(setChests).catch(() => {});
+    fetchAvailability().then(setAvailability).catch(() => {});
   }, [currentUser]);
-
-  async function handleBuyChest(type: ChestType, label: string) {
-    if (buyingChest) return;
-    setBuyingChest(type);
-    setError(null);
-    setChestNotice(null);
-    try {
-      const result = await buyChest(type);
-      setChests(result);
-      setGameState(result.state);
-      setChestNotice(`${label} köpt! Den låses upp i Samling när tiden gått ut.`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kunde inte köpa kistan.");
-    } finally {
-      setBuyingChest(null);
-    }
-  }
 
   async function handleBuyPack(collectionId: string, quantity: number) {
     if (buyingPack) return;
@@ -64,6 +47,7 @@ export function ButikPage({ currentUser }: ButikPageProps) {
     try {
       const result = await buyPack(collectionId, quantity);
       setGameState(result.state);
+      fetchAvailability().then(setAvailability).catch(() => {});
       const col = collections.find((c) => c.id === collectionId);
       const label = col?.pack.label ?? "Pack";
       setOpenedPack({ label: quantity > 1 ? `${quantity} × ${label}` : label, cards: result.pulledCards });
@@ -73,8 +57,6 @@ export function ButikPage({ currentUser }: ButikPageProps) {
       setBuyingPack(null);
     }
   }
-
-  const PACK_QUANTITIES = [1, 5, 10];
 
   if (!currentUser) {
     return (
@@ -111,160 +93,40 @@ export function ButikPage({ currentUser }: ButikPageProps) {
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
                 <h1 className="text-4xl md:text-5xl font-bold mb-2">Butik</h1>
-                <p className="text-text">Köp kortpaket med dina diamanter.</p>
+                <p className="text-text">Köp kortpaket och kistor med dina diamanter.</p>
               </div>
-              <div className="flex flex-col items-start md:items-end gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-diamonds">
-                    {isLoadingState ? "–" : diamonds}
-                  </span>
-                  <span className="text-diamonds"><DiamondIcon /></span>
-                </div>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold text-diamonds">
+                  {isLoadingState ? "–" : diamonds}
+                </span>
+                <span className="text-diamonds"><DiamondIcon /></span>
               </div>
             </div>
 
             {error && <p className="text-sm text-danger">{error}</p>}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {collections.map((collection) => {
-                const { pack } = collection;
-                // Not-yet-released packs still show all their info — only buying is held back.
-                const purchasable = isPackPurchasable(collection, now);
-                const releaseLabel = packReleaseLabel(collection, now);
-                const canAfford = diamonds >= pack.price;
-                const isBuying = buyingPack === collection.id;
-                return (
-                  <div
+            <section className="space-y-4">
+              <h2 className="font-display text-2xl font-bold">Packs</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {collections.map((collection) => (
+                  <PackCard
                     key={collection.id}
-                    className="rounded-2xl border bg-surface"
-                  >
-                    <div className="h-2 rounded-t-2xl bg-raised" />
-                    <div className="p-6 flex flex-col gap-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-xs font-medium uppercase tracking-wider text-tertiary mb-1">
-                            {collection.label}
-                          </div>
-                          <div className="text-2xl font-bold">{pack.label}</div>
-                          {collection.description && (
-                            <div className="text-sm text-secondary mt-1">{collection.description}</div>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-2 shrink-0">
-                          {!purchasable && (
-                            <span className="inline-flex items-center rounded-full bg-raised text-text text-xs font-medium px-2.5 py-1">
-                              {releaseLabel ?? "Kommer snart"}
-                            </span>
-                          )}
-                          {/* Scoped to this collection, so each pack card reports its own pool. */}
-                          <CardPoolPeek collectionId={collection.id} label={collection.label} />
-                        </div>
-                      </div>
-
-                      <div className="text-sm text-secondary">
-                        {pack.cardCount} kort per pack · {pack.price} <DiamondIcon /> per pack
-                      </div>
-
-                      <div className="mt-auto space-y-2">
-                        {!purchasable ? (
-                          <p className="text-sm text-secondary">
-                            {releaseLabel ? `${releaseLabel}.` : "Packet går inte att köpa än."} Korten finns redan i{" "}
-                            <Link to="/samling" className="text-accent hover:underline">Samling</Link>{" "}
-                            och kan fås via kistor och byten.
-                          </p>
-                        ) : !canAfford ? (
-                          <p className="text-sm text-tertiary">Inte tillräckligt med diamanter.</p>
-                        ) : null}
-                        <div className="grid grid-cols-3 gap-2">
-                          {PACK_QUANTITIES.map((qty) => {
-                            const totalCost = pack.price * qty;
-                            const canAffordQty = purchasable && diamonds >= totalCost;
-                            return (
-                              <Button
-                                key={qty}
-                                onClick={() => void handleBuyPack(collection.id, qty)}
-                                disabled={!purchasable || !canAffordQty || isLoadingState || !!buyingPack}
-                                variant={canAffordQty ? "default" : "outline"}
-                                className={`flex-col h-auto py-2 ${canAffordQty ? "bg-accent text-accent-on hover:bg-accent/90 hover: text-accent-on" : ""}`}
-                              >
-                                <span className="font-semibold">{isBuying ? "..." : `Köp ${qty}`}</span>
-                                <span className="text-[11px] opacity-80">{totalCost} <DiamondIcon /></span>
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-            </div>
+                    collection={collection}
+                    diamonds={diamonds}
+                    soldOut={availability[collection.id]?.soldOut === true}
+                    purchasable={isPackPurchasable(collection, now)}
+                    releaseLabel={packReleaseLabel(collection, now)}
+                    isBuying={buyingPack === collection.id}
+                    disabled={isLoadingState || !!buyingPack}
+                    onBuy={(qty) => void handleBuyPack(collection.id, qty)}
+                  />
+                ))}
+              </div>
+            </section>
 
             <SmCollectionDisclaimer />
 
-            {/* Chests — cheap, slow-burn rewards. Bought here, opened in Samling. */}
-            {chests && (
-              <section className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-                  <div>
-                    <h2 className="text-2xl font-bold">Kistor</h2>
-                    <p className="text-sm text-text">
-                      Köp en kista, vänta ut klockan och hämta diamanter (och kanske ett kort) i{" "}
-                      <Link to="/samling" className="text-accent hover:underline">Samling</Link>. Din
-                      fria plats tar en kista i taget — fasta platser per sort köper du i Samling.
-                    </p>
-                  </div>
-                  <div className="text-sm text-secondary">
-                    {chests.chests.length} / {chests.slots} kistplatser upptagna
-                  </div>
-                </div>
-
-                {chestNotice && <p className="text-sm text-success">{chestNotice}</p>}
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {chests.types.map((chest) => {
-                    const canAfford = diamonds >= chest.price;
-                    // The server decides whether this specific type fits: its own
-                    // dedicated slot, or the free one if that is still empty.
-                    const slotsFull = !chests.canStore[chest.id];
-                    return (
-                      <div key={chest.id} className="rounded-2xl border bg-surface overflow-hidden flex flex-col">
-                        <div className={`h-2 bg-gradient-to-r ${CHEST_ACCENT[chest.id]}`} />
-                        <div className="p-5 flex flex-col gap-3 flex-1">
-                          <div className="flex items-center gap-3">
-                            <span className="text-3xl" aria-hidden>{CHEST_EMOJI[chest.id]}</span>
-                            <div>
-                              <div className="font-bold">{chest.label}</div>
-                              <div className="text-xs text-secondary">{chest.price} <DiamondIcon /></div>
-                            </div>
-                          </div>
-                          <ul className="text-xs text-secondary space-y-1">
-                            <li>{chest.diamondMin}–{chest.diamondMax} <DiamondIcon /></li>
-                            <li>Chans på kort</li>
-                            <li>Låses upp efter {chest.waitHours} tim</li>
-                          </ul>
-                          <Button
-                            onClick={() => void handleBuyChest(chest.id, chest.label)}
-                            disabled={!canAfford || slotsFull || !!buyingChest || isLoadingState}
-                            variant={canAfford && !slotsFull ? "default" : "outline"}
-                            className={`mt-auto ${canAfford && !slotsFull ? "bg-accent hover:bg-accent/90 text-accent-on" : ""}`}
-                          >
-                            {buyingChest === chest.id
-                              ? "Köper..."
-                              : slotsFull
-                                ? "Ingen ledig plats"
-                                : canAfford
-                                  ? <>Köp för {chest.price} <DiamondIcon /></>
-                                  : "För få diamanter"}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+            <ChestsSection diamonds={diamonds} onState={setGameState} />
 
           </div>
         </div>
@@ -273,10 +135,83 @@ export function ButikPage({ currentUser }: ButikPageProps) {
   );
 }
 
-const CHEST_EMOJI: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇" };
+const PACK_QUANTITIES = [1, 5, 10];
 
-const CHEST_ACCENT: Record<string, string> = {
-  bronze: "from-rarity-legendary/50 to-rarity-legendary/80",
-  silver: "from-secondary to-text",
-  gold: "from-rarity-legendary to-text",
+/** Up to three Cards of the Collection's top Rarities, fanned out as cover art. */
+function coverArt(collectionId: string): string[] {
+  return cards
+    .filter((c) => c.collectionId === collectionId && (c.rarity === "legendary" || c.rarity === "epic"))
+    .map((c) => resolveCardDesignUrl(c.designKey))
+    .filter((url): url is string => !!url)
+    .slice(0, 3);
+}
+
+type PackCardProps = {
+  collection: CollectionConfig;
+  diamonds: number;
+  soldOut: boolean;
+  purchasable: boolean;
+  releaseLabel: string | null;
+  isBuying: boolean;
+  disabled: boolean;
+  onBuy: (quantity: number) => void;
 };
+
+/** One big Pack card per live Collection (Skyltfönster). */
+function PackCard({ collection, diamonds, soldOut, purchasable, releaseLabel, isBuying, disabled, onBuy }: PackCardProps) {
+  const { pack } = collection;
+  const art = coverArt(collection.id);
+  const buyable = purchasable && !soldOut;
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-surface">
+      <div className="relative flex h-44 items-center justify-center bg-raised" aria-hidden>
+        {art.map((url, i) => (
+          <img
+            key={url}
+            src={url}
+            alt=""
+            className="absolute h-36 w-28 rounded-lg border-2 border-hairline-strong object-cover object-top shadow-lg"
+            style={{ transform: `translateX(${(i - (art.length - 1) / 2) * 60}px) rotate(${(i - (art.length - 1) / 2) * 8}deg)`, zIndex: i === 1 ? 2 : 1 }}
+          />
+        ))}
+        {soldOut && (
+          <span className="absolute right-3 top-3 z-10 rounded-full bg-background/80 px-3 py-1 text-xs font-semibold text-danger">Slutsålt</span>
+        )}
+      </div>
+      <div className="space-y-4 p-5">
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wider text-tertiary">{collection.label}</div>
+          <div className="font-display text-2xl font-bold">{pack.label}</div>
+          <div className="text-sm text-secondary">
+            {pack.cardCount} kort per pack{collection.description ? ` · ${collection.description}` : ""}
+          </div>
+        </div>
+        {!purchasable && (
+          <p className="text-sm text-secondary">
+            {releaseLabel ?? "Kommer snart"}. Korten finns redan i{" "}
+            <Link to="/samling" className="text-accent hover:underline">Samling</Link>{" "}
+            och kan fås via kistor och byten.
+          </p>
+        )}
+        <div className="grid grid-cols-3 gap-2">
+          {PACK_QUANTITIES.map((qty) => {
+            const totalCost = pack.price * qty;
+            const canAfford = buyable && diamonds >= totalCost;
+            return (
+              <Button
+                key={qty}
+                onClick={() => onBuy(qty)}
+                disabled={!canAfford || disabled}
+                variant={canAfford ? "default" : "outline"}
+                className={`h-auto flex-col py-2 ${canAfford ? "bg-accent text-accent-on hover:bg-accent/90" : ""}`}
+              >
+                <span className="font-semibold">{isBuying ? "..." : `Köp ${qty}`}</span>
+                {!soldOut && <span className="text-[11px] opacity-80">{totalCost} <DiamondIcon /></span>}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

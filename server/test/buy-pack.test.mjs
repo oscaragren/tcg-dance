@@ -11,7 +11,13 @@ afterEach(() => t.close());
 
 const buy = (quantity = 1) =>
   t.request("POST", "/api/game/buy-pack", { cookie: player.cookie, body: { collectionId: "test", quantity } });
-const pool = async () => (await t.request("GET", "/api/game/pool")).body;
+// Players cannot see pool counts; the admin view can.
+const pool = async () => {
+  const login = await t.request("POST", "/api/admin/login", { body: { password: "admin-pw" } });
+  const cookie = login.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+  const rows = (await t.request("GET", "/api/admin/pool", { cookie })).body;
+  return Object.fromEntries(rows.map((r) => [r.cardId, { copiesRemaining: r.remaining }]));
+};
 
 // Pool at start (ordered by card_id): c1 x10, c2 x10, l1 x1, r1 x5 = 26 copies.
 // A draw of random()=r picks copy floor(r * total) in that order.

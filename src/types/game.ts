@@ -57,7 +57,14 @@ export type BuyPackResponse = {
   state: GameState;
 };
 
-export type CardPoolInfo = Record<string, { totalCopies: number; copiesRemaining: number }>;
+/**
+ * What players may know about a Collection's Card pool: sold out or not, and
+ * which Rarities still have Copies. Never how many.
+ */
+export type CollectionAvailability = Record<
+  string,
+  { soldOut: boolean; rarityInStock: Partial<Record<CardRarity, boolean>> }
+>;
 
 export type UpgradeResponse = {
   upgradedCard: DanceCard;

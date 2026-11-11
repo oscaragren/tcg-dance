@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradeResponse, UserSearchResult, WaitingResponse } from "../types/game";
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradeResponse, UserSearchResult, WaitingResponse } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -62,8 +62,8 @@ export async function claimDailyDiamonds(): Promise<ClaimDailyDiamondsResponse> 
   return requestJson<ClaimDailyDiamondsResponse>("/api/game/claim-daily-diamonds", { method: "POST" });
 }
 
-export async function fetchCardPool(): Promise<CardPoolInfo> {
-  return requestJson<CardPoolInfo>("/api/game/pool", { method: "GET" });
+export async function fetchAvailability(): Promise<CollectionAvailability> {
+  return requestJson<CollectionAvailability>("/api/game/availability", { method: "GET" });
 }
 
 export async function buyPack(collectionId: string, quantity = 1): Promise<BuyPackResponse> {

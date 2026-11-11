@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import type { CollectionConfig } from "../../data/buildCardCatalog";
-import { CardPoolRemaining } from "./CardPoolRemaining";
 import { isPackPurchasable, packReleaseLabel } from "../../data/packs";
 import { useNow } from "../../utils/useNow";
 import { DiamondIcon } from "./DiamondIcon";
@@ -104,8 +103,6 @@ export function FeaturedCollection({
                 <div className="text-text font-semibold text-lg mb-1">{pack.label}</div>
                 <div className="text-tertiary text-sm">{pack.cardCount} kort per pack</div>
               </div>
-
-              <CardPoolRemaining collectionId={collection.id} />
 
               <div className="pt-2 border-t border-hairline/10 flex items-center justify-between">
                 <span className="text-tertiary text-sm">Pris</span>
