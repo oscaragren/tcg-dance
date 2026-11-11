@@ -5,6 +5,7 @@ import { cards, type CardRarity } from "../../data/cards";
 import { rarityLabel } from "../../data/rarity";
 import { upgradeTierTarget, type UpgradePick } from "../../types/game";
 import { fetchUpgradePick } from "../../utils/gameApi";
+import { useIsDesktop } from "../../utils/useMediaQuery";
 import { Button } from "../shared/ui/button";
 import { CardThumb } from "./CardThumb";
 
@@ -20,13 +21,14 @@ type UpgradeScreenProps = {
 };
 
 /**
- * Full-screen Upgrade list. The game has already picked Duplicates (never an
+ * Full-screen Upgrade list on a phone, right side panel at ≥1024px. The game has already picked Duplicates (never an
  * only Copy, skipping Behåll); the player adjusts with −/+ before confirming.
  */
 export function UpgradeScreen({ collectionId, rarity, ownedCardIds, keptCardIds, isSubmitting, error, onConfirm, onClose }: UpgradeScreenProps) {
   const [pick, setPick] = useState<UpgradePick | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Record<string, number>>({});
+  const desktop = useIsDesktop();
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +81,7 @@ export function UpgradeScreen({ collectionId, rarity, ownedCardIds, keptCardIds,
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col bg-raised" role="dialog" aria-modal="true" aria-label="Uppgradera">
+    <div className="fixed inset-0 z-50 flex flex-col bg-raised lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[28rem] lg:border-l lg:shadow-2xl" role="dialog" aria-modal={!desktop} aria-label="Uppgradera">
       <header className="flex items-center justify-between border-b bg-surface px-4 py-3">
         <div>
           <h2 className="font-display text-lg font-semibold">
