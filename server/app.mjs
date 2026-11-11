@@ -1137,10 +1137,32 @@ function daysBetweenDates(from, to) {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / (24 * 60 * 60 * 1000));
 }
 
-/** Seam for the "Det här är nytt" sheet (#48): while it is due, the summary stays hidden. */
-function whatsNewSheetDue(_userId) {
-  return false;
+/**
+ * "Det här är nytt" (#48): due for a player whose account existed when the relaunch
+ * migration ran and who has not dismissed it. While it is due the Comeback summary
+ * stays hidden (the gift is unaffected).
+ */
+function whatsNewSheetDue(userId) {
+  const marker = db.prepare("SELECT value FROM settings WHERE key = 'relaunch_migration'").get();
+  if (!marker) return false;
+  const migratedAt = JSON.parse(marker.value).at;
+  const user = db.prepare("SELECT created_at FROM users WHERE id = ?").get(userId);
+  if (!user || Date.parse(user.created_at) > Date.parse(migratedAt)) return false;
+  return !db.prepare("SELECT 1 FROM whats_new_seen WHERE user_id = ?").get(userId);
 }
+
+app.get("/api/game/whats-new", authed, (request, response) => {
+  const userId = request.auth.userId;
+  if (!whatsNewSheetDue(userId)) { response.json({ sheet: null }); return; }
+  const row = db.prepare("SELECT achievement_payout, cancelled_trades FROM relaunch_migration_players WHERE user_id = ?").get(userId);
+  response.json({ sheet: { achievementPayout: row?.achievement_payout ?? 0, cancelledTrades: row?.cancelled_trades ?? 0 } });
+});
+
+app.post("/api/game/whats-new/seen", authed, (request, response) => {
+  db.prepare("INSERT OR IGNORE INTO whats_new_seen (user_id, seen_at) VALUES (?, ?)")
+    .run(request.auth.userId, new Date(clock.now()).toISOString());
+  response.json({ sheet: null });
+});
 
 /** Records a return if the player is eligible for one; returns their comeback row (or undefined). */
 function syncComeback(userId) {
@@ -1178,6 +1200,12 @@ function buildComebackSummary(userId, row) {
 app.get("/api/game/comeback", authed, (request, response) => {
   const userId = request.auth.userId;
   const row = syncComeback(userId);
+  if (row?.summary_pending && whatsNewSheetDue(userId)) {
+    // Only "Det här är nytt" shows when both are due; the summary is dropped, not postponed.
+    db.prepare("UPDATE comeback_state SET summary_pending = 0 WHERE user_id = ?").run(userId);
+    response.json({ summary: null });
+    return;
+  }
   response.json({ summary: row?.summary_pending ? buildComebackSummary(userId, row) : null });
 });
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChestRewardModal } from "../../components/web/ChestRewardModal";
 import { DiamondIcon } from "../../components/web/DiamondIcon";
+import { WhatsNewSheet as WhatsNewSheetView } from "../../components/web/WhatsNewSheet";
 import { ComebackSheet } from "../../components/web/ComebackSheet";
 import { EventSheet } from "../../components/web/EventSheet";
 import { HemDesktop } from "../../components/web/HemDesktop";
@@ -10,11 +11,11 @@ import { ProgressRing } from "../../components/web/ProgressRing";
 import { WaitingStrip } from "../../components/web/WaitingStrip";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
-import type { AnnouncementBanner, CollectionProgress, ComebackSummary, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WeeklyGoal } from "../../types/game";
+import type { AnnouncementBanner, CollectionProgress, ComebackSummary, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WhatsNewSheet, WeeklyGoal } from "../../types/game";
 import {
   acceptTrade, dismissAnnouncementBanner, fetchAnnouncementBanner, claimAchievement, claimDailyDiamonds, claimWeeklyGoal,
   claimComebackGift, claimEventGift, claimStarterPack, claimStarterStep, collectChest, fetchStarter,
-  fetchCollectionProgress, fetchComeback, fetchGameState, markComebackSummarySeen, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
+  fetchCollectionProgress, fetchComeback, fetchWhatsNew, markWhatsNewSeen, fetchGameState, markComebackSummarySeen, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
 } from "../../utils/gameApi";
 import { useIsDesktop } from "../../utils/useMediaQuery";
 import { useNow } from "../../utils/useNow";
@@ -38,6 +39,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const [starter, setStarter] = useState<StarterResponse | null>(null);
   const [reward, setReward] = useState<{ label: string; diamonds: number; cards: DanceCard[] } | null>(null);
   const [comeback, setComeback] = useState<ComebackSummary | null>(null);
+  const [whatsNew, setWhatsNew] = useState<WhatsNewSheet | null>(null);
   const [banner, setBanner] = useState<AnnouncementBanner | null>(null);
   const now = useNow(1000);
   const desktop = useIsDesktop();
@@ -49,7 +51,13 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     setWaiting(items.items);
     setWeeklyGoals(goals.goals);
     // Before the Daily claim ends the absence; the server keeps showing it until dismissed.
-    fetchComeback().then((r) => setComeback((prev) => prev ?? r.summary)).catch(() => undefined);
+    // "Det här är nytt" goes first; when it is due the server hides the Comeback summary.
+    fetchWhatsNew()
+      .then((w) => {
+        setWhatsNew((prev) => prev ?? w.sheet);
+        return w.sheet ? null : fetchComeback().then((r) => setComeback((prev) => prev ?? r.summary));
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -117,7 +125,13 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       {reward && (
         <ChestRewardModal chestLabel={reward.label} diamondsAwarded={reward.diamonds} cards={reward.cards} onClose={() => setReward(null)} />
       )}
-      {comeback && (
+      {whatsNew && (
+        <WhatsNewSheetView
+          sheet={whatsNew}
+          onClose={() => { markWhatsNewSeen().catch(() => undefined).finally(() => setWhatsNew(null)); }}
+        />
+      )}
+      {comeback && !whatsNew && (
         <ComebackSheet
           summary={comeback}
           onClose={() => { markComebackSummarySeen().catch(() => undefined).finally(() => setComeback(null)); }}
