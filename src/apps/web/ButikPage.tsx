@@ -88,7 +88,7 @@ export function ButikPage({ currentUser }: ButikPageProps) {
 
       <main className="min-h-[calc(100vh-72px)] bg-background py-16">
         <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto space-y-10">
+          <div className="max-w-5xl mx-auto space-y-10 lg:max-w-6xl">
 
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
@@ -105,9 +105,12 @@ export function ButikPage({ currentUser }: ButikPageProps) {
 
             {error && <p className="text-sm text-danger">{error}</p>}
 
+            {/* >=1024px: Packs in the main column, Kistor in a sticky right column (Sidopanel). */}
+            <div className="space-y-10 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-8 lg:space-y-0">
+            <div className="space-y-10">
             <section className="space-y-4">
               <h2 className="font-display text-2xl font-bold">Packs</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
                 {collections.map((collection) => (
                   <PackCard
                     key={collection.id}
@@ -125,8 +128,12 @@ export function ButikPage({ currentUser }: ButikPageProps) {
             </section>
 
             <SmCollectionDisclaimer />
+            </div>
 
-            <ChestsSection diamonds={diamonds} onState={setGameState} />
+            <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto" aria-label="Kistor">
+              <ChestsSection diamonds={diamonds} onState={setGameState} />
+            </aside>
+            </div>
 
           </div>
         </div>
@@ -163,8 +170,8 @@ function PackCard({ collection, diamonds, soldOut, purchasable, releaseLabel, is
   const art = coverArt(collection.id);
   const buyable = purchasable && !soldOut;
   return (
-    <div className="overflow-hidden rounded-2xl border bg-surface">
-      <div className="relative flex h-44 items-center justify-center bg-raised" aria-hidden>
+    <div className="overflow-hidden rounded-2xl border bg-surface lg:flex">
+      <div className="relative flex h-44 items-center justify-center bg-raised lg:h-auto lg:min-h-56 lg:w-72 lg:shrink-0" aria-hidden>
         {art.map((url, i) => (
           <img
             key={url}
@@ -178,7 +185,7 @@ function PackCard({ collection, diamonds, soldOut, purchasable, releaseLabel, is
           <span className="absolute right-3 top-3 z-10 rounded-full bg-background/80 px-3 py-1 text-xs font-semibold text-danger">Slutsålt</span>
         )}
       </div>
-      <div className="space-y-4 p-5">
+      <div className="space-y-4 p-5 lg:flex-1 lg:self-center">
         <div>
           <div className="text-xs font-medium uppercase tracking-wider text-tertiary">{collection.label}</div>
           <div className="font-display text-2xl font-bold">{pack.label}</div>
