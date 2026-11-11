@@ -12,6 +12,7 @@ import { cards, type CardRarity, type DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
 import { rarityColor, rarityLabel } from "../../data/rarity";
 import { fetchCollectionProgress, fetchGameState, fetchTrophies, markCollectionViewed, setCardKept, upgradeCards } from "../../utils/gameApi";
+import { useIsDesktop } from "../../utils/useMediaQuery";
 import { upgradeCardsRequired, upgradeTierTarget, type CollectionProgress, type Trophy } from "../../types/game";
 
 type View = "alla" | "saknas" | "dubbletter";
@@ -43,6 +44,7 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [revealCard, setRevealCard] = useState<DanceCard | null>(null);
+  const desktop = useIsDesktop();
 
   useEffect(() => {
     if (!userEmail) { setOwnedCardIds([]); setKeptCardIds(new Set()); return; }
@@ -71,6 +73,16 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
     for (const id of ownedCardIds) m.set(id, (m.get(id) ?? 0) + 1);
     return m;
   }, [ownedCardIds]);
+
+  // Per-Collection progress for the sidebar list (Special Cards are not counted).
+  const collectionProgress = useMemo(
+    () =>
+      collections.map((c) => {
+        const list = cards.filter((card) => card.collectionId === c.id && card.rarity !== "special");
+        return { id: c.id, label: c.label, owned: list.filter((card) => (copies.get(card.id) ?? 0) > 0).length, total: list.length };
+      }),
+    [copies],
+  );
 
   const collectionCards = useMemo(() => cards.filter((c) => c.collectionId === collectionId), [collectionId]);
 
@@ -160,7 +172,7 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
   return (
     <main className="bg-raised min-h-[calc(100vh-72px)] pb-16">
       {/* Sticky header: Collection, overall progress, view tabs, search. */}
-      <div className="sticky top-14 z-40 border-b bg-background/95 backdrop-blur-sm">
+      <div className="sticky top-14 z-40 border-b lg:hidden bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto max-w-6xl space-y-2 px-4 py-3">
           <div className="flex items-center gap-3">
             <label htmlFor="collection-select" className="sr-only">Samling</label>
@@ -212,11 +224,78 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
         </div>
       </div>
 
-      <div className="container mx-auto max-w-6xl space-y-6 px-4 pt-5">
+      <div className="container mx-auto max-w-7xl px-4 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-8 lg:px-6">
+        {desktop && (
+          <aside aria-label="Samling" className="sticky top-[4.5rem] hidden max-h-[calc(100vh-5.5rem)] space-y-5 self-start overflow-y-auto py-5 lg:block">
+            <nav aria-label="Samlingar" className="space-y-1">
+              {collectionProgress.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCollectionId(c.id)}
+                  aria-current={c.id === collectionId ? "true" : undefined}
+                  className={`block w-full rounded-md px-3 py-2 text-left ${c.id === collectionId ? "bg-surface ring-1 ring-hairline-strong" : "hover:bg-surface"}`}
+                >
+                  <span className="flex items-baseline justify-between gap-2 text-sm font-semibold">
+                    <span className="truncate">{c.label}</span>
+                    <span className="shrink-0 tabular-nums text-text">{c.owned}/{c.total}</span>
+                  </span>
+                  <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-raised">
+                    <span className="block h-full rounded-full bg-accent" style={{ width: `${pct(c.owned, c.total)}%` }} />
+                  </span>
+                </button>
+              ))}
+            </nav>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Sök kort"
+              aria-label="Sök kort"
+              className="h-11 w-full rounded-md border border-hairline px-3 text-sm"
+            />
+            <div role="tablist" aria-label="Visa" className="flex rounded-md bg-surface p-0.5">
+              {VIEWS.map((v) => (
+                <button
+                  key={v.id}
+                  role="tab"
+                  aria-selected={view === v.id}
+                  onClick={() => setView(v.id)}
+                  className={`h-9 flex-1 rounded px-2 text-sm font-medium ${view === v.id ? "bg-accent text-accent-on" : "text-secondary"}`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+            <nav aria-label="Hoppa till Rarity">
+              <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-secondary">Rarity</h2>
+              <ul>
+                {SECTION_RARITIES.map((r) => {
+                  const c = progress?.byRarity[r];
+                  return (
+                    <li key={r}>
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById(`rarity-${r}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                        className="flex h-10 w-full items-center justify-between gap-2 rounded-md px-3 text-sm hover:bg-surface"
+                        style={{ borderLeft: `3px solid ${rarityColor(r)}` }}
+                      >
+                        <span className="font-medium">{rarityLabel[r]}</span>
+                        <span className="tabular-nums text-text">{c ? `${c.owned}/${c.total}` : "–"}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+            <AchievementsSection collectionId={collectionId} />
+          </aside>
+        )}
+        <div className={`min-w-0 space-y-6 pt-5 ${desktop && (selected || upgradeRarity) ? "lg:pr-[27rem]" : ""}`}>
         {error && <p className="text-sm text-danger">{error}</p>}
 
         {/* Scoreboard: cream Totalt cell, one cell per Rarity, no Special. */}
-        <div className="grid grid-cols-5 gap-2" aria-label="Poängtavla">
+        <div className="grid grid-cols-5 gap-2 lg:hidden" aria-label="Poängtavla">
           <div className="rounded-lg bg-text p-2 text-center text-accent-on">
             <div className="text-[10px] font-semibold uppercase tracking-wider">Totalt</div>
             <div className="font-display text-lg font-bold tabular-nums">{total ? `${total.owned}/${total.total}` : "–"}</div>
@@ -261,7 +340,7 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
             const needed = upgradeCardsRequired[s.rarity];
             const have = spareByRarity[s.rarity] ?? 0;
             return (
-              <section key={s.rarity}>
+              <section key={s.rarity} id={`rarity-${s.rarity}`} className="scroll-mt-20">
                 <div className="mb-2 flex w-full items-center justify-between" style={{ borderBottom: `2px solid ${rarityColor(s.rarity)}` }}>
                   <button
                     type="button"
@@ -282,14 +361,15 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
                     </button>
                   ) : null}
                 </div>
-                {open && <CardGrid items={s.items} onSelect={setSelected} />}
+                {open && <CardGrid items={s.items} onSelect={setSelected} className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6" />}
               </section>
             );
           })
         )}
 
-        <AchievementsSection collectionId={collectionId} />
+        {!desktop && <AchievementsSection collectionId={collectionId} />}
 
+        </div>
       </div>
 
       {upgradeRarity && (
