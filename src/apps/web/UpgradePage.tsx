@@ -35,11 +35,11 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
 
   if (!currentUser) {
     return (
-      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
+          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Uppgradering</h1>
-            <p className="text-gray-600 mb-6">Logga in för att uppgradera dina kort.</p>
+            <p className="text-text mb-6">Logga in för att uppgradera dina kort.</p>
             <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
           </div>
         </div>
@@ -83,7 +83,7 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
   }
 
   return (
-    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+    <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
       {pickerGroup && (
         <UpgradePickerModal
           collectionId={pickerGroup.collectionId}
@@ -104,20 +104,20 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
         <div className="max-w-4xl mx-auto space-y-8">
           <div>
             <h1 className="text-4xl md:text-5xl font-bold mb-3">Uppgradering</h1>
-            <p className="text-gray-600">
+            <p className="text-text">
               Kombinera kort av samma raritet och kortpaket till ett slumpmässigt kort en nivå högre.
               Antalet kort som krävs beror på rariteten: {upgradeCardsRequired.common} common, {upgradeCardsRequired.rare} rare, {upgradeCardsRequired.epic} epic.
             </p>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
 
           {isLoading ? (
-            <p className="text-gray-500">Laddar...</p>
+            <p className="text-secondary">Laddar...</p>
           ) : (
             <div className="space-y-6">
               {collections.map((collection) => (
-                <div key={collection.id} className="rounded-2xl border bg-white p-6">
+                <div key={collection.id} className="rounded-2xl border bg-surface p-6">
                   <h2 className="text-lg font-semibold mb-4">{collection.label}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {(["common", "rare", "epic"] as CardRarity[]).map((rarity) => {
@@ -133,12 +133,12 @@ export function UpgradePage({ currentUser }: UpgradePageProps) {
                           <div className="text-sm font-medium">
                             {RARITY_LABEL[rarity]} → {RARITY_LABEL[targetRarity]}
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-secondary mt-1">
                             {Math.min(owned, required)}/{required} kort
                           </div>
                           <Button
                             size="sm"
-                            className="mt-3 w-full bg-purple-600 hover:bg-purple-700 text-white"
+                            className="mt-3 w-full bg-accent hover:bg-accent text-accent-on"
                             disabled={!canUpgrade}
                             onClick={() => setPickerGroup({ collectionId: collection.id, rarity })}
                           >

@@ -1,3 +1,4 @@
+import { Flame } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
@@ -11,10 +12,11 @@ import type { DanceCard } from "../../types/danceCard";
 import type { GameState } from "../../types/game";
 import type { ChestsResponse, ChestType } from "../../types/game";
 import { buyChest, buyPack, claimDailyDiamonds, fetchChests, fetchGameState } from "../../utils/gameApi";
+import { DiamondIcon } from "../../components/web/DiamondIcon";
 
-type HandelPageProps = { currentUser: AuthUser | null };
+type ButikPageProps = { currentUser: AuthUser | null };
 
-export function HandelPage({ currentUser }: HandelPageProps) {
+export function ButikPage({ currentUser }: ButikPageProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoadingState, setIsLoadingState] = useState(!!currentUser);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -95,11 +97,11 @@ export function HandelPage({ currentUser }: HandelPageProps) {
 
   if (!currentUser) {
     return (
-      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">Handel</h1>
-            <p className="text-gray-600 mb-6">Logga in för att köpa kortpaket.</p>
+          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Butik</h1>
+            <p className="text-text mb-6">Logga in för att köpa kortpaket.</p>
             <Button asChild>
               <Link to="/auth?tab=login">Logga in</Link>
             </Button>
@@ -122,50 +124,50 @@ export function HandelPage({ currentUser }: HandelPageProps) {
         />
       )}
 
-      <main className="min-h-[calc(100vh-72px)] bg-gradient-to-b from-gray-50 to-white py-16">
+      <main className="min-h-[calc(100vh-72px)] bg-background py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto space-y-10">
 
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-2">Handel</h1>
-                <p className="text-gray-600">Köp kortpaket med dina diamanter.</p>
+                <h1 className="text-4xl md:text-5xl font-bold mb-2">Butik</h1>
+                <p className="text-text">Köp kortpaket med dina diamanter.</p>
               </div>
               <div className="flex flex-col items-start md:items-end gap-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-blue-600">
+                  <span className="text-3xl font-bold text-diamonds">
                     {isLoadingState ? "–" : diamonds}
                   </span>
-                  <span className="text-blue-600">◆</span>
+                  <span className="text-diamonds"><DiamondIcon /></span>
                 </div>
                 <Button
                   size="sm"
                   onClick={handleClaimDailyDiamonds}
                   disabled={!canClaim || isLoadingState || isClaiming}
                   variant={canClaim ? "default" : "outline"}
-                  className={canClaim ? "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white" : ""}
+                  className={canClaim ? "bg-accent hover:bg-accent/90 text-accent-on" : ""}
                 >
                   {isClaiming
                     ? "Hämtar..."
                     : canClaim
-                      ? `Hämta ${gameState?.dailyDiamondsToday ?? dailyDiamonds} gratis ◆`
+                      ? <>Hämta {gameState?.dailyDiamondsToday ?? dailyDiamonds} gratis <DiamondIcon /></>
                       : "Diamanter hämtade idag"}
                 </Button>
                 {!isLoadingState && (
-                  <p className="text-[11px] text-amber-600 mt-1">
-                    🔥 {gameState?.diamondStreak ?? 0}/{gameState?.diamondStreakTarget ?? 7} dagar i rad
+                  <p className="text-[11px] text-rarity-legendary mt-1">
+                    <Flame className="inline h-4 w-4" aria-hidden /> {gameState?.diamondStreak ?? 0}/{gameState?.diamondStreakTarget ?? 7} dagar i rad
                   </p>
                 )}
               </div>
             </div>
 
             {!!streakBonusAwarded && (
-              <p className="text-sm font-medium text-amber-600">
-                🔥 {gameState?.diamondStreakTarget ?? 7} dagar i rad! +{streakBonusAwarded} ◆ streak-bonus.
+              <p className="text-sm font-medium text-rarity-legendary">
+                <Flame className="inline h-4 w-4" aria-hidden /> {gameState?.diamondStreakTarget ?? 7} dagar i rad! +{streakBonusAwarded} <DiamondIcon /> streak-bonus.
               </p>
             )}
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {collections.map((collection) => {
@@ -178,23 +180,23 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                 return (
                   <div
                     key={collection.id}
-                    className="rounded-2xl border bg-white"
+                    className="rounded-2xl border bg-surface"
                   >
-                    <div className="h-2 rounded-t-2xl bg-gradient-to-r from-purple-500 to-blue-500" />
+                    <div className="h-2 rounded-t-2xl bg-raised" />
                     <div className="p-6 flex flex-col gap-5">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1">
+                          <div className="text-xs font-medium uppercase tracking-wider text-tertiary mb-1">
                             {collection.label}
                           </div>
                           <div className="text-2xl font-bold">{pack.label}</div>
                           {collection.description && (
-                            <div className="text-sm text-gray-500 mt-1">{collection.description}</div>
+                            <div className="text-sm text-secondary mt-1">{collection.description}</div>
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
                           {!purchasable && (
-                            <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-medium px-2.5 py-1">
+                            <span className="inline-flex items-center rounded-full bg-raised text-text text-xs font-medium px-2.5 py-1">
                               {releaseLabel ?? "Kommer snart"}
                             </span>
                           )}
@@ -203,19 +205,19 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                         </div>
                       </div>
 
-                      <div className="text-sm text-gray-500">
-                        {pack.cardCount} kort per pack · {pack.price} ◆ per pack
+                      <div className="text-sm text-secondary">
+                        {pack.cardCount} kort per pack · {pack.price} <DiamondIcon /> per pack
                       </div>
 
                       <div className="mt-auto space-y-2">
                         {!purchasable ? (
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-secondary">
                             {releaseLabel ? `${releaseLabel}.` : "Packet går inte att köpa än."} Korten finns redan i{" "}
-                            <Link to="/samling" className="text-purple-600 hover:underline">Samling</Link>{" "}
+                            <Link to="/samling" className="text-accent hover:underline">Samling</Link>{" "}
                             och kan fås via kistor och byten.
                           </p>
                         ) : !canAfford ? (
-                          <p className="text-sm text-gray-400">Inte tillräckligt med diamanter.</p>
+                          <p className="text-sm text-tertiary">Inte tillräckligt med diamanter.</p>
                         ) : null}
                         <div className="grid grid-cols-3 gap-2">
                           {PACK_QUANTITIES.map((qty) => {
@@ -227,10 +229,10 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                                 onClick={() => void handleBuyPack(collection.id, qty)}
                                 disabled={!purchasable || !canAffordQty || isLoadingState || !!buyingPack}
                                 variant={canAffordQty ? "default" : "outline"}
-                                className={`flex-col h-auto py-2 ${canAffordQty ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" : ""}`}
+                                className={`flex-col h-auto py-2 ${canAffordQty ? "bg-accent text-accent-on hover:bg-accent/90 hover: text-accent-on" : ""}`}
                               >
                                 <span className="font-semibold">{isBuying ? "..." : `Köp ${qty}`}</span>
-                                <span className="text-[11px] opacity-80">{totalCost} ◆</span>
+                                <span className="text-[11px] opacity-80">{totalCost} <DiamondIcon /></span>
                               </Button>
                             );
                           })}
@@ -251,18 +253,18 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                 <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
                   <div>
                     <h2 className="text-2xl font-bold">Kistor</h2>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-text">
                       Köp en kista, vänta ut klockan och hämta diamanter (och kanske ett kort) i{" "}
-                      <Link to="/samling" className="text-purple-600 hover:underline">Samling</Link>. Din
+                      <Link to="/samling" className="text-accent hover:underline">Samling</Link>. Din
                       fria plats tar en kista i taget — fasta platser per sort köper du i Samling.
                     </p>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-secondary">
                     {chests.chests.length} / {chests.slots} kistplatser upptagna
                   </div>
                 </div>
 
-                {chestNotice && <p className="text-sm text-green-600">{chestNotice}</p>}
+                {chestNotice && <p className="text-sm text-success">{chestNotice}</p>}
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {chests.types.map((chest) => {
@@ -271,18 +273,18 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                     // dedicated slot, or the free one if that is still empty.
                     const slotsFull = !chests.canStore[chest.id];
                     return (
-                      <div key={chest.id} className="rounded-2xl border bg-white overflow-hidden flex flex-col">
+                      <div key={chest.id} className="rounded-2xl border bg-surface overflow-hidden flex flex-col">
                         <div className={`h-2 bg-gradient-to-r ${CHEST_ACCENT[chest.id]}`} />
                         <div className="p-5 flex flex-col gap-3 flex-1">
                           <div className="flex items-center gap-3">
                             <span className="text-3xl" aria-hidden>{CHEST_EMOJI[chest.id]}</span>
                             <div>
                               <div className="font-bold">{chest.label}</div>
-                              <div className="text-xs text-gray-500">{chest.price} ◆</div>
+                              <div className="text-xs text-secondary">{chest.price} <DiamondIcon /></div>
                             </div>
                           </div>
-                          <ul className="text-xs text-gray-500 space-y-1">
-                            <li>{chest.diamondMin}–{chest.diamondMax} ◆</li>
+                          <ul className="text-xs text-secondary space-y-1">
+                            <li>{chest.diamondMin}–{chest.diamondMax} <DiamondIcon /></li>
                             <li>Chans på kort</li>
                             <li>Låses upp efter {chest.waitHours} tim</li>
                           </ul>
@@ -290,14 +292,14 @@ export function HandelPage({ currentUser }: HandelPageProps) {
                             onClick={() => void handleBuyChest(chest.id, chest.label)}
                             disabled={!canAfford || slotsFull || !!buyingChest || isLoadingState}
                             variant={canAfford && !slotsFull ? "default" : "outline"}
-                            className={`mt-auto ${canAfford && !slotsFull ? "bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white" : ""}`}
+                            className={`mt-auto ${canAfford && !slotsFull ? "bg-accent hover:bg-accent/90 text-accent-on" : ""}`}
                           >
                             {buyingChest === chest.id
                               ? "Köper..."
                               : slotsFull
                                 ? "Ingen ledig plats"
                                 : canAfford
-                                  ? `Köp för ${chest.price} ◆`
+                                  ? <>Köp för {chest.price} <DiamondIcon /></>
                                   : "För få diamanter"}
                           </Button>
                         </div>
@@ -318,7 +320,7 @@ export function HandelPage({ currentUser }: HandelPageProps) {
 const CHEST_EMOJI: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇" };
 
 const CHEST_ACCENT: Record<string, string> = {
-  bronze: "from-amber-700 to-amber-500",
-  silver: "from-gray-400 to-gray-300",
-  gold: "from-yellow-500 to-amber-300",
+  bronze: "from-rarity-legendary/50 to-rarity-legendary/80",
+  silver: "from-secondary to-text",
+  gold: "from-rarity-legendary to-text",
 };

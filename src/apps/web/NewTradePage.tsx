@@ -188,7 +188,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
       setError(
         e instanceof Error
           ? e.message
-          : counterOfTradeId ? "Kunde inte skicka motbudet." : "Kunde inte skapa handeln.",
+          : counterOfTradeId ? "Kunde inte skicka motbudet." : "Kunde inte skapa bytet.",
       );
     } finally {
       setIsSubmitting(false);
@@ -197,11 +197,11 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
 
   if (!currentUser) {
     return (
-      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
-            <h1 className="text-3xl font-bold mb-4">Ny handel</h1>
-            <p className="text-gray-600 mb-6">Logga in för att handla.</p>
+          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
+            <h1 className="text-3xl font-bold mb-4">Nytt byte</h1>
+            <p className="text-text mb-6">Logga in för att handla.</p>
             <Button asChild>
               <Link to="/auth?tab=login">Logga in</Link>
             </Button>
@@ -221,12 +221,12 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
     (requestedTotal > 0 || requestedDiamonds > 0);
 
   return (
-    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+    <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
         <div className="max-w-5xl mx-auto space-y-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2">{isCounter ? "Motbud" : "Ny handel"}</h1>
-            <p className="text-gray-600">
+            <h1 className="text-4xl font-bold mb-2">{isCounter ? "Motbud" : "Nytt byte"}</h1>
+            <p className="text-text">
               {isCounter
                 ? "Bygg ditt motbud. Det ursprungliga erbjudandet stängs när du skickar."
                 : "Välj en spelare och bygg ditt erbjudande."}
@@ -234,20 +234,20 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
           </div>
 
           {isCounter && originalTrade && (
-            <section className="rounded-2xl border border-purple-200 bg-purple-50 p-6">
-              <h2 className="text-sm font-semibold text-purple-900 mb-3">
+            <section className="rounded-2xl border border-hairline-strong bg-raised p-6">
+              <h2 className="text-sm font-semibold text-text mb-3">
                 Du svarar på {originalTrade.sender.username}s erbjudande
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <div className="text-xs font-medium text-purple-700 mb-1">De erbjöd</div>
-                  <div className="text-gray-700">
+                  <div className="text-xs font-medium text-text mb-1">De erbjöd</div>
+                  <div className="text-text">
                     {describeSide(originalTrade.offeredCardIds, originalTrade.offeredDiamonds)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-purple-700 mb-1">De ville ha</div>
-                  <div className="text-gray-700">
+                  <div className="text-xs font-medium text-text mb-1">De ville ha</div>
+                  <div className="text-text">
                     {describeSide(originalTrade.requestedCardIds, originalTrade.requestedDiamonds)}
                   </div>
                 </div>
@@ -255,7 +255,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
             </section>
           )}
 
-          <section className="rounded-2xl border bg-white p-6">
+          <section className="rounded-2xl border bg-surface p-6">
             <h2 className="text-lg font-semibold mb-4">{isCounter ? "Motpart" : "Välj spelare"}</h2>
             {selectedUser ? (
               <div className="flex items-center gap-3">
@@ -283,15 +283,15 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Sök användarnamn..."
-                  className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  className="w-full h-10 rounded-md border border-hairline bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
                 />
-                {isSearching && <p className="text-xs text-gray-400">Söker...</p>}
+                {isSearching && <p className="text-xs text-tertiary">Söker...</p>}
                 {searchResults.length > 0 && (
                   <div className="rounded-md border divide-y">
                     {searchResults.map((u) => (
                       <button
                         key={u.id}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-raised transition-colors"
                         onClick={() => {
                           setSelectedUser(u);
                           setSearchResults([]);
@@ -304,7 +304,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                   </div>
                 )}
                 {!isSearching && query.length >= 2 && searchResults.length === 0 && (
-                  <p className="text-xs text-gray-400">Inga spelare hittades.</p>
+                  <p className="text-xs text-tertiary">Inga spelare hittades.</p>
                 )}
               </div>
             )}
@@ -331,7 +331,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                   legend={
                     <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
                       <span className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-600 text-white text-[9px] leading-none">⇄</span>
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-accent text-accent-on text-[9px] leading-none">⇄</span>
                         vill byta bort kortet
                       </span>
                       <span className="flex items-center gap-1.5">
@@ -350,7 +350,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-danger">{error}</p>}
 
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => navigate("/byte")}>
@@ -359,7 +359,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                 <Button
                   disabled={!canSubmit}
                   onClick={() => void handleSubmit()}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  className="bg-accent text-accent-on hover:bg-accent/90 hover:"
                 >
                   {isSubmitting ? "Skickar..." : isCounter ? "Skicka motbud" : "Skicka erbjudande"}
                 </Button>
@@ -398,15 +398,15 @@ function CardPickerPanel({
   onDiamondsChange: (n: number) => void;
 }) {
   return (
-    <section className="rounded-2xl border bg-white p-6 flex flex-col gap-4">
+    <section className="rounded-2xl border bg-surface p-6 flex flex-col gap-4">
       <div>
         <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="text-xs text-gray-400 mt-0.5">{hint}</p>
-        {legend && <div className="text-[11px] text-gray-500 mt-2">{legend}</div>}
+        <p className="text-xs text-tertiary mt-0.5">{hint}</p>
+        {legend && <div className="text-[11px] text-secondary mt-2">{legend}</div>}
       </div>
 
       <div>
-        <label className="text-xs text-gray-500 mb-1 block">{diamondLabel}</label>
+        <label className="text-xs text-secondary mb-1 block">{diamondLabel}</label>
         <input
           type="number"
           min={0}
@@ -416,12 +416,12 @@ function CardPickerPanel({
             const n = Math.max(0, Number(e.target.value));
             onDiamondsChange(diamondMax !== undefined ? Math.min(diamondMax, n) : n);
           }}
-          className="w-32 h-8 rounded-md border border-gray-200 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+          className="w-32 h-8 rounded-md border border-hairline px-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
         />
       </div>
 
       {entries.length === 0 ? (
-        <p className="text-sm text-gray-400">{emptyMessage}</p>
+        <p className="text-sm text-tertiary">{emptyMessage}</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-96">
           {entries.map(({ cardId, max, wanted = 0, missing = false }) => {
@@ -433,7 +433,7 @@ function CardPickerPanel({
               <div
                 key={cardId}
                 className={`rounded-lg p-1 flex flex-col items-center gap-1.5 transition-all ${
-                  isSelected ? "ring-2 ring-purple-500 bg-purple-50" : ""
+                  isSelected ? "ring-2 ring-accent bg-raised" : ""
                 }`}
               >
                 <div className="relative">
@@ -448,7 +448,7 @@ function CardPickerPanel({
                   {wanted > 0 && (
                     <div
                       title="Markerat som vill byta"
-                      className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none"
+                      className="absolute top-1.5 left-1.5 z-10 bg-accent text-accent-on text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none"
                     >
                       ⇄
                     </div>
@@ -456,7 +456,7 @@ function CardPickerPanel({
                   {missing && (
                     <div
                       title="Du äger inte det här kortet"
-                      className="absolute top-1.5 right-1.5 z-10 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white pointer-events-none"
+                      className="absolute top-1.5 right-1.5 z-10 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-background pointer-events-none"
                     />
                   )}
                 </div>
@@ -464,7 +464,7 @@ function CardPickerPanel({
                   <button
                     onClick={() => onAdjust(cardId, isSelected ? 0 : 1, max)}
                     className={`text-xs font-medium rounded-full px-3 py-0.5 transition-colors ${
-                      isSelected ? "bg-purple-600 text-white" : "border border-gray-300 text-gray-600 hover:border-gray-400"
+                      isSelected ? "bg-accent text-accent-on" : "border border-hairline-strong text-text hover:border-hairline-strong"
                     }`}
                   >
                     {isSelected ? "Vald" : "Välj"}
@@ -474,7 +474,7 @@ function CardPickerPanel({
                     <button
                       onClick={() => onAdjust(cardId, qty - 1, max)}
                       disabled={qty <= 0}
-                      className="w-6 h-6 rounded-full border border-gray-300 text-gray-700 leading-none text-sm disabled:opacity-40"
+                      className="w-6 h-6 rounded-full border border-hairline-strong text-text leading-none text-sm disabled:opacity-40"
                       aria-label="Minska"
                     >
                       −
@@ -483,7 +483,7 @@ function CardPickerPanel({
                     <button
                       onClick={() => onAdjust(cardId, qty + 1, max)}
                       disabled={qty >= max}
-                      className="w-6 h-6 rounded-full border border-gray-300 text-gray-700 leading-none text-sm disabled:opacity-40"
+                      className="w-6 h-6 rounded-full border border-hairline-strong text-text leading-none text-sm disabled:opacity-40"
                       aria-label="Öka"
                     >
                       +

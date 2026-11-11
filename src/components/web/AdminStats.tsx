@@ -32,10 +32,10 @@ export function summarizeConsumed(cardIds: string[]): string {
 
 function Tile({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
-    <div className="rounded-xl border bg-white p-4">
+    <div className="rounded-xl border bg-surface p-4">
       <div className="text-2xl font-bold tabular-nums">{typeof value === "number" ? formatNumber(value) : value}</div>
-      <div className="text-xs text-gray-500 mt-1">{label}</div>
-      {hint && <div className="text-[11px] text-gray-400 mt-0.5">{hint}</div>}
+      <div className="text-xs text-secondary mt-1">{label}</div>
+      {hint && <div className="text-[11px] text-tertiary mt-0.5">{hint}</div>}
     </div>
   );
 }
@@ -60,20 +60,20 @@ function DailyBars({
   const shown = hover ?? data.length - 1;
 
   return (
-    <div className="rounded-xl border bg-white p-4">
+    <div className="rounded-xl border bg-surface p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
-        <span className="text-xs text-gray-500 tabular-nums">totalt {formatNumber(total)}</span>
+        <h3 className="text-sm font-semibold text-text">{title}</h3>
+        <span className="text-xs text-secondary tabular-nums">totalt {formatNumber(total)}</span>
       </div>
-      <div className="mt-1 h-5 text-xs text-gray-600 tabular-nums">
+      <div className="mt-1 h-5 text-xs text-text tabular-nums">
         {data[shown] && (
           <>
-            <span className="text-gray-400">{data[shown].date}{hover === null ? " (idag)" : ""}:</span>{" "}
+            <span className="text-tertiary">{data[shown].date}{hover === null ? " (idag)" : ""}:</span>{" "}
             <span className="font-semibold">{formatNumber(values[shown])}</span>
           </>
         )}
       </div>
-      <div className="mt-2 flex h-28 items-end gap-[2px] border-b border-gray-200" onMouseLeave={() => setHover(null)}>
+      <div className="mt-2 flex h-28 items-end gap-[2px] border-b border-hairline" onMouseLeave={() => setHover(null)}>
         {values.map((v, i) => (
           <div
             key={data[i].date}
@@ -82,13 +82,13 @@ function DailyBars({
             title={`${data[i].date}: ${v}`}
           >
             <div
-              className={`w-full rounded-t-[3px] ${hover === i ? "bg-purple-800" : "bg-purple-500"}`}
+              className={`w-full rounded-t-[3px] ${hover === i ? "bg-accent" : "bg-accent"}`}
               style={{ height: v > 0 ? `${Math.max(3, (v / max) * 100)}%` : "0%" }}
             />
           </div>
         ))}
       </div>
-      <div className="mt-1 flex justify-between text-[10px] text-gray-400 tabular-nums">
+      <div className="mt-1 flex justify-between text-[10px] text-tertiary tabular-nums">
         <span>{data[0]?.date}</span>
         <span>{data[data.length - 1]?.date}</span>
       </div>
@@ -108,16 +108,16 @@ function LeaderList({
   onOpenUser: (userId: string) => void;
 }) {
   return (
-    <div className="rounded-xl border bg-white">
-      <h3 className="border-b px-4 py-2 text-sm font-semibold text-gray-700">{title}</h3>
+    <div className="rounded-xl border bg-surface">
+      <h3 className="border-b px-4 py-2 text-sm font-semibold text-text">{title}</h3>
       {rows.length === 0 ? (
-        <p className="px-4 py-4 text-sm text-gray-400">Ingen data ännu.</p>
+        <p className="px-4 py-4 text-sm text-tertiary">Ingen data ännu.</p>
       ) : (
         <ol className="divide-y text-sm">
           {rows.map((r, i) => (
             <li key={r.id} className="flex items-center gap-3 px-4 py-1.5">
-              <span className="w-5 text-right text-xs text-gray-400 tabular-nums">{i + 1}</span>
-              <button onClick={() => onOpenUser(r.id)} className="flex-1 truncate text-left text-purple-700 hover:underline">
+              <span className="w-5 text-right text-xs text-tertiary tabular-nums">{i + 1}</span>
+              <button onClick={() => onOpenUser(r.id)} className="flex-1 truncate text-left text-accent hover:underline">
                 {r.username}
               </button>
               <span className="tabular-nums font-medium">{unit ? unit(r) : formatNumber(r.value)}</span>
@@ -136,10 +136,10 @@ export function UpgradeRow({ upgrade, username, onOpenUser }: {
 }) {
   return (
     <tr className="align-top">
-      <td className="px-4 py-2 whitespace-nowrap text-gray-500 tabular-nums">{formatDateTime(upgrade.createdAt)}</td>
+      <td className="px-4 py-2 whitespace-nowrap text-secondary tabular-nums">{formatDateTime(upgrade.createdAt)}</td>
       {username && (
         <td className="px-4 py-2">
-          <button onClick={() => onOpenUser?.(username.id)} className="text-purple-700 hover:underline">
+          <button onClick={() => onOpenUser?.(username.id)} className="text-accent hover:underline">
             {username.username}
           </button>
         </td>
@@ -148,7 +148,7 @@ export function UpgradeRow({ upgrade, username, onOpenUser }: {
         {RARITY_LABEL[upgrade.fromRarity] ?? upgrade.fromRarity} → {RARITY_LABEL[upgrade.toRarity] ?? upgrade.toRarity}
       </td>
       <td className="px-4 py-2 font-medium">{cardName(upgrade.resultCardId)}</td>
-      <td className="px-4 py-2 text-xs text-gray-500">{summarizeConsumed(upgrade.consumedCardIds)}</td>
+      <td className="px-4 py-2 text-xs text-secondary">{summarizeConsumed(upgrade.consumedCardIds)}</td>
     </tr>
   );
 }
@@ -168,8 +168,8 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
     return () => { cancelled = true; };
   }, [days]);
 
-  if (error) return <p className="text-sm text-red-600 pt-2">{error}</p>;
-  if (!stats) return <p className="text-sm text-gray-500 pt-2">Laddar statistik...</p>;
+  if (error) return <p className="text-sm text-danger pt-2">{error}</p>;
+  if (!stats) return <p className="text-sm text-secondary pt-2">Laddar statistik...</p>;
 
   const { totals, diamondFlow: flow } = stats;
   const earned = flow.daily + flow.chestRewards;
@@ -179,18 +179,18 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
     <div className="space-y-6 pt-2">
       {/* Range + logging notice */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1 rounded-lg border bg-white p-1">
+        <div className="flex gap-1 rounded-lg border bg-surface p-1">
           {RANGE_OPTIONS.map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
-              className={`rounded-md px-3 py-1 text-sm ${days === d ? "bg-purple-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+              className={`rounded-md px-3 py-1 text-sm ${days === d ? "bg-accent text-accent-on" : "text-text hover:bg-raised"}`}
             >
               {d} dagar
             </button>
           ))}
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-secondary">
           Uppgraderingar, paketköp och diamanter loggas{" "}
           {stats.since.events || stats.since.upgrades
             ? `sedan ${formatDateTime([stats.since.events, stats.since.upgrades].filter(Boolean).sort()[0]!)}`
@@ -233,25 +233,25 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
 
       {/* Upgrades by tier + diamond flow */}
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border bg-white p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Uppgraderingar per nivå (totalt)</h3>
+        <div className="rounded-xl border bg-surface p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-text">Uppgraderingar per nivå (totalt)</h3>
           {stats.upgradesByTier.map((t) => (
             <div key={t.from} className="flex items-center justify-between text-sm">
               <span>
                 {RARITY_LABEL[t.from]} → {RARITY_LABEL[t.to]}
-                <span className="ml-2 text-xs text-gray-400">{t.cardsPerUpgrade} kort per uppgradering</span>
+                <span className="ml-2 text-xs text-tertiary">{t.cardsPerUpgrade} kort per uppgradering</span>
               </span>
               <span className="font-semibold tabular-nums">{formatNumber(t.count)}</span>
             </div>
           ))}
         </div>
-        <div className="rounded-xl border bg-white p-4 space-y-2 text-sm">
-          <h3 className="text-sm font-semibold text-gray-700">Diamantflöde, senaste {stats.days} dagarna</h3>
-          <div className="flex justify-between"><span className="text-gray-600">In: dagliga diamanter</span><span className="tabular-nums">+{formatNumber(flow.daily)}</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">In: kistbelöningar</span><span className="tabular-nums">+{formatNumber(flow.chestRewards)}</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Ut: paket</span><span className="tabular-nums">−{formatNumber(flow.packs)}</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Ut: kistor</span><span className="tabular-nums">−{formatNumber(flow.chests)}</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Ut: kistplatser</span><span className="tabular-nums">−{formatNumber(flow.slots)}</span></div>
+        <div className="rounded-xl border bg-surface p-4 space-y-2 text-sm">
+          <h3 className="text-sm font-semibold text-text">Diamantflöde, senaste {stats.days} dagarna</h3>
+          <div className="flex justify-between"><span className="text-text">In: dagliga diamanter</span><span className="tabular-nums">+{formatNumber(flow.daily)}</span></div>
+          <div className="flex justify-between"><span className="text-text">In: kistbelöningar</span><span className="tabular-nums">+{formatNumber(flow.chestRewards)}</span></div>
+          <div className="flex justify-between"><span className="text-text">Ut: paket</span><span className="tabular-nums">−{formatNumber(flow.packs)}</span></div>
+          <div className="flex justify-between"><span className="text-text">Ut: kistor</span><span className="tabular-nums">−{formatNumber(flow.chests)}</span></div>
+          <div className="flex justify-between"><span className="text-text">Ut: kistplatser</span><span className="tabular-nums">−{formatNumber(flow.slots)}</span></div>
           <div className="flex justify-between border-t pt-2 font-semibold">
             <span>Netto</span>
             <span className="tabular-nums">{earned - spent >= 0 ? "+" : "−"}{formatNumber(Math.abs(earned - spent))}</span>
@@ -271,16 +271,16 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
           unit={(r) => `${r.value} · ${r.percent} %`}
           onOpenUser={onOpenUser}
         />
-        <div className="rounded-xl border bg-white">
-          <h3 className="border-b px-4 py-2 text-sm font-semibold text-gray-700">Mest ägda kort (ej common)</h3>
+        <div className="rounded-xl border bg-surface">
+          <h3 className="border-b px-4 py-2 text-sm font-semibold text-text">Mest ägda kort (ej common)</h3>
           {stats.topCards.length === 0 ? (
-            <p className="px-4 py-4 text-sm text-gray-400">Ingen data ännu.</p>
+            <p className="px-4 py-4 text-sm text-tertiary">Ingen data ännu.</p>
           ) : (
             <ol className="divide-y text-sm">
               {stats.topCards.map((c) => (
                 <li key={c.cardId} className="flex items-center gap-3 px-4 py-1.5">
                   <span className="flex-1 truncate">{cardName(c.cardId)}</span>
-                  <span className="text-xs text-gray-400">{RARITY_LABEL[c.rarity] ?? c.rarity}</span>
+                  <span className="text-xs text-tertiary">{RARITY_LABEL[c.rarity] ?? c.rarity}</span>
                   <span className="tabular-nums font-medium" title={`${c.owners} ägare`}>{c.copies}</span>
                 </li>
               ))}
@@ -291,10 +291,10 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
 
       {/* Latest upgrades */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-gray-700">Senaste uppgraderingar ({stats.recentUpgrades.length})</h3>
-        <div className="rounded-xl border bg-white overflow-x-auto max-h-[480px] overflow-y-auto">
+        <h3 className="text-sm font-semibold text-text">Senaste uppgraderingar ({stats.recentUpgrades.length})</h3>
+        <div className="rounded-xl border bg-surface overflow-x-auto max-h-[480px] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 sticky top-0">
+            <thead className="bg-raised text-secondary sticky top-0">
               <tr>
                 <th className="text-left px-4 py-2">Tid</th>
                 <th className="text-left px-4 py-2">Spelare</th>
@@ -305,7 +305,7 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
             </thead>
             <tbody className="divide-y">
               {stats.recentUpgrades.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">Inga uppgraderingar loggade ännu.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-secondary">Inga uppgraderingar loggade ännu.</td></tr>
               ) : (
                 stats.recentUpgrades.map((u) => (
                   <UpgradeRow key={u.id} upgrade={u} username={u.user} onOpenUser={onOpenUser} />

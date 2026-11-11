@@ -52,7 +52,7 @@ export function CardPoolPeek({ collectionId, label }: CardPoolPeekProps) {
         aria-label="Visa hur många kort som är kvar i poolen"
         onClick={() => setIsOpen((open) => !open)}
         onFocus={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition-colors hover:border-purple-300 hover:text-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
+        className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1.5 text-xs font-medium text-text shadow-sm transition-colors hover:border-accent hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
       >
         <Layers className="h-3.5 w-3.5" aria-hidden="true" />
         Kort kvar
@@ -62,9 +62,9 @@ export function CardPoolPeek({ collectionId, label }: CardPoolPeekProps) {
         <div
           role="dialog"
           aria-label={"Kort kvar i poolen — " + label}
-          className="absolute right-0 top-full z-40 mt-2 w-64 rounded-2xl border border-white/10 bg-gray-900 p-5 text-left shadow-xl"
+          className="absolute right-0 top-full z-40 mt-2 w-64 rounded-2xl border border-hairline/10 bg-raised p-5 text-left shadow-xl"
         >
-          <div className="mb-3 text-sm font-semibold text-white">{label}</div>
+          <div className="mb-3 text-sm font-semibold text-text">{label}</div>
           <CardPoolRemaining collectionId={collectionId} />
         </div>
       )}

@@ -69,11 +69,11 @@ export function UpgradePickerModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+      <div className="bg-surface rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
         <div className="p-6 border-b">
           <h2 className="text-xl font-bold">Välj kort att byta in</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Valda: <span className="font-semibold text-purple-600">{selectedTotal}</span> / {requiredCount}
+          <p className="text-sm text-secondary mt-1">
+            Valda: <span className="font-semibold text-text">{selectedTotal}</span> / {requiredCount}
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export function UpgradePickerModal({
               <div key={card.id} className="flex flex-col items-center gap-1.5">
                 <div
                   onClick={() => adjust(card.id, 1)}
-                  className={`relative cursor-pointer rounded-xl p-1 ${count > 0 ? "ring-2 ring-purple-500" : ""}`}
+                  className={`relative cursor-pointer rounded-xl p-1 ${count > 0 ? "ring-2 ring-accent" : ""}`}
                 >
                   <CardPlaceholder
                     rarity={card.rarity}
@@ -96,16 +96,16 @@ export function UpgradePickerModal({
                     disableLightbox
                   />
                   {count > 0 && (
-                    <div className="absolute top-1.5 right-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    <div className="absolute top-1.5 right-1.5 z-10 bg-accent text-accent-on text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       {count}
                     </div>
                   )}
                 </div>
-                <div className="text-[10px] text-gray-500">{count}/{owned}</div>
+                <div className="text-[10px] text-secondary">{count}/{owned}</div>
                 {count > 0 && (
                   <button
                     onClick={() => adjust(card.id, -1)}
-                    className="text-[10px] text-gray-400 hover:text-gray-700 underline"
+                    className="text-[10px] text-tertiary hover:text-text underline"
                   >
                     Ta bort
                   </button>
@@ -120,7 +120,7 @@ export function UpgradePickerModal({
           <Button
             disabled={selectedTotal !== requiredCount || isSubmitting}
             onClick={handleConfirm}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-accent hover:bg-accent text-accent-on"
           >
             {isSubmitting ? "Uppgraderar..." : "Uppgradera"}
           </Button>

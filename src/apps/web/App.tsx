@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
-import { Header } from "../../components/web/Header";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BottomTabBar, Header } from "../../components/web/Header";
 import { BanBanner } from "../../components/web/BanBanner";
 import { Hero } from "../../components/web/Hero";
 import { FeaturedCollection } from "../../components/web/FeaturedCollection";
@@ -14,7 +14,7 @@ import { AuthPage } from "./AuthPage";
 import { CompleteProfilePage } from "./CompleteProfilePage";
 import { CollectionPage } from "./CollectionPage";
 import { LoggedInHomePage } from "./LoggedInHomePage";
-import { HandelPage } from "./HandelPage";
+import { ButikPage } from "./ButikPage";
 import { TradePage } from "./TradePage";
 import { NewTradePage } from "./NewTradePage";
 import { MarkForTradePage } from "./MarkForTradePage";
@@ -149,7 +149,7 @@ export default function App() {
   }
 
   if (isAuthLoading) {
-    return <div className="min-h-screen bg-white" />;
+    return <div className="min-h-screen bg-surface" />;
   }
 
   // Hard gate for accounts that predate mandatory first/last names: nothing but
@@ -162,7 +162,7 @@ export default function App() {
 
   if (currentUser && !currentUser.profileComplete && !isGateExempt) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <CompleteProfilePage
           currentUser={currentUser}
           onComplete={setCurrentUser}
@@ -173,7 +173,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-screen bg-background text-text ${currentUser ? "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}>
       <Header
         username={currentUser?.username ?? null}
         onLogout={handleLogout}
@@ -192,7 +192,8 @@ export default function App() {
         <Route path="/"         element={<HomePage currentUser={currentUser} />} />
         <Route path="/samling"      element={<CollectionPage userEmail={currentUser?.email ?? null} />} />
         <Route path="/samling/byte" element={<MarkForTradePage currentUser={currentUser} />} />
-        <Route path="/handel"   element={<HandelPage currentUser={currentUser} />} />
+        <Route path="/butik"    element={<ButikPage currentUser={currentUser} />} />
+        <Route path="/handel"   element={<Navigate to="/butik" replace />} />
         <Route path="/uppgradering" element={<UpgradePage currentUser={currentUser} />} />
         <Route path="/topplista" element={<TopplistaPage currentUser={currentUser} />} />
         <Route path="/byte"     element={<TradePage currentUser={currentUser} />} />
@@ -205,6 +206,7 @@ export default function App() {
         <Route path="/admin"                 element={<AdminPage />} />
       </Routes>
       <Footer />
+      {currentUser && <BottomTabBar pendingTradeCount={pendingTradeCount} hasReadyChest={hasReadyChest} />}
     </div>
   );
 }

@@ -85,11 +85,11 @@ export function TradePage({ currentUser }: TradePageProps) {
 
   if (!currentUser) {
     return (
-      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
+          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Byte</h1>
-            <p className="text-gray-600 mb-6">Logga in för att byta kort med andra spelare.</p>
+            <p className="text-text mb-6">Logga in för att byta kort med andra spelare.</p>
             <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function TradePage({ currentUser }: TradePageProps) {
   const tabHasMissing = tabTrades.some((t) => incomingCardIds(t).some((id) => !ownedSet.has(id)));
 
   return (
-    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+    <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
         <div className="max-w-4xl mx-auto space-y-8">
 
@@ -118,10 +118,10 @@ export function TradePage({ currentUser }: TradePageProps) {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold mb-2">Byte</h1>
-              <p className="text-gray-600">Byt kort med andra spelare. Leta i bytesmarknaden nedan efter ett kort du saknar.</p>
+              <p className="text-text">Byt kort med andra spelare. Leta i bytesmarknaden nedan efter ett kort du saknar.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+              <Button asChild className="bg-accent text-accent-on hover:bg-accent/90 hover:">
                 <Link to="/byte/ny">Nytt byte</Link>
               </Button>
             </div>
@@ -140,8 +140,8 @@ export function TradePage({ currentUser }: TradePageProps) {
                   onClick={() => setTab(t)}
                   className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                     tab === t
-                      ? "border-purple-600 text-purple-600"
-                      : "border-transparent text-gray-500 hover:text-gray-900"
+                      ? "border-accent text-text"
+                      : "border-transparent text-secondary hover:text-text"
                   }`}
                 >
                   {label}
@@ -150,18 +150,18 @@ export function TradePage({ currentUser }: TradePageProps) {
             </div>
 
             {tabHasMissing && (
-              <p className="mb-4 flex items-center gap-2 text-xs text-gray-500">
+              <p className="mb-4 flex items-center gap-2 text-xs text-secondary">
                 <UnownedDot label="Röd prick" />
                 Röd prick = ett kort du inte äger ännu.
               </p>
             )}
 
-            {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+            {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 
             {isLoading ? (
-              <p className="text-gray-500">Laddar...</p>
+              <p className="text-secondary">Laddar...</p>
             ) : tabTrades.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
+              <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-8 text-center text-secondary">
                 {tab === "incoming" ? "Inga inkommande bytesförfrågningar."
                   : tab === "outgoing" ? "Inga utgående bytesförfrågningar."
                   : "Ingen historik ännu."}
@@ -191,7 +191,7 @@ export function TradePage({ currentUser }: TradePageProps) {
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
               <div>
                 <h2 className="text-2xl font-bold mb-1">Bytesmarknad</h2>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-text">
                   Hitta ett kort du saknar, eller bläddra bland allas byteshyllor.
                 </p>
               </div>
@@ -223,14 +223,14 @@ function TradeCard({ trade, myId, ownedSet, actionLoading, onAccept, onReject, o
   const otherUser  = isIncoming ? trade.sender : trade.receiver;
 
   return (
-    <div className="rounded-xl border bg-white p-6">
+    <div className="rounded-xl border bg-surface p-6">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-secondary">
           {isIncoming ? `Från ${otherUser.username}` : `Till ${otherUser.username}`}
-          <span className="ml-2 text-xs text-gray-400">{new Date(trade.createdAt).toLocaleDateString("sv-SE")}</span>
+          <span className="ml-2 text-xs text-tertiary">{new Date(trade.createdAt).toLocaleDateString("sv-SE")}</span>
         </span>
         {trade.status !== "pending" && (
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${trade.status === "accepted" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${trade.status === "accepted" ? "bg-success/15 text-success" : "bg-raised text-secondary"}`}>
             {STATUS_LABEL[trade.status]}
           </span>
         )}
@@ -245,7 +245,7 @@ function TradeCard({ trade, myId, ownedSet, actionLoading, onAccept, onReject, o
           ownedSet={ownedSet}
           markMissing
         />
-        <div className="text-xl text-gray-300 text-center pt-6 hidden md:block">⇄</div>
+        <div className="text-xl text-tertiary text-center pt-6 hidden md:block">⇄</div>
         <TradeSide
           cardIds={isIncoming ? trade.requestedCardIds : trade.offeredCardIds}
           diamonds={isIncoming ? trade.requestedDiamonds : trade.offeredDiamonds}
@@ -259,7 +259,7 @@ function TradeCard({ trade, myId, ownedSet, actionLoading, onAccept, onReject, o
             <>
               <Button size="sm" variant="outline" disabled={isActing} onClick={() => onReject(trade.id)}>Avböj</Button>
               <Button size="sm" variant="outline" disabled={isActing} onClick={() => onCounter(trade)}>Motbjud</Button>
-              <Button size="sm" disabled={isActing} className="bg-green-600 hover:bg-green-700 text-white" onClick={() => onAccept(trade.id)}>
+              <Button size="sm" disabled={isActing} className="bg-success hover:bg-success text-accent-on" onClick={() => onAccept(trade.id)}>
                 {isActing ? "Accepterar..." : "Acceptera"}
               </Button>
             </>
@@ -284,9 +284,9 @@ function TradeSide({ cardIds, diamonds, label, ownedSet, markMissing = false }: 
 }) {
   return (
     <div>
-      <div className="text-xs font-medium text-gray-500 mb-2">{label}</div>
+      <div className="text-xs font-medium text-secondary mb-2">{label}</div>
       {cardIds.length === 0 && diamonds === 0 ? (
-        <p className="text-xs text-gray-400">Inget</p>
+        <p className="text-xs text-tertiary">Inget</p>
       ) : (
         <div className="space-y-2">
           {cardIds.length > 0 && (
@@ -298,25 +298,25 @@ function TradeSide({ cardIds, diamonds, label, ownedSet, markMissing = false }: 
                   // The same card can legitimately appear twice in one offer, so
                   // the index is part of the key.
                   <div key={`${cardId}-${index}`} style={{ width: 64 }}>
-                    <div className={`relative rounded-lg ${isMissing ? "ring-2 ring-red-500 ring-offset-2" : ""}`}>
+                    <div className={`relative rounded-lg ${isMissing ? "ring-2 ring-danger ring-offset-2" : ""}`}>
                       <CardPlaceholder rarity={card.rarity} size="small" name={card.name} designKey={card.designKey} showCaption />
                       {isMissing && (
                         <div
                           title="Du äger inte det här kortet"
-                          className="absolute top-1 left-1 z-10 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white pointer-events-none"
+                          className="absolute top-1 left-1 z-10 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-background pointer-events-none"
                         />
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div key={`${cardId}-${index}`} className="w-16 h-20 bg-gray-100 rounded text-[10px] text-gray-400 flex items-center justify-center px-1 text-center">
+                  <div key={`${cardId}-${index}`} className="w-16 h-20 bg-raised rounded text-[10px] text-tertiary flex items-center justify-center px-1 text-center">
                     {cardId}
                   </div>
                 );
               })}
             </div>
           )}
-          {diamonds > 0 && <div className="text-sm font-semibold text-blue-600">{diamonds} diamanter</div>}
+          {diamonds > 0 && <div className="text-sm font-semibold text-diamonds">{diamonds} diamanter</div>}
         </div>
       )}
     </div>

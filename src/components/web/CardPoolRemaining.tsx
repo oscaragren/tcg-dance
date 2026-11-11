@@ -4,11 +4,11 @@ import type { CardPoolInfo } from "../../types/game";
 import { fetchCardPool } from "../../utils/gameApi";
 
 const RARITIES = [
-  { key: "special",   label: "Special",   color: "text-fuchsia-400", zero: "text-red-400" },
-  { key: "legendary", label: "Legendary", color: "text-amber-400",  zero: "text-red-400" },
-  { key: "epic",      label: "Epic",      color: "text-purple-400", zero: "text-red-400" },
-  { key: "rare",      label: "Rare",      color: "text-blue-400",   zero: "text-red-400" },
-  { key: "common",    label: "Common",    color: "text-gray-400",   zero: "text-red-400" },
+  { key: "special",   label: "Special",   color: "text-rarity-epic", zero: "text-danger" },
+  { key: "legendary", label: "Legendary", color: "text-rarity-legendary",  zero: "text-danger" },
+  { key: "epic",      label: "Epic",      color: "text-text", zero: "text-danger" },
+  { key: "rare",      label: "Rare",      color: "text-diamonds",   zero: "text-danger" },
+  { key: "common",    label: "Common",    color: "text-tertiary",   zero: "text-danger" },
 ] as const;
 
 type CardPoolRemainingProps = {
@@ -17,7 +17,7 @@ type CardPoolRemainingProps = {
 
 /**
  * "Kort kvar i poolen" — remaining copies per rarity for one collection.
- * Shared by the logged-in landing page and the Handel pool button so the two
+ * Shared by the logged-in landing page and the Butik pool button so the two
  * can never drift apart. Styled for a dark background in both places.
  *
  * Fetches on mount rather than caching: buying a pack changes these numbers, so
@@ -49,14 +49,14 @@ export function CardPoolRemaining({ collectionId }: CardPoolRemainingProps) {
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-gray-500 uppercase tracking-wider">Kort kvar i poolen</div>
+      <div className="text-xs text-secondary uppercase tracking-wider">Kort kvar i poolen</div>
       {RARITIES.map(({ key, label, color, zero }) => {
         const count = remaining[key];
         const soldOut = poolLoaded && count === 0;
         return (
           <div key={key} className="flex items-center justify-between">
             <span className={`text-sm font-medium ${color}`}>{label}</span>
-            <span className={`text-sm font-semibold ${soldOut ? zero : "text-white"}`}>
+            <span className={`text-sm font-semibold ${soldOut ? zero : "text-text"}`}>
               {!poolLoaded ? "–" : soldOut ? "Slutsåld" : `${count} kvar`}
             </span>
           </div>

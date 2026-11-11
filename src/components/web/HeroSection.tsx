@@ -1,6 +1,8 @@
+import { Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import { dailyDiamonds } from "../../data/packs";
+import { DiamondIcon } from "./DiamondIcon";
 
 type HeroSectionProps = {
   username: string;
@@ -36,7 +38,7 @@ export function HeroSection({
   const todaysAmount = dailyDiamondsToday ?? dailyDiamonds;
   const isBoosted = todaysAmount > dailyDiamonds;
   return (
-    <section className="relative w-full border-b bg-white">
+    <section className="relative w-full border-b bg-surface">
       <div className="container mx-auto px-6 py-10 md:py-14">
         <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
 
@@ -47,20 +49,20 @@ export function HeroSection({
             </h1>
 
             <div className="flex items-baseline gap-1.5 mb-0.5">
-              <span className="text-5xl font-bold tabular-nums text-blue-600">
+              <span className="text-5xl font-bold tabular-nums text-diamonds">
                 {isLoading ? "–" : diamonds}
               </span>
-              <span className="text-2xl text-blue-400 font-bold">◆</span>
+              <span className="text-2xl text-diamonds font-bold"><DiamondIcon /></span>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-tertiary">
               {isBoosted
-                ? `Idag får du ${todaysAmount} ◆ istället för ${dailyDiamonds} ◆!`
-                : `Du får ${dailyDiamonds} ◆ gratis varje dag.`}
+                ? <>Idag får du {todaysAmount} <DiamondIcon /> istället för {dailyDiamonds} <DiamondIcon />!</>
+                : <>Du får {dailyDiamonds} <DiamondIcon /> gratis varje dag.</>}
             </p>
             {!isLoading && (
-              <p className="text-xs text-amber-600 mt-1">
-                🔥 {diamondStreak}/{diamondStreakTarget} dagar i rad — hämta {diamondStreakTarget} dagar
-                utan uppehåll för 500 ◆ bonus.
+              <p className="text-xs text-rarity-legendary mt-1">
+                <Flame className="inline h-4 w-4" aria-hidden /> {diamondStreak}/{diamondStreakTarget} dagar i rad — hämta {diamondStreakTarget} dagar
+                utan uppehåll för 500 <DiamondIcon /> bonus.
               </p>
             )}
           </div>
@@ -71,27 +73,27 @@ export function HeroSection({
               size="lg"
               onClick={onClaim}
               disabled={!canClaim || isLoading || isClaiming}
-              className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white w-full mb-1.5"
+              className="bg-accent hover:bg-accent/90 text-accent-on w-full mb-1.5"
             >
-              {isClaiming ? "Hämtar..." : canClaim ? `Hämta ${todaysAmount} ◆` : "Diamanter hämtade idag"}
+              {isClaiming ? "Hämtar..." : canClaim ? <>Hämta {todaysAmount} <DiamondIcon /></> : "Diamanter hämtade idag"}
             </Button>
             {!isLoading && (
-              <p className="text-[11px] text-gray-400 mb-6">
+              <p className="text-[11px] text-tertiary mb-6">
                 {canClaim ? "Dina dagliga diamanter väntar." : "Kom tillbaka imorgon."}
               </p>
             )}
 
             {!!streakBonusAwarded && (
-              <p className="mb-4 text-sm font-medium text-amber-600">
-                🔥 {diamondStreakTarget} dagar i rad! +{streakBonusAwarded} ◆ streak-bonus.
+              <p className="mb-4 text-sm font-medium text-rarity-legendary">
+                <Flame className="inline h-4 w-4" aria-hidden /> {diamondStreakTarget} dagar i rad! +{streakBonusAwarded} <DiamondIcon /> streak-bonus.
               </p>
             )}
 
-            {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+            {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 
-            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-hairline">
               <Button asChild variant="outline" size="sm">
-                <Link to="/handel">Köp pack</Link>
+                <Link to="/butik">Köp pack</Link>
               </Button>
               <Button asChild variant="outline" size="sm">
                 <Link to="/byte">Byt kort</Link>

@@ -113,7 +113,7 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
   function renderCardGrid(list: DanceCard[]) {
     if (list.length === 0) {
       return (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
+        <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-8 text-center text-text">
           {isLoading
             ? "Laddar samling..."
             : showAll
@@ -145,12 +145,12 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
                   hideDesign={!isOwned}
                 />
                 {count > 1 && (
-                  <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
+                  <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-text text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
                     ×{count}
                   </div>
                 )}
                 {isForTrade && (
-                  <div className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
+                  <div className="absolute top-1.5 left-1.5 z-10 bg-accent text-accent-on text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
                     ⇄
                   </div>
                 )}
@@ -164,11 +164,11 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
 
   if (!userEmail) {
     return (
-      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
+          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Din samling</h1>
-            <p className="text-gray-600 mb-6">Logga in eller skapa ett konto för att se dina kort.</p>
+            <p className="text-text mb-6">Logga in eller skapa ett konto för att se dina kort.</p>
             <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
           </div>
         </div>
@@ -182,34 +182,34 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
   );
 
   return (
-    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+    <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
         <div className="max-w-6xl mx-auto">
           <div className="mb-10">
             <h1 className="text-4xl md:text-5xl font-bold mb-3">Samling</h1>
-            <p className="text-gray-600 mb-3">
-              Dina kort. Kort märkta med <span className="text-purple-600 font-medium">⇄</span> har du markerat att du vill byta bort.
+            <p className="text-text mb-3">
+              Dina kort. Kort märkta med <span className="text-text font-medium">⇄</span> har du markerat att du vill byta bort.
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
+              <Button asChild size="sm" className="bg-accent hover:bg-accent text-accent-on">
                 <Link to="/samling/byte">⇄ Välj kort du vill byta</Link>
               </Button>
               <Button
                 size="sm"
                 variant={showAll ? "default" : "outline"}
                 onClick={() => setShowAll((v) => !v)}
-                className={showAll ? "bg-gray-900 hover:bg-gray-800 text-white" : ""}
+                className={showAll ? "bg-raised hover:bg-raised text-accent-on" : ""}
               >
                 {showAll ? "Visa bara mina kort" : "Se alla kort"}
               </Button>
             </div>
             {showAll && (
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-secondary mt-2">
                 Kort du inte äger visas utan design — bara namn och dansstil.
               </p>
             )}
             {forTradeCount > 0 && (
-              <p className="text-xs text-purple-600 mt-2">
+              <p className="text-xs text-text mt-2">
                 Du vill byta bort {forTradeCount} kort just nu
               </p>
             )}
@@ -226,12 +226,12 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
             {/* Hidden on mobile — too little room for three dropdowns there. */}
             <div className="hidden md:block space-y-3">
               <div>
-                <label htmlFor="rarity-filter" className="block text-sm text-gray-600 mb-2">Visa rarity</label>
+                <label htmlFor="rarity-filter" className="block text-sm text-text mb-2">Visa rarity</label>
                 <select
                   id="rarity-filter"
                   value={rarityFilter}
                   onChange={(e) => setRarityFilter(e.target.value as RarityFilter)}
-                  className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  className="w-full h-10 rounded-md border border-hairline bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
                 >
                   <option value="all">Alla</option>
                   <option value="special">Special</option>
@@ -243,12 +243,12 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
               </div>
               {danceStyleOptions.length > 1 && (
                 <div>
-                  <label htmlFor="dancestyle-filter" className="block text-sm text-gray-600 mb-2">Visa dansstil</label>
+                  <label htmlFor="dancestyle-filter" className="block text-sm text-text mb-2">Visa dansstil</label>
                   <select
                     id="dancestyle-filter"
                     value={danceStyleFilter}
                     onChange={(e) => setDanceStyleFilter(e.target.value)}
-                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                    className="w-full h-10 rounded-md border border-hairline bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
                   >
                     <option value="all">Alla dansstilar</option>
                     {danceStyleOptions.map((s) => (
@@ -259,12 +259,12 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
               )}
               {eventOptions.length > 1 && (
                 <div>
-                  <label htmlFor="event-filter" className="block text-sm text-gray-600 mb-2">Visa år</label>
+                  <label htmlFor="event-filter" className="block text-sm text-text mb-2">Visa år</label>
                   <select
                     id="event-filter"
                     value={eventFilter}
                     onChange={(e) => setEventFilter(e.target.value)}
-                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                    className="w-full h-10 rounded-md border border-hairline bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
                   >
                     <option value="all">Alla år</option>
                     {eventOptions.map((ev) => (
@@ -275,12 +275,12 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
               )}
               {clubOptions.length > 1 && (
                 <div>
-                  <label htmlFor="club-filter" className="block text-sm text-gray-600 mb-2">Visa förening</label>
+                  <label htmlFor="club-filter" className="block text-sm text-text mb-2">Visa förening</label>
                   <select
                     id="club-filter"
                     value={clubFilter}
                     onChange={(e) => setClubFilter(e.target.value)}
-                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                    className="w-full h-10 rounded-md border border-hairline bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
                   >
                     <option value="all">Alla föreningar</option>
                     {clubOptions.map((c) => (
@@ -306,14 +306,14 @@ export function CollectionPage({ userEmail }: CollectionPageProps) {
             <TabsContent value="all" className="mt-4">
               <AchievementsSection />
               {renderCardGrid(cardsForCollection("all"))}
-              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+              {error && <p className="mt-4 text-sm text-danger">{error}</p>}
             </TabsContent>
 
             {collections.map((c) => (
               <TabsContent key={c.id} value={c.id} className="mt-4">
                 <AchievementsSection collectionId={c.id} />
                 {renderCardGrid(cardsForCollection(c.id))}
-                {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+                {error && <p className="mt-4 text-sm text-danger">{error}</p>}
               </TabsContent>
             ))}
           </Tabs>

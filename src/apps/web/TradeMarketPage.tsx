@@ -12,11 +12,11 @@ type TradeMarketPageProps = { currentUser: AuthUser | null };
 export function TradeMarketPage({ currentUser }: TradeMarketPageProps) {
   if (!currentUser) {
     return (
-      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
+          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Bytesmarknad</h1>
-            <p className="text-gray-600 mb-6">Logga in för att se vilka kort andra spelare vill byta bort.</p>
+            <p className="text-text mb-6">Logga in för att se vilka kort andra spelare vill byta bort.</p>
             <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
           </div>
         </div>
@@ -25,14 +25,14 @@ export function TradeMarketPage({ currentUser }: TradeMarketPageProps) {
   }
 
   return (
-    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+    <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
         <div className="max-w-4xl mx-auto space-y-8">
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold mb-2">Bytesmarknad</h1>
-              <p className="text-gray-600">Hitta ett kort du saknar, eller bläddra bland allas byteshyllor.</p>
+              <p className="text-text">Hitta ett kort du saknar, eller bläddra bland allas byteshyllor.</p>
             </div>
             <Button asChild variant="outline">
               <Link to="/byte">Tillbaka till Byte</Link>

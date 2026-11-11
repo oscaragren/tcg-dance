@@ -24,18 +24,18 @@ export function UnownedDot({ label }: { label: string }) {
       title={label}
       aria-label={label}
       role="img"
-      className="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shrink-0"
+      className="inline-block w-2.5 h-2.5 rounded-full bg-accent shrink-0"
     />
   );
 }
 
 export function UnownedLegend() {
   return (
-    <p className="flex items-center gap-2 text-xs text-gray-500">
+    <p className="flex items-center gap-2 text-xs text-secondary">
       <UnownedDot label="Röd prick" />
       <span>
         Röd prick betyder att spelaren vill byta bort minst ett kort som du
-        <span className="font-medium text-gray-700"> inte äger ännu</span> — de korten har
+        <span className="font-medium text-text"> inte äger ännu</span> — de korten har
         en liten röd prick.
       </span>
     </p>
@@ -72,8 +72,8 @@ export function TradeMarket() {
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t
-                ? "border-purple-600 text-purple-600"
-                : "border-transparent text-gray-500 hover:text-gray-900"
+                ? "border-accent text-text"
+                : "border-transparent text-secondary hover:text-text"
             }`}
           >
             {label}
@@ -127,8 +127,8 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border bg-white p-6">
-        <label htmlFor="card-search" className="block text-sm text-gray-600 mb-2">
+      <section className="rounded-2xl border bg-surface p-6">
+        <label htmlFor="card-search" className="block text-sm text-text mb-2">
           Sök efter ett kort — på namn, dansstil eller förening
         </label>
         <input
@@ -137,7 +137,7 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
           value={query}
           onChange={(e) => { setQuery(e.target.value); setSelectedCard(null); }}
           placeholder="Namn, dansstil eller förening..."
-          className="w-full max-w-sm h-10 rounded-md border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+          className="w-full max-w-sm h-10 rounded-md border border-hairline bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
         />
 
         {!selectedCard && suggestions.length > 0 && (
@@ -146,7 +146,7 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
               <button
                 key={card.id}
                 onClick={() => setSelectedCard(card)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between gap-3"
+                className="w-full text-left px-4 py-2 text-sm hover:bg-raised transition-colors flex items-center justify-between gap-3"
               >
                 <span className="min-w-0">
                   <span className="truncate flex items-center gap-2">
@@ -154,24 +154,24 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                     <span className="truncate">{card.name}</span>
                   </span>
                   {(card.danceStyle || card.club) && (
-                    <span className="block text-[11px] text-gray-400 truncate">
+                    <span className="block text-[11px] text-tertiary truncate">
                       {[card.danceStyle, card.club].filter(Boolean).join(" · ")}
                     </span>
                   )}
                 </span>
-                <span className="text-[11px] uppercase tracking-wider text-gray-400 shrink-0">{card.rarity}</span>
+                <span className="text-[11px] uppercase tracking-wider text-tertiary shrink-0">{card.rarity}</span>
               </button>
             ))}
           </div>
         )}
 
         {!selectedCard && query.trim().length >= 2 && suggestions.length === 0 && (
-          <p className="mt-3 text-xs text-gray-400">Inga kort matchar sökningen.</p>
+          <p className="mt-3 text-xs text-tertiary">Inga kort matchar sökningen.</p>
         )}
       </section>
 
       {selectedCard && (
-        <section className="rounded-2xl border bg-white p-6">
+        <section className="rounded-2xl border bg-surface p-6">
           <div className="flex flex-col sm:flex-row gap-6">
             <div className="shrink-0">
               <div className="relative inline-block">
@@ -187,7 +187,7 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                   showCaption
                 />
                 {isMissing && (
-                  <div className="absolute top-1.5 left-1.5 z-10 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white pointer-events-none" />
+                  <div className="absolute top-1.5 left-1.5 z-10 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-background pointer-events-none" />
                 )}
               </div>
             </div>
@@ -197,18 +197,18 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                 {isMissing && <UnownedDot label="Du äger inte det här kortet" />}
                 {selectedCard.name}
               </h2>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-secondary mb-4">
                 {isMissing
                   ? "Du saknar det här kortet. Spelarna nedan vill byta bort det."
                   : "Du äger redan det här kortet. Spelarna nedan vill byta bort det."}
               </p>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-danger">{error}</p>}
 
               {isLoading ? (
-                <p className="text-sm text-gray-500">Söker...</p>
+                <p className="text-sm text-secondary">Söker...</p>
               ) : !traders || traders.length === 0 ? (
-                <p className="text-sm text-gray-400">Ingen spelare vill byta bort det här kortet just nu.</p>
+                <p className="text-sm text-tertiary">Ingen spelare vill byta bort det här kortet just nu.</p>
               ) : (
                 <ul className="divide-y rounded-lg border">
                   {traders.map((t) => (
@@ -216,12 +216,12 @@ function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                       {isMissing && <UnownedDot label="Erbjuder ett kort du saknar" />}
                       <Link
                         to={`/spelare/${t.userId}`}
-                        className="flex-1 min-w-0 truncate text-sm font-medium text-gray-900 hover:text-purple-600 transition-colors"
+                        className="flex-1 min-w-0 truncate text-sm font-medium text-text hover:text-accent transition-colors"
                       >
                         {t.username}
                       </Link>
-                      <span className="text-xs text-gray-400 shrink-0">×{t.quantity}</span>
-                      <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white shrink-0">
+                      <span className="text-xs text-tertiary shrink-0">×{t.quantity}</span>
+                      <Button asChild size="sm" className="bg-accent hover:bg-accent text-accent-on shrink-0">
                         <Link to={newTradeLink(t.userId, t.username)}>Byt</Link>
                       </Button>
                     </li>
@@ -260,12 +260,12 @@ function BrowseTradersTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
     return map;
   }, [traders, ownedCardIds]);
 
-  if (isLoading) return <p className="text-sm text-gray-500">Laddar marknaden...</p>;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (isLoading) return <p className="text-sm text-secondary">Laddar marknaden...</p>;
+  if (error) return <p className="text-sm text-danger">{error}</p>;
 
   if (traders.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
+      <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-8 text-center text-secondary">
         Ingen spelare vill byta bort några kort ännu.
       </div>
     );
@@ -277,7 +277,7 @@ function BrowseTradersTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
         const isOpen = expanded === trader.userId;
         const missing = missingByTrader.get(trader.userId) ?? 0;
         return (
-          <section key={trader.userId} className="rounded-2xl border bg-white overflow-hidden">
+          <section key={trader.userId} className="rounded-2xl border bg-surface overflow-hidden">
             <div className="flex items-center gap-3 p-5">
               <button
                 onClick={() => setExpanded(isOpen ? null : trader.userId)}
@@ -291,10 +291,10 @@ function BrowseTradersTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                   )}
                   <span className="truncate">{trader.username}</span>
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-secondary">
                   Vill byta bort {trader.totalCards} kort
                   {missing > 0 && (
-                    <span className="text-red-600 font-medium">
+                    <span className="text-danger font-medium">
                       {" "}· {missing} du saknar
                     </span>
                   )}
@@ -304,7 +304,7 @@ function BrowseTradersTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
               <Button asChild size="sm" variant="outline" className="shrink-0">
                 <Link to={`/spelare/${trader.userId}`}>Samling</Link>
               </Button>
-              <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white shrink-0">
+              <Button asChild size="sm" className="bg-accent hover:bg-accent text-accent-on shrink-0">
                 <Link to={newTradeLink(trader.userId, trader.username)}>Byt</Link>
               </Button>
             </div>
@@ -327,12 +327,12 @@ function BrowseTradersTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
                             showCaption
                           />
                           {quantity > 1 && (
-                            <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
+                            <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-text text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
                               ×{quantity}
                             </div>
                           )}
                           {isMissing && (
-                            <div className="absolute top-1.5 left-1.5 z-10 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white pointer-events-none" />
+                            <div className="absolute top-1.5 left-1.5 z-10 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-background pointer-events-none" />
                           )}
                         </div>
                       </div>

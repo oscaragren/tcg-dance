@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../shared/ui/button";
 import type { Achievement } from "../../types/game";
 import { claimAchievement, fetchAchievements } from "../../utils/gameApi";
+import { DiamondIcon } from "./DiamondIcon";
 
 type AchievementsSectionProps = {
   /** Scopes to one collection's achievements (global, collection-less ones are excluded). Omit to show all. */
@@ -46,7 +47,7 @@ export function AchievementsSection({ collectionId }: AchievementsSectionProps) 
   const claimableCount = visibleAchievements.filter((a) => a.complete).length;
 
   return (
-    <section className="rounded-2xl border bg-white mb-10 overflow-hidden">
+    <section className="rounded-2xl border bg-surface mb-10 overflow-hidden">
       <button
         onClick={() => setIsOpen((v) => !v)}
         className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left"
@@ -54,22 +55,22 @@ export function AchievementsSection({ collectionId }: AchievementsSectionProps) 
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold">Prestationer</h2>
           {claimableCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+            <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-accent text-accent-on text-[10px] font-bold">
               {claimableCount}
             </span>
           )}
         </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 text-tertiary transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
         <div className="px-4 pb-4">
-          <p className="text-xs text-gray-500 mb-3">Lös in prestationer för att tjäna diamanter.</p>
+          <p className="text-xs text-secondary mb-3">Lös in prestationer för att tjäna diamanter.</p>
 
-          {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+          {error && <p className="mb-3 text-sm text-danger">{error}</p>}
 
           {visibleAchievements.length === 0 ? (
-            <p className="text-sm text-gray-400">Inga prestationer kvar — du har löst in alla du klarat.</p>
+            <p className="text-sm text-tertiary">Inga prestationer kvar — du har löst in alla du klarat.</p>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {visibleAchievements.map((a) => {
@@ -79,27 +80,27 @@ export function AchievementsSection({ collectionId }: AchievementsSectionProps) 
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-medium text-sm">{a.title}</div>
-                      <div className="text-xs text-gray-500">{a.description}</div>
+                      <div className="text-xs text-secondary">{a.description}</div>
                     </div>
-                    <div className="text-xs font-semibold text-blue-600 shrink-0">+{a.reward} ◆</div>
+                    <div className="text-xs font-semibold text-diamonds shrink-0">+{a.reward} <DiamondIcon /></div>
                   </div>
 
-                  <div className="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="mt-2 h-1.5 rounded-full bg-raised overflow-hidden">
                     <div
-                      className={`h-full ${a.complete ? "bg-green-500" : "bg-purple-500"}`}
+                      className={`h-full ${a.complete ? "bg-success" : "bg-accent"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
                   <div className="mt-1 flex items-center justify-between">
-                    <span className="text-xs text-gray-400">{a.progress} / {a.target}</span>
+                    <span className="text-xs text-tertiary">{a.progress} / {a.target}</span>
                     {a.claimed ? (
-                      <span className="text-xs text-green-600 font-medium">Inlöst</span>
+                      <span className="text-xs text-success font-medium">Inlöst</span>
                     ) : a.complete ? (
                       <Button
                         size="sm"
                         disabled={claimingId === a.id}
                         onClick={() => handleClaim(a.id)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white h-7 px-3 text-xs"
+                        className="bg-accent hover:bg-accent text-accent-on h-7 px-3 text-xs"
                       >
                         {claimingId === a.id ? "Löser in..." : "Lös in"}
                       </Button>

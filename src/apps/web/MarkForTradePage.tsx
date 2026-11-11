@@ -112,11 +112,11 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
 
   if (!currentUser) {
     return (
-      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
+          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
             <h1 className="text-3xl font-bold mb-4">Vill byta</h1>
-            <p className="text-gray-600 mb-6">Logga in för att välja vilka kort du vill byta bort.</p>
+            <p className="text-text mb-6">Logga in för att välja vilka kort du vill byta bort.</p>
             <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
           </div>
         </div>
@@ -125,7 +125,7 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
   }
 
   return (
-    <main className="py-12 bg-gray-50 min-h-[calc(100vh-72px)]">
+    <main className="py-12 bg-raised min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
         <div className="max-w-6xl mx-auto">
 
@@ -133,7 +133,7 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
           <div className="mb-8">
             <button
               onClick={() => navigate("/samling")}
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-4"
+              className="inline-flex items-center gap-1.5 text-sm text-secondary hover:text-text transition-colors mb-4"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                 <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
@@ -144,15 +144,15 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">Vill byta</h1>
-                <p className="text-gray-500 text-sm">
+                <p className="text-secondary text-sm">
                   Markera hur många kopior av varje kort du vill byta bort, och tryck Spara. Korten
                   visas på bytesmarknaden — andra spelare kan ändå fråga efter vilket kort som helst
                   i din samling.
                 </p>
               </div>
               {markedCount > 0 && (
-                <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 text-sm font-medium rounded-full px-4 py-1.5 shrink-0">
-                  <span className="text-purple-500">⇄</span>
+                <div className="inline-flex items-center gap-2 bg-raised text-text text-sm font-medium rounded-full px-4 py-1.5 shrink-0">
+                  <span className="text-text">⇄</span>
                   {totalCopies} {totalCopies === 1 ? "kopia" : "kopior"} ({markedCount} {markedCount === 1 ? "kort" : "kort"})
                 </div>
               )}
@@ -162,11 +162,11 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
           {/* Filter + save bar */}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600 shrink-0">Visa rarity</label>
+              <label className="text-sm text-text shrink-0">Visa rarity</label>
               <select
                 value={rarityFilter}
                 onChange={(e) => setRarityFilter(e.target.value as RarityFilter)}
-                className="h-9 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                className="h-9 rounded-md border border-hairline bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
               >
                 <option value="all">Alla</option>
                 <option value="special">Special</option>
@@ -177,11 +177,11 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
               </select>
             </div>
             <div className="flex items-center gap-3">
-              {!isDirty && !isLoading && <span className="text-xs text-gray-400">Sparat</span>}
+              {!isDirty && !isLoading && <span className="text-xs text-tertiary">Sparat</span>}
               <Button
                 onClick={() => void handleSave()}
                 disabled={!isDirty || isSaving}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-accent hover:bg-accent text-accent-on"
               >
                 {isSaving ? "Sparar..." : "Spara"}
               </Button>
@@ -189,11 +189,11 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
           </div>
 
           {isLoading ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-gray-500">
+            <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-10 text-center text-secondary">
               Laddar samling...
             </div>
           ) : ownedCards.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-gray-500">
+            <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-10 text-center text-secondary">
               Du äger inga kort i den här kategorin.
             </div>
           ) : (
@@ -206,7 +206,7 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
                 return (
                   <div key={card.id} className="relative flex flex-col items-center gap-2">
                     <div className={`relative rounded-xl transition-all duration-150 ${
-                      isForTrade ? "ring-2 ring-purple-500 ring-offset-2" : ""
+                      isForTrade ? "ring-2 ring-accent ring-offset-2" : ""
                     }`}>
                       <CardPlaceholder
                         rarity={card.rarity}
@@ -219,12 +219,12 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
                         disableLightbox
                       />
                       {owned > 1 && (
-                        <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
+                        <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-text text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
                           ×{owned}
                         </div>
                       )}
                       {isForTrade && (
-                        <div className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
+                        <div className="absolute top-1.5 left-1.5 z-10 bg-accent text-accent-on text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
                           ⇄
                         </div>
                       )}
@@ -236,8 +236,8 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
                         onClick={() => setQuantity(card.id, qty > 0 ? 0 : 1)}
                         className={`text-xs font-medium rounded-full px-3 py-1 transition-colors ${
                           isForTrade
-                            ? "bg-purple-600 text-white hover:bg-purple-700"
-                            : "border border-gray-300 text-gray-600 hover:border-gray-400"
+                            ? "bg-accent text-accent-on hover:bg-accent"
+                            : "border border-hairline-strong text-text hover:border-hairline-strong"
                         }`}
                       >
                         {isForTrade ? "✓ Vill byta" : "Vill byta"}
@@ -247,7 +247,7 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
                         <button
                           onClick={() => setQuantity(card.id, qty - 1)}
                           disabled={qty <= 0}
-                          className="w-7 h-7 rounded-full border border-gray-300 text-gray-700 leading-none disabled:opacity-40 hover:border-gray-400"
+                          className="w-7 h-7 rounded-full border border-hairline-strong text-text leading-none disabled:opacity-40 hover:border-hairline-strong"
                           aria-label="Minska"
                         >
                           −
@@ -256,7 +256,7 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
                         <button
                           onClick={() => setQuantity(card.id, qty + 1)}
                           disabled={qty >= owned}
-                          className="w-7 h-7 rounded-full border border-gray-300 text-gray-700 leading-none disabled:opacity-40 hover:border-gray-400"
+                          className="w-7 h-7 rounded-full border border-hairline-strong text-text leading-none disabled:opacity-40 hover:border-hairline-strong"
                           aria-label="Öka"
                         >
                           +
@@ -269,7 +269,7 @@ export function MarkForTradePage({ currentUser }: MarkForTradePageProps) {
             </div>
           )}
 
-          {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-6 text-sm text-danger">{error}</p>}
 
         </div>
       </div>
