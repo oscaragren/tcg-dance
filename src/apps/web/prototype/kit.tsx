@@ -3,11 +3,10 @@
 // floating variant switcher. Variants import from here but own their layouts.
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Bell, ChevronLeft, ChevronRight, Gem, Home, Layers, Repeat, ShoppingBag, Trophy, User, X } from "lucide-react";
-import { ImageWithFallback } from "../../../components/shared/figma/ImageWithFallback";
-import { resolveCardDesignUrl } from "../../../data/cardDesignUrls";
+import { Bell, ChevronLeft, ChevronRight, Home, Layers, Repeat, ShoppingBag, Trophy, User, X } from "lucide-react";
+import { BadgeHar, BadgeNy, CardFrame, Diamonds, Wordmark } from "./Baren";
 import {
-  availableCount, cards, incomingTrades, otherPlayers, initialChests, initialKeep, initialOwned, rarityFrame, rarityLabel,
+  availableCount, cards, incomingTrades, otherPlayers, initialChests, initialKeep, initialOwned, rarityLabel,
   rarityText, weeklyGoals, type ChestSlot, type DanceCard,
 } from "./data";
 
@@ -101,8 +100,9 @@ export function useProgress(collectionId: string) {
       return { have: l.filter((c) => owned[c.id]).length, total: l.length };
     };
     return {
-      have: list.filter((c) => owned[c.id]).length,
-      total: list.length,
+      // Collection progress leaves Special out (visual identity ticket #23).
+      have: list.filter((c) => c.rarity !== "special" && owned[c.id]).length,
+      total: list.filter((c) => c.rarity !== "special").length,
       rarity: { common: by("common"), rare: by("rare"), epic: by("epic"), legendary: by("legendary"), special: by("special") },
     };
   }, [owned, collectionId]);
@@ -112,8 +112,8 @@ export function useProgress(collectionId: string) {
 
 export function PhoneFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="relative mx-auto min-h-screen w-full max-w-[390px] bg-white pb-36 shadow-xl">{children}</div>
+    <div className="min-h-screen" style={{ background: "#0b0807" }}>
+      <div className="relative mx-auto min-h-screen w-full max-w-[390px] pb-44 shadow-xl" style={{ background: "var(--bg)" }}>{children}</div>
     </div>
   );
 }
@@ -121,12 +121,10 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
 export function TopBar() {
   const { diamonds } = useStore();
   return (
-    <div className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-white/90 px-4 backdrop-blur">
-      <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-lg font-semibold text-transparent">TCG Dance</span>
-      <div className="flex items-center gap-1">
-        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-sm font-semibold tabular-nums text-blue-700">
-          <Gem className="h-4 w-4" /> {diamonds.toLocaleString("sv-SE")}
-        </span>
+    <div className="sticky top-0 z-30 flex h-14 items-center justify-between px-4" style={{ background: "var(--bg)" }}>
+      <Wordmark size={22} />
+      <div className="flex items-center">
+        <Diamonds n={diamonds} className="mr-1 text-sm" />
         <button className="relative grid h-11 w-11 place-items-center text-gray-600" aria-label="Notiser">
           <Bell className="h-5 w-5" />
           <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-red-500" />
@@ -154,7 +152,8 @@ export function TabBar({ current }: { current: Screen }) {
         const active = id === current;
         return (
           <button key={id} onClick={() => s.go(id)} className={`relative flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] ${active ? "font-semibold text-purple-700" : "text-gray-500"}`}>
-            <Icon className="h-5 w-5" />
+            {active && <span className="absolute top-0 h-[3px] w-8 rounded-b" style={{ background: "var(--accent)" }} />}
+            <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
             {label}
             {id === "byte" && s.trades.length > 0 && (
               <span className="absolute left-1/2 top-1.5 ml-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{s.trades.length}</span>
@@ -175,37 +174,29 @@ export function CardThumb({ card, owned, count, badge, dim, selected, onClick, c
 }) {
   const s = useStore();
   const isOwned = owned ?? (s.owned[card.id] ?? 0) > 0;
-  const url = isOwned ? resolveCardDesignUrl(card.designKey) : undefined;
   return (
-    <button
-      onClick={onClick ?? (() => s.set({ sheetCardId: card.id }))}
-      className={`relative block aspect-[4/5] w-full rounded-lg p-0.5 text-left ${isOwned ? `bg-gradient-to-br ${rarityFrame[card.rarity]}` : "bg-gray-300"} ${dim ? "opacity-40" : ""} ${selected ? "ring-2 ring-green-500 ring-offset-2" : ""} ${className}`}
-    >
-      <div className="relative h-full w-full overflow-hidden rounded-[6px] bg-gray-800">
-        {url ? <ImageWithFallback src={url} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
-          : <div className="grid h-full place-items-center text-xl text-white/30">{isOwned ? "⚡" : "?"}</div>}
-      </div>
-      {count !== undefined && count > 1 && (
-        <span className="absolute bottom-1 right-1 rounded-full bg-black/75 px-1.5 text-[10px] font-bold text-white">×{count}</span>
-      )}
-      {badge && <span className="absolute left-1 top-1">{badge}</span>}
+    <button onClick={onClick ?? (() => s.set({ sheetCardId: card.id }))} className={`relative block w-full ${dim ? "opacity-40" : ""} ${className}`}>
+      <CardFrame card={card} owned={isOwned} selected={selected} small={!!className.match(/\bw-(8|10|12)\b/)}>
+        {count !== undefined && count > 1 && (
+          <span className="absolute bottom-1 right-1 rounded-full bg-black/75 px-1.5 text-[11px] font-bold text-white">×{count}</span>
+        )}
+        {badge && <span className="absolute left-1 top-1">{badge}</span>}
+      </CardFrame>
     </button>
   );
 }
 
 export function NewBadge({ isNew, have }: { isNew: boolean; have?: number }) {
-  return isNew
-    ? <span className="rounded bg-green-500 px-1 text-[9px] font-bold text-white">Ny!</span>
-    : <span className="rounded bg-gray-700/80 px-1 text-[9px] font-medium text-white">Har redan{have ? ` ×${have}` : ""}</span>;
+  return isNew ? <BadgeNy /> : <BadgeHar have={have} />;
 }
 
 export function RarityDot({ r }: { r: DanceCard["rarity"] }) {
-  return <span className={`text-[10px] font-semibold uppercase tracking-wider ${rarityText[r]}`}>{rarityLabel[r]}</span>;
+  return <span className={`text-[11px] font-bold uppercase tracking-wider ${rarityText[r]}`}>{rarityLabel[r]}</span>;
 }
 
-export function Bar({ value, total, className = "bg-gradient-to-r from-purple-600 to-blue-600" }: { value: number; total: number; className?: string }) {
+export function Bar({ value, total, className = "bar-accent" }: { value: number; total: number; className?: string }) {
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+    <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--surf2)" }}>
       <div className={`h-full rounded-full ${className}`} style={{ width: `${total ? (100 * value) / total : 0}%` }} />
     </div>
   );
@@ -248,19 +239,11 @@ export function CardSheet() {
   if (!card) return null;
   const n = s.owned[card.id] ?? 0;
   const kept = s.keep.has(card.id);
-  const url = n ? resolveCardDesignUrl(card.designKey) : undefined;
   const holders = otherHolders(card.id);
   const close = () => s.set({ sheetCardId: null });
   return (
     <Sheet open onClose={close} title={card.name}>
-      <div className="mx-auto w-56">
-        <div className={`aspect-[4/5] rounded-xl p-1 ${n ? `bg-gradient-to-br ${rarityFrame[card.rarity]}` : "bg-gray-300"}`}>
-          <div className="relative h-full overflow-hidden rounded-lg bg-gray-800">
-            {url ? <ImageWithFallback src={url} alt={card.name} className="absolute inset-0 h-full w-full object-cover object-top" />
-              : <div className="grid h-full place-items-center text-5xl text-white/25">?</div>}
-          </div>
-        </div>
-      </div>
+      <div className="mx-auto w-56"><CardFrame card={card} owned={n > 0} /></div>
       <div className="mt-3 text-center">
         <RarityDot r={card.rarity} />
         <div className="text-xs text-gray-500">{[card.event, card.danceStyle, card.club].filter(Boolean).join(" · ")}</div>
@@ -340,7 +323,7 @@ export function VariantSwitcher({ keys, names, current, onChange, bottom = "bott
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <div className="mb-2 flex items-baseline justify-between">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">{children}</h2>
+      <h2 className="font-display text-2xl italic">{children}</h2>
       {right}
     </div>
   );

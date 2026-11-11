@@ -13,7 +13,8 @@
 
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Bell, Gem, User } from "lucide-react";
+import { Bell, User } from "lucide-react";
+import { BarenRoot, Diamonds, PICKS, Stilark, Wordmark } from "./Baren";
 import { butikDesktop } from "./ButikDesktop";
 import { byteDesktop } from "./ByteDesktop";
 import { hemDesktop } from "./HemDesktop";
@@ -28,12 +29,12 @@ function TopNav({ current }: { current: Screen }) {
   const s = useStore();
   const chestReady = s.chests.some((c) => c.readyInMin === 0);
   return (
-    <header className="sticky top-0 z-30 border-b bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b" style={{ background: "var(--bg)" }}>
       <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-8 px-6">
-        <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-xl font-semibold text-transparent">TCG Dance</span>
+        <Wordmark size={26} />
         <nav className="flex h-full flex-1 items-stretch gap-1">
           {TABS.map(({ id, label, Icon }) => (
-            <button key={id} onClick={() => s.go(id)} className={`relative flex items-center gap-2 border-b-2 px-3 text-sm ${id === current ? "border-purple-600 font-semibold text-purple-700" : "border-transparent text-gray-600 hover:text-gray-900"}`}>
+            <button key={id} onClick={() => s.go(id)} className={`relative flex items-center gap-2 border-b-2 px-3 text-sm ${id === current ? "border-purple-600 font-semibold text-purple-700" : "border-transparent text-gray-500"}`}>
               <Icon className="h-4 w-4" />{label}
               {id === "byte" && s.trades.length > 0 && <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{s.trades.length}</span>}
               {id === "butik" && chestReady && <span className="h-2 w-2 rounded-full bg-red-500" />}
@@ -41,7 +42,7 @@ function TopNav({ current }: { current: Screen }) {
           ))}
         </nav>
         <div className="flex items-center gap-1">
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold tabular-nums text-blue-700"><Gem className="h-4 w-4" /> {s.diamonds.toLocaleString("sv-SE")}</span>
+          <Diamonds n={s.diamonds} className="mr-2" />
           <button className="relative grid h-10 w-10 place-items-center text-gray-600" aria-label="Notiser"><Bell className="h-5 w-5" /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" /></button>
           <button className="grid h-10 w-10 place-items-center text-gray-600" aria-label="Profil"><User className="h-5 w-5" /></button>
         </div>
@@ -65,18 +66,19 @@ export function DesktopPrototype() {
   const variants = SCREENS[screen];
   const keys = variants ? Object.keys(variants) : [];
   const key = `d${screen}`;
-  const current = (params.get(key) ?? "A").toUpperCase();
+  const current = (params.get(key) ?? PICKS[key] ?? "A").toUpperCase();
   const go = useCallback((s: Screen) => {
     setParams((p) => { p.set("skarm", s); return p; }, { replace: true });
     window.scrollTo(0, 0);
   }, [setParams]);
   const setVariant = (k: string) => setParams((p) => { p.set(key, k); return p; }, { replace: true });
   const v = variants?.[current];
-  const Body = v?.C ?? Topplista;
+  const Body = screen === ("stil" as Screen) ? () => <Stilark owned={{}} wide /> : v?.C ?? Topplista;
   return (
     <StoreProvider go={go}>
+      <BarenRoot switcherBottom="bottom-16">
       <SheetMode.Provider value={v?.sheet ?? "dialog"}>
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen pb-28" style={{ background: "var(--bg)" }}>
           <TopNav current={screen} />
           <Body key={`${screen}-${current}`} />
           <CardSheet />
@@ -87,6 +89,7 @@ export function DesktopPrototype() {
           )}
         </div>
       </SheetMode.Provider>
+      </BarenRoot>
     </StoreProvider>
   );
 }

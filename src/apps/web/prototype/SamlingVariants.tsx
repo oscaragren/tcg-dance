@@ -8,6 +8,7 @@ import {
   cardsIn, collections, rarityBg, rarityLabel, rarityText, sortCards, upgradeRule, RARITIES, type CardRarity, type DanceCard,
 } from "./data";
 import { Bar, CardThumb, Sheet, useProgress, useStore } from "./kit";
+import { Empty, Scoreboard, TrophyShelf } from "./Baren";
 
 export type Filter = "alla" | "saknas" | "dubbletter";
 
@@ -219,7 +220,17 @@ function SamlingB() {
         <div className="flex items-center gap-2"><FilterChips filter={v.filter} setFilter={v.setFilter} />
           <div className="flex h-9 flex-1 items-center rounded-full bg-gray-100 px-3"><Search className="h-4 w-4 text-gray-400" /><input value={v.q} onChange={(e) => v.setQ(e.target.value)} className="w-full bg-transparent pl-1 text-sm outline-none" /></div></div>
       </div>
-      {(["special", "legendary", "epic", "rare", "common"] as CardRarity[]).map((r) => {
+      {v.filter === "alla" && !v.q && (
+        <div className="space-y-3 p-3"><Scoreboard p={p} compact /><TrophyShelf collectionId={v.col} owned={s.owned} /></div>
+      )}
+      {v.list.filter((c) => c.rarity !== "special").length === 0 && (
+        <div className="p-3">
+          {v.filter === "dubbletter" ? <Empty icon="🃏" title="Inga dubbletter än" body="Öppna fler Packs så dyker dubbletter upp här." cta="Till Butik" onCta={() => s.go("butik")} />
+            : v.filter === "saknas" ? <Empty icon="🏆" title="Du har alla!" body="Inga Cards saknas i den här samlingen." />
+              : <Empty icon="🔍" title="Inga träffar" body={`Inget Card matchar "${v.q}".`} />}
+        </div>
+      )}
+      {(["legendary", "epic", "rare", "common"] as CardRarity[]).map((r) => {
         const list = v.list.filter((c) => c.rarity === r);
         if (!list.length) return null;
         const isOpen = !collapsed.has(r);
@@ -229,7 +240,7 @@ function SamlingB() {
             <div className="flex h-12 items-center gap-2 px-3">
               <button onClick={() => { const n = new Set(collapsed); isOpen ? n.add(r) : n.delete(r); setCollapsed(n); }} className="flex flex-1 items-center gap-2 text-left">
                 <ChevronDown className={`h-4 w-4 text-gray-400 ${isOpen ? "" : "-rotate-90"}`} />
-                <span className={`text-sm font-semibold ${rarityText[r]}`}>{rarityLabel[r]}</span>
+                <span className={`font-display text-lg italic ${rarityText[r]}`}>{rarityLabel[r]}</span>
                 <span className="text-sm tabular-nums text-gray-500">{p.rarity[r].have}/{p.rarity[r].total}</span>
               </button>
               {rl && <button onClick={() => u.pick(r)} className="h-8 rounded-full bg-purple-50 px-3 text-xs font-medium text-purple-800">↑ {rarityLabel[rl.to]} · {u.available(r)}/{rl.cost}</button>}

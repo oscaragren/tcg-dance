@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, Gift, Repeat, Sparkles, Trophy } from "lucide-react";
 import { activeEvent, collections, fmtMin, otherPlayers, weeklyGoals } from "./data";
 import { Bar, Sheet, SectionTitle, useActions, useProgress, useStore } from "./kit";
+import { Empty } from "./Baren";
 
 export type WaitItem = { id: string; icon: string; title: string; sub?: string; cta: string; act: () => void };
 
@@ -132,7 +133,7 @@ function HemA() {
         {weeklyGoals.filter((g) => g.progress < g.target).map((g) => (
           <div key={g.id} className="py-2">
             <div className="mb-1 flex justify-between text-sm"><span>{g.label}</span><span className="text-gray-500">{g.progress}/{g.target} · {g.reward} 💎</span></div>
-            <Bar value={g.progress} total={g.target} className="bg-green-500" />
+            <Bar value={g.progress} total={g.target} className={g.progress >= g.target ? "bg-green-500" : undefined} />
           </div>
         ))}
       </section>
@@ -156,10 +157,9 @@ export function Ring({ have, total, label }: { have: number; total: number; labe
   return (
     <div className="flex flex-col items-center">
       <svg width="68" height="68" viewBox="0 0 68 68">
-        <circle cx="34" cy="34" r={r} fill="none" stroke="#f3f4f6" strokeWidth="7" />
-        <circle cx="34" cy="34" r={r} fill="none" stroke="url(#g)" strokeWidth="7" strokeDasharray={`${pct * c} ${c}`} strokeLinecap="round" transform="rotate(-90 34 34)" />
-        <defs><linearGradient id="g"><stop offset="0" stopColor="#9333ea" /><stop offset="1" stopColor="#2563eb" /></linearGradient></defs>
-        <text x="34" y="38" textAnchor="middle" className="fill-gray-900 text-[13px] font-semibold">{Math.round(pct * 100)}%</text>
+        <circle cx="34" cy="34" r={r} fill="none" stroke="var(--surf2)" strokeWidth="7" />
+        <circle cx="34" cy="34" r={r} fill="none" stroke="var(--text)" strokeWidth="7" strokeDasharray={`${pct * c} ${c}`} strokeLinecap="round" transform="rotate(-90 34 34)" />
+                <text x="34" y="38" textAnchor="middle" className="fill-gray-900 font-display text-[15px]">{Math.round(pct * 100)}%</text>
       </svg>
       <div className="text-xs font-medium">{label}</div>
       <div className="text-[11px] tabular-nums text-gray-500">{have}/{total}</div>
@@ -190,9 +190,10 @@ function HemB() {
         </button>
       </div>
 
+      {waiting.length === 0 && <Empty icon="☕" title="Allt hämtat för idag" body="Kom tillbaka imorgon för dagens diamanter." />}
       {waiting.length > 0 && (
         <section>
-          <div className="mb-1.5 px-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Väntar på dig · {waiting.length}</div>
+          <div className="mb-1.5 flex items-baseline gap-2 px-1"><span className="font-display text-xl italic">Väntar på dig</span><span className="text-sm text-gray-500">{waiting.length}</span></div>
           <div className="-mx-3 flex snap-x gap-2 overflow-x-auto px-3 pb-1">
             {waiting.map((w) => (
               <button key={w.id} onClick={w.act} className="w-36 shrink-0 snap-start rounded-xl border border-purple-200 bg-purple-50 p-3 text-left">
@@ -209,8 +210,8 @@ function HemB() {
         {liveCollections().map((c) => <RingFor key={c.id} id={c.id} label={c.shortLabel ?? c.label} />)}
       </section>
 
-      <button onClick={() => setEv(true)} className="flex h-11 w-full items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-3 text-sm text-white">
-        <Sparkles className="h-4 w-4" /><b>{activeEvent.name}</b><span className="text-white/80">· {activeEvent.endsIn} kvar</span><ChevronRight className="ml-auto h-4 w-4" />
+      <button onClick={() => setEv(true)} className="flex h-12 w-full items-center gap-2 rounded-xl border border-purple-300 bg-white px-3 text-sm">
+        <Sparkles className="h-4 w-4 text-purple-700" /><span className="text-[11px] font-bold uppercase tracking-widest text-purple-700">Event</span><b className="font-display text-base">{activeEvent.name}</b><span className="text-white/80">· {activeEvent.endsIn} kvar</span><ChevronRight className="ml-auto h-4 w-4" />
       </button>
 
       <section className="grid grid-cols-3 gap-2">

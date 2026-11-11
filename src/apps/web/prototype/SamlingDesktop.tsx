@@ -8,6 +8,7 @@ import { useState } from "react";
 import { ChevronDown, Minus, Plus, Search } from "lucide-react";
 import { collections, rarityBg, rarityLabel, rarityText, upgradeRule, type CardRarity, type DanceCard } from "./data";
 import { Bar, CardThumb, Page, Sheet, useProgress, useStore } from "./kit";
+import { Scoreboard, TrophyShelf } from "./Baren";
 import { FilterChips, UpgradeFooter, milestones, useSamling, useUpgrade } from "./SamlingVariants";
 
 const ORDER: CardRarity[] = ["special", "legendary", "epic", "rare", "common"];
@@ -23,13 +24,13 @@ function SearchBox({ v, className = "" }: { v: V; className?: string }) {
 }
 
 /** The Rarity sections, shared; `cols` is the only thing desktop changes here. */
-function Sections({ v, u, cols, onUpgrade, named }: { v: V; u: U; cols: string; onUpgrade: (r: CardRarity) => void; named?: boolean }) {
+function Sections({ v, u, cols, onUpgrade, named, noSpecial }: { v: V; u: U; cols: string; onUpgrade: (r: CardRarity) => void; named?: boolean; noSpecial?: boolean }) {
   const s = useStore();
   const p = useProgress(v.col);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   return (
     <>
-      {ORDER.map((r) => {
+      {ORDER.filter((r) => !(noSpecial && r === "special")).map((r) => {
         const list = v.list.filter((c) => c.rarity === r);
         if (!list.length) return null;
         const isOpen = !collapsed.has(r);
@@ -39,7 +40,7 @@ function Sections({ v, u, cols, onUpgrade, named }: { v: V; u: U; cols: string; 
             <div className="flex h-12 items-center gap-2 px-4">
               <button onClick={() => { const n = new Set(collapsed); isOpen ? n.add(r) : n.delete(r); setCollapsed(n); }} className="flex flex-1 items-center gap-2 text-left">
                 <ChevronDown className={`h-4 w-4 text-gray-400 ${isOpen ? "" : "-rotate-90"}`} />
-                <span className={`font-semibold ${rarityText[r]}`}>{rarityLabel[r]}</span>
+                <span className={`font-display text-lg italic ${rarityText[r]}`}>{rarityLabel[r]}</span>
                 <span className="text-sm tabular-nums text-gray-500">{p.rarity[r].have}/{p.rarity[r].total}</span>
               </button>
               {rl && <button onClick={() => onUpgrade(r)} className="h-8 rounded-full bg-purple-50 px-3 text-xs font-medium text-purple-800 hover:bg-purple-100">↑ {rarityLabel[rl.to]} · {u.available(r)}/{rl.cost}</button>}
@@ -124,6 +125,7 @@ function SamlingA() {
 // both open as a right side panel, so the grid stays in view.
 
 function SamlingB() {
+  const s = useStore();
   const v = useSamling();
   const u = useUpgrade(v.col);
   const p = useProgress(v.col);
@@ -145,7 +147,8 @@ function SamlingB() {
         <Milestones />
       </aside>
       <div className="space-y-4">
-        <Sections v={v} u={u} cols="grid-cols-6" onUpgrade={u.pick} />
+        {v.filter === "alla" && !v.q && <><Scoreboard p={p} /><TrophyShelf collectionId={v.col} owned={s.owned} cols="grid-cols-6" /></>}
+        <Sections v={v} u={u} cols="grid-cols-6" onUpgrade={u.pick} noSpecial />
       </div>
       <Sheet open={!!u.from} onClose={u.reset} full title={u.from ? `Uppgradera ${rarityLabel[u.from]}` : ""}>
         <div className="-m-4 flex h-full flex-col">

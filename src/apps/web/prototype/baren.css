@@ -1,0 +1,303 @@
+/* PROTOTYPE — throwaway. Wayfinder ticket "How does the new visual identity
+   look on the chosen screens?" (#20 on map #7).
+
+   The "Baren" identity laid over the key-screen prototype without rewriting
+   every screen: role tokens per variation (?tema=A|B|C), then the Tailwind
+   colour utilities the screens use are remapped onto those tokens inside
+   .baren. A real build would use the tokens directly; this remap is only a
+   shortcut so all eight chosen screens wear the identity at once. */
+
+/* ── Tokens ──────────────────────────────────────────────────────────────── */
+
+.baren {
+  /* Rarity hues, tuned for the dark background (≥3:1 on --bg and --surf). */
+  --r-common: #b5a595;
+  --r-common-2: #7d6e61;
+  --r-rare: #5aa9ff;
+  --r-rare-2: #2f6fc0;
+  --r-epic: #b98cff;
+  --r-epic-2: #7a4fd0;
+  --r-legendary: #f2c35b;
+  --r-legendary-2: #b9832a;
+  --r-special: #ff8ad8;
+
+  --gem: #7ee8ff;
+  --ok: #8fdc9a;
+  --ok-soft: rgba(143, 220, 154, 0.14);
+  --warn: #ff9b8a;
+
+  --font-sign: Pacifico, cursive;
+  --font-display: Fraunces, Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* A · Neon — the brief as written: espresso, filled surfaces, neon coral. */
+.baren[data-tema="A"] {
+  --bg: #1f1513;
+  --surf: #2c1f1b;
+  --surf2: #3a2a24;
+  --line: rgba(244, 232, 214, 0.1);
+  --line-strong: rgba(244, 232, 214, 0.22);
+  --text: #f4e8d6;
+  --text2: #bfa992;
+  --text3: #8f7b69;
+  --accent: #ff7a59;
+  --on-accent: #1f1513;
+  --accent-soft: rgba(255, 122, 89, 0.14);
+  --accent-line: rgba(255, 122, 89, 0.45);
+  --radius: 16px;
+}
+
+/* B · Bärnsten — warm amber accent, low surface contrast: surfaces are the
+   background plus a hairline, like a menu card on a dark bar top. */
+.baren[data-tema="B"] {
+  --bg: #1c1411;
+  --surf: #211814;
+  --surf2: #2b201b;
+  --line: rgba(244, 232, 214, 0.16);
+  --line-strong: rgba(244, 232, 214, 0.3);
+  --text: #f6ecdc;
+  --text2: #c4ae96;
+  --text3: #937e6b;
+  --accent: #f5b544;
+  --on-accent: #1c1411;
+  --accent-soft: rgba(245, 181, 68, 0.12);
+  --accent-line: rgba(245, 181, 68, 0.45);
+  --radius: 12px;
+}
+
+/* C · Kontrast — coral, but a deeper room and lighter, raised surfaces with
+   a lit top edge; larger radii, heavier Card frames. */
+.baren[data-tema="C"] {
+  --bg: #120c0a;
+  --surf: #2e211c;
+  --surf2: #3f2e27;
+  --line: rgba(244, 232, 214, 0.12);
+  --line-strong: rgba(244, 232, 214, 0.26);
+  --text: #fbf1e3;
+  --text2: #c9b39b;
+  --text3: #98826e;
+  --accent: #ff6b4a;
+  --on-accent: #120c0a;
+  --accent-soft: rgba(255, 107, 74, 0.16);
+  --accent-line: rgba(255, 107, 74, 0.5);
+  --radius: 20px;
+}
+.baren[data-tema="C"] .rounded-xl.border,
+.baren[data-tema="C"] .rounded-2xl.border {
+  box-shadow: inset 0 1px 0 rgba(255, 240, 220, 0.08), 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Type ────────────────────────────────────────────────────────────────── */
+
+.baren .font-display { font-family: var(--font-display); }
+.baren .font-sign { font-family: var(--font-sign); }
+.baren .font-semibold,
+.baren .font-bold { font-weight: 700; }
+
+/* ── Tailwind remap (shortcut, see header) ───────────────────────────────── */
+
+:where(.baren) * { border-color: var(--line); }
+.baren .border-gray-200 { border-color: var(--line); }
+.baren .divide-y > * + * { border-color: var(--line); }
+
+.baren .rounded-xl { border-radius: calc(var(--radius) - 4px); }
+.baren .rounded-2xl { border-radius: var(--radius); }
+
+/* Surfaces */
+.baren .bg-white,
+.baren .bg-white\/90 { background-color: var(--surf); }
+.baren .bg-gray-50,
+.baren .bg-gray-100 { background-color: var(--surf2); }
+.baren .bg-gray-200,
+.baren .bg-gray-300 { background-color: var(--line-strong); }
+.baren .bg-gray-800 { background-color: var(--surf2); }
+.baren .bg-gray-900 { background-color: var(--text); color: var(--bg); }
+.baren .hover\:bg-gray-100:hover { background-color: var(--surf2); }
+.baren[data-tema="B"] .bg-white { background-color: var(--bg); }
+
+/* Text */
+.baren .text-gray-900,
+.baren .text-gray-700,
+.baren .text-gray-600 { color: var(--text); }
+.baren .text-gray-500 { color: var(--text2); }
+.baren .text-gray-400 { color: var(--text3); }
+.baren .fill-gray-900 { fill: var(--text); }
+.baren .text-white { color: var(--on-accent); }
+.baren .bg-gray-900.text-white { color: var(--bg); }
+.baren .text-white\/80 { color: var(--text2); }
+.baren .bg-black\/75.text-white,
+.baren .bg-gray-700\/80.text-white { color: var(--text); }
+
+/* Accent: purple and the purple→blue gradient were the old brand. In Baren the
+   accent is only for actions, so every one of those becomes the accent. */
+.baren .bg-gradient-to-r.from-purple-600,
+.baren .bg-gradient-to-br.from-purple-600 {
+  background-image: none;
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+.baren button:disabled.from-purple-600 { background-color: var(--surf2); color: var(--text3); }
+.baren .bg-purple-50,
+.baren .bg-purple-100,
+.baren .bg-purple-200 { background-color: var(--accent-soft); }
+.baren .border-purple-200,
+.baren .border-purple-300 { border-color: var(--accent-line); }
+.baren .border-purple-400,
+.baren .border-purple-500,
+.baren .border-purple-600,
+.baren .hover\:border-purple-300:hover,
+.baren .hover\:border-purple-400:hover { border-color: var(--accent); }
+.baren .text-purple-600,
+.baren .text-purple-700,
+.baren .text-purple-800,
+.baren .text-purple-900 { color: var(--accent); }
+.baren .ring-purple-300,
+.baren .ring-purple-500 { --tw-ring-color: var(--accent); }
+.baren .accent-purple-600 { accent-color: var(--accent); }
+.baren .from-purple-100 { background-image: radial-gradient(120% 90% at 50% 100%, var(--surf2), var(--bg)); }
+
+/* Notification dots and count badges belong to the accent too. */
+.baren .bg-red-500 { background-color: var(--accent); }
+.baren .text-red-600 { color: var(--warn); }
+
+/* Success */
+.baren .bg-green-500,
+.baren .bg-green-600 { background-color: var(--ok); color: var(--bg); }
+.baren .bg-green-50,
+.baren .bg-green-100 { background-color: var(--ok-soft); }
+.baren .text-green-600,
+.baren .text-green-700,
+.baren .text-green-800 { color: var(--ok); }
+.baren .border-green-500 { border-color: var(--ok); }
+.baren .ring-green-500 { --tw-ring-color: var(--accent); --tw-ring-offset-color: var(--bg); }
+
+/* Odd leftovers */
+.baren .text-amber-600,
+.baren .text-amber-700,
+.baren .text-amber-800 { color: var(--r-legendary); }
+.baren .bg-blue-50 { background-color: transparent; }
+.baren .text-blue-700 { color: var(--gem); }
+.baren .border-white { border-color: var(--surf); }
+
+/* Form fields */
+.baren select,
+.baren input:not([type="checkbox"]) { background-color: var(--surf2); color: var(--text); }
+.baren input::placeholder { color: var(--text3); }
+
+/* Tap targets ≥44px: lift the small controls the layouts used. */
+.baren button.h-8,
+.baren button.h-9,
+.baren button.h-10,
+.baren select.h-10,
+.baren a.h-9 { min-height: 44px; }
+.baren .h-9:has(> input) { min-height: 44px; }
+
+/* ── Rarity ──────────────────────────────────────────────────────────────── */
+
+.baren .rt-common { color: var(--r-common); }
+.baren .rt-rare { color: var(--r-rare); }
+.baren .rt-epic { color: var(--r-epic); }
+.baren .rt-legendary { color: var(--r-legendary); }
+.baren .rt-special { background: linear-gradient(90deg, #ff6ad5, #ffd36a, #6affb0, #6ad8ff, #b06aff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.baren .rb-common { background-color: var(--r-common); }
+.baren .rb-rare { background-color: var(--r-rare); }
+.baren .rb-epic { background-color: var(--r-epic); }
+.baren .rb-legendary { background-color: var(--r-legendary); }
+.baren .rb-special { background: linear-gradient(90deg, #ff6ad5, #ffd36a, #6affb0, #6ad8ff, #b06aff); }
+
+@property --holo-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes holo-spin { to { --holo-a: 360deg; } }
+.baren .holo {
+  background: conic-gradient(from var(--holo-a), #ff6ad5, #ffd36a, #6affb0, #6ad8ff, #b06aff, #ff6ad5);
+  animation: holo-spin 4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .baren .holo { animation: none; } }
+
+/* ── Card frame (one per variation) ─────────────────────────────────────── */
+/* Every frame carries a shape pip or a caption, so Rarity never relies on
+   colour alone: ● Common, ◆ Rare, ▲ Epic, ★ Legendary, ✦ Special. */
+
+.pcard { position: relative; display: block; width: 100%; aspect-ratio: 4 / 5; text-align: left; }
+.pcard-art { position: absolute; overflow: hidden; background: var(--surf2); }
+.pcard-art > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.pcard[data-r="common"] { --rc: var(--r-common); --rc2: var(--r-common-2); }
+.pcard[data-r="rare"] { --rc: var(--r-rare); --rc2: var(--r-rare-2); }
+.pcard[data-r="epic"] { --rc: var(--r-epic); --rc2: var(--r-epic-2); }
+.pcard[data-r="legendary"] { --rc: var(--r-legendary); --rc2: var(--r-legendary-2); }
+.pcard[data-r="special"] { --rc: var(--r-special); --rc2: var(--r-special); }
+.pcard-pip {
+  position: absolute; display: grid; place-items: center;
+  width: 18px; height: 18px; border-radius: 999px; font-size: 10px; line-height: 1;
+  background: rgba(18, 12, 10, 0.82); color: var(--rc);
+}
+.pcard[data-r="special"] .pcard-pip { color: #fff; }
+.pcard-caption { display: none; }
+
+/* A · Neon: a thin flat Rarity line, pip top-right. */
+.baren[data-tema="A"] .pcard { border-radius: 10px; padding: 2px; background: var(--rc); }
+.baren[data-tema="A"] .pcard-art { inset: 2px; border-radius: 8px; }
+.baren[data-tema="A"] .pcard-pip { top: 5px; right: 5px; }
+
+/* B · Bärnsten: a dark mat with a hairline in the Rarity colour and the
+   Rarity name as a caption under the art, like a print in a passe-partout. */
+.baren[data-tema="B"] .pcard { border-radius: 8px; background: #2b201b; box-shadow: inset 0 0 0 1px var(--rc); }
+.baren[data-tema="B"] .pcard-art { inset: 4px 4px 16px 4px; border-radius: 4px; }
+.baren[data-tema="B"] .pcard-pip { display: none; }
+.baren[data-tema="B"] .pcard-caption {
+  display: block; position: absolute; left: 0; right: 0; bottom: 2px;
+  text-align: center; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rc);
+}
+.baren[data-tema="B"] .pcard.is-small .pcard-art { inset: 3px; }
+.baren[data-tema="B"] .pcard.is-small .pcard-caption { display: none; }
+.baren[data-tema="B"] .pcard.holo { box-shadow: none; }
+.baren[data-tema="B"] .pcard.holo .pcard-art { inset: 3px 3px 16px 3px; }
+.baren[data-tema="B"] .pcard.holo .pcard-caption { color: #1c1411; }
+
+/* C · Kontrast: a heavy metallic frame (light → dark Rarity), pip notched
+   into the bottom-left corner, a drop shadow (not a glow). */
+.baren[data-tema="C"] .pcard {
+  border-radius: 12px; padding: 4px;
+  background: linear-gradient(145deg, var(--rc) 0%, var(--rc2) 55%, var(--rc) 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.baren[data-tema="C"] .pcard-art { inset: 4px; border-radius: 8px; }
+.baren[data-tema="C"] .pcard-pip { left: 2px; bottom: 2px; width: 20px; height: 20px; background: var(--rc2); color: #fff; box-shadow: 0 0 0 2px var(--rc); }
+.baren[data-tema="C"] .pcard.is-small { padding: 3px; }
+.baren[data-tema="C"] .pcard.is-small .pcard-art { inset: 3px; }
+
+.baren .pcard.holo { background: conic-gradient(from var(--holo-a), #ff6ad5, #ffd36a, #6affb0, #6ad8ff, #b06aff, #ff6ad5); }
+.pcard.is-small .pcard-pip { display: none; }
+
+/* Missing Card: a silhouette, never coloured by Rarity (you don't own it). */
+.pcard.is-missing { background: transparent !important; box-shadow: none !important; padding: 0; animation: none; }
+.pcard.is-missing .pcard-art { inset: 0; border-radius: 10px; border: 1.5px dashed var(--line-strong); background: transparent; }
+.pcard.is-missing .pcard-caption,
+.pcard.is-missing .pcard-pip { display: none; }
+
+/* Art fallback: owned Card without art. Initials over a Rarity-tinted weave. */
+.pcard-fallback {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background:
+    repeating-linear-gradient(135deg, color-mix(in srgb, var(--rc) 16%, transparent) 0 6px, transparent 6px 12px),
+    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--rc) 28%, var(--surf2)), var(--surf2) 70%);
+}
+.pcard-fallback span { font-family: var(--font-display); font-style: italic; font-size: clamp(14px, 30cqw, 44px); color: var(--text); opacity: 0.9; }
+.pcard-art { container-type: inline-size; }
+
+/* Selected (Trade picker) */
+.pcard.is-selected { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.baren .bar-accent { background-color: var(--text); } /* progress is not an action, so not the accent */
+.baren .border-dashed { border-color: var(--line-strong); }
+
+/* Tiny thumbs (Trade table, Upgrade rows): drop pip/caption, keep the frame. */
+.pcard { container-type: inline-size; }
+@container (max-width: 64px) {
+  .pcard-pip, .pcard-caption { display: none !important; }
+  .baren[data-tema="B"] .pcard-art { inset: 3px; }
+}

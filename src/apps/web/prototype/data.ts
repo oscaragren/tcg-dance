@@ -14,13 +14,12 @@ export const rarityLabel: Record<CardRarity, string> = {
   common: "Common", rare: "Rare", epic: "Epic", legendary: "Legendary", special: "Special",
 };
 
+// Baren (ticket #20): Rarity colours come from the theme tokens in baren.css.
 export const rarityText: Record<CardRarity, string> = {
-  common: "text-gray-500", rare: "text-blue-600", epic: "text-purple-600",
-  legendary: "text-amber-700", special: "text-fuchsia-700",
+  common: "rt-common", rare: "rt-rare", epic: "rt-epic", legendary: "rt-legendary", special: "rt-special",
 };
 export const rarityBg: Record<CardRarity, string> = {
-  common: "bg-gray-400", rare: "bg-blue-500", epic: "bg-purple-500",
-  legendary: "bg-amber-500", special: "bg-fuchsia-500",
+  common: "rb-common", rare: "rb-rare", epic: "rb-epic", legendary: "rb-legendary", special: "rb-special",
 };
 export const rarityFrame: Record<CardRarity, string> = {
   common: "from-gray-400 to-gray-600", rare: "from-blue-400 to-blue-600",

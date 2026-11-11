@@ -9,6 +9,7 @@ import {
   availableCount, cards, computeMatches, otherPlayers, rarityLabel, sortCards, type CardRarity, type DanceCard, type Match, type OtherPlayer,
 } from "./data";
 import { CardThumb, NewBadge, Sheet, useStore } from "./kit";
+import { Empty } from "./Baren";
 
 // ── Shared ───────────────────────────────────────────────────────────────────
 
@@ -164,11 +165,12 @@ export function useMatches() {
 function MatchA() {
   const s = useStore();
   const m = useMatches();
+  if (!m.length) return <div className="p-4"><Empty icon="⇄" title="Inga matchningar just nu" body="Ingen har något du saknar tillgängligt. Prova Hitta byte från ett Card du saknar." /></div>;
   return (
     <div className="divide-y">
       {m.map(({ player, theyGive, iGive }) => (
         <button key={player.id} onClick={() => s.set({ builder: { playerId: player.id, requestCardId: theyGive[0]?.id } })} className="block w-full p-4 text-left">
-          <div className="flex items-center justify-between"><b>{player.name}</b>{iGive.length > 0 && <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-800">Ni kan byta med varandra</span>}</div>
+          <div className="flex items-center justify-between"><b className="font-display text-lg">{player.name}</b>{iGive.length > 0 && <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-800">Ni kan byta med varandra</span>}</div>
           <div className="mt-2 text-[11px] text-gray-500">Kan ge dig {theyGive.length}</div>
           <div className="mt-1 grid grid-cols-6 gap-1">{theyGive.slice(0, 6).map((c) => <CardThumb key={c.id} card={c} owned onClick={() => {}} />)}</div>
           {iGive.length > 0 && <div className="mt-2 text-[11px] text-gray-500">Du kan ge {iGive.length}: {totals(iGive.slice(0, 6))}{iGive.length > 6 ? "…" : ""}</div>}

@@ -16,7 +16,13 @@ import { hemVariants } from "./HemVariants";
 import { samlingVariants } from "./SamlingVariants";
 import { otherPlayers } from "./data";
 import { DesktopPrototype } from "./DesktopPrototype";
-import { CardSheet, PhoneFrame, StoreProvider, TabBar, Toast, TopBar, VariantSwitcher, type Screen } from "./kit";
+import { BarenRoot, PICKS, Stilark } from "./Baren";
+import { CardSheet, PhoneFrame, StoreProvider, TabBar, Toast, TopBar, VariantSwitcher, useStore, type Screen } from "./kit";
+
+function StilarkScreen({ wide }: { wide?: boolean }) {
+  const s = useStore();
+  return <Stilark owned={s.owned} wide={wide} />;
+}
 
 type VariantMap = Record<string, { name: string; C: () => JSX.Element }>;
 const SCREENS: Partial<Record<Screen, VariantMap>> = { hem: hemVariants, butik: butikVariants, samling: samlingVariants, byte: byteVariants };
@@ -35,15 +41,16 @@ function PhonePrototype() {
   const screen = (params.get("skarm") as Screen) ?? "hem";
   const variants = SCREENS[screen];
   const keys = variants ? Object.keys(variants) : [];
-  const current = (params.get(screen) ?? "A").toUpperCase();
+  const current = (params.get(screen) ?? PICKS[screen] ?? "A").toUpperCase();
   const go = useCallback((s: Screen) => {
     setParams((p) => { p.set("skarm", s); return p; }, { replace: true });
     window.scrollTo(0, 0);
   }, [setParams]);
   const setVariant = (k: string) => setParams((p) => { p.set(screen, k); return p; }, { replace: true });
-  const Body = variants?.[current]?.C ?? Topplista;
+  const Body = screen === ("stil" as Screen) ? StilarkScreen : variants?.[current]?.C ?? Topplista;
   return (
     <StoreProvider go={go}>
+      <BarenRoot>
       <PhoneFrame>
         <TopBar />
         <Body key={`${screen}-${current}`} />
@@ -52,6 +59,7 @@ function PhonePrototype() {
         <TabBar current={screen} />
         {variants && <VariantSwitcher keys={keys} names={Object.fromEntries(keys.map((k) => [k, variants[k].name]))} current={current} onChange={setVariant} />}
       </PhoneFrame>
+      </BarenRoot>
     </StoreProvider>
   );
 }

@@ -4,8 +4,9 @@
 
 import { useState } from "react";
 import { ChevronRight, Sparkles, Trophy } from "lucide-react";
-import { activeEvent, otherPlayers, rarityBg, rarityLabel, weeklyGoals, type CardRarity } from "./data";
+import { activeEvent, otherPlayers, weeklyGoals } from "./data";
 import { Bar, Page, SectionTitle, useActions, useProgress, useStore } from "./kit";
+import { Scoreboard } from "./Baren";
 import { EventSheet, RingFor, StreakTrack, TopRows, liveCollections, useWaiting } from "./HemVariants";
 
 function DailyRow() {
@@ -26,8 +27,8 @@ function DailyRow() {
 
 function EventBanner({ onOpen }: { onOpen: () => void }) {
   return (
-    <button onClick={onOpen} className="flex h-12 w-full items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 text-sm text-white">
-      <Sparkles className="h-4 w-4" /><b>{activeEvent.name}</b><span className="text-white/80">· {activeEvent.endsIn} kvar</span><ChevronRight className="ml-auto h-4 w-4" />
+    <button onClick={onOpen} className="flex h-14 w-full items-center gap-3 rounded-xl border border-purple-300 bg-white px-4 text-sm">
+      <Sparkles className="h-4 w-4 text-purple-700" /><span className="text-[11px] font-bold uppercase tracking-widest text-purple-700">Ikväll · Event</span><b className="font-display text-xl">{activeEvent.name}</b><span className="text-white/80">· {activeEvent.endsIn} kvar</span><ChevronRight className="ml-auto h-4 w-4" />
     </button>
   );
 }
@@ -128,17 +129,11 @@ function HemB() {
 function CollectionCard({ id, label }: { id: string; label: string }) {
   const p = useProgress(id);
   const s = useStore();
-  const order: CardRarity[] = ["common", "rare", "epic", "legendary", "special"];
   return (
     <button onClick={() => s.go("samling")} className="rounded-xl border bg-white p-4 text-left hover:border-purple-300">
-      <div className="flex items-baseline justify-between"><span className="font-semibold">{label}</span><span className="tabular-nums text-gray-600">{p.have}/{p.total}</span></div>
-      <div className="mt-3 space-y-1.5">
-        {order.filter((r) => p.rarity[r].total).map((r) => (
-          <div key={r} className="grid grid-cols-[72px_1fr_44px] items-center gap-2 text-xs">
-            <span className="text-gray-500">{rarityLabel[r]}</span><Bar value={p.rarity[r].have} total={p.rarity[r].total} className={rarityBg[r]} /><span className="text-right tabular-nums">{p.rarity[r].have}/{p.rarity[r].total}</span>
-          </div>
-        ))}
-      </div>
+      <div className="flex items-baseline justify-between"><span className="font-display text-xl italic">{label}</span><span className="tabular-nums text-gray-500">{Math.round(100 * p.have / p.total)} %</span></div>
+      <div className="mt-3"><Scoreboard p={p} compact /></div>
+      {p.rarity.special.total > 0 && <p className="mt-2 text-xs text-gray-500"><span className="rt-special font-bold">✦ Troféer</span> · {p.rarity.special.have} av {p.rarity.special.total} Special är dina</p>}
     </button>
   );
 }
