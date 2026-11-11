@@ -31,19 +31,23 @@ type Props = {
   flagUnavailable?: boolean;
 };
 
-/** Full-height sheet for picking Copies of Cards, filterable by Collection and sortable by name or Rarity. */
-export function TradePickerSheet({ title, entries, selected, onAdjust, onClose, emptyMessage, flagUnavailable = false }: Props) {
-  const titleId = useId();
+type ListProps = Pick<Props, "entries" | "selected" | "onAdjust" | "emptyMessage" | "flagUnavailable"> & {
+  /** Grid column classes; the sheet is wide, a desktop column is narrow. */
+  gridClassName?: string;
+  /** Classes for the filter row, e.g. padding inside the sheet. */
+  controlsClassName?: string;
+};
+
+/**
+ * Collection filter, name/Rarity sort and a grid of pickable Copies. Used by
+ * the phone sheet and, permanently open, by the desktop builder's columns.
+ */
+export function TradePickerList({
+  entries, selected, onAdjust, emptyMessage, flagUnavailable = false,
+  gridClassName = "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6", controlsClassName = "",
+}: ListProps) {
   const [collectionId, setCollectionId] = useState("all");
   const [sort, setSort] = useState<Sort>("raritet");
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
-  }, [onClose]);
 
   const visible = useMemo(() => {
     const withCard = entries
@@ -57,17 +61,9 @@ export function TradePickerSheet({ title, entries, selected, onAdjust, onClose, 
     return withCard.sort((a, b) => Number(!!b.suggested) - Number(!!a.suggested) || byOrder(a, b));
   }, [entries, collectionId, sort]);
 
-  const pickedTotal = Object.values(selected).reduce((s, n) => s + n, 0);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex flex-col bg-background" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <div className="flex items-center gap-3 border-b px-4 py-3">
-        <h2 id={titleId} className="flex-1 text-lg font-semibold">{title}</h2>
-        <Button size="sm" onClick={onClose} className="bg-accent text-accent-on hover:bg-accent">
-          Klar{pickedTotal > 0 ? ` (${pickedTotal})` : ""}
-        </Button>
-      </div>
-      <div className="flex flex-wrap gap-3 border-b px-4 py-2 text-sm">
+  return (
+    <>
+      <div className={`flex flex-wrap gap-3 text-sm ${controlsClassName}`}>
         <label className="flex items-center gap-2">
           Kollektion
           <select value={collectionId} onChange={(e) => setCollectionId(e.target.value)} className="h-9 rounded-md border border-hairline bg-surface px-2">
@@ -87,7 +83,7 @@ export function TradePickerSheet({ title, entries, selected, onAdjust, onClose, 
         {visible.length === 0 ? (
           <p className="text-sm text-tertiary">{entries.length === 0 ? emptyMessage : "Inga kort i den valda kollektionen."}</p>
         ) : (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+          <div className={`grid gap-3 ${gridClassName}`}>
             {visible.map((e) => {
               const qty = selected[e.cardId] ?? 0;
               const notForTrade = flagUnavailable && e.available < Math.max(qty, 1);
@@ -116,6 +112,36 @@ export function TradePickerSheet({ title, entries, selected, onAdjust, onClose, 
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+/** Full-height sheet for picking Copies of Cards, filterable by Collection and sortable by name or Rarity. */
+export function TradePickerSheet({ title, entries, selected, onAdjust, onClose, emptyMessage, flagUnavailable = false }: Props) {
+  const titleId = useId();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
+
+  const pickedTotal = Object.values(selected).reduce((s, n) => s + n, 0);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex flex-col bg-background" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div className="flex items-center gap-3 border-b px-4 py-3">
+        <h2 id={titleId} className="flex-1 text-lg font-semibold">{title}</h2>
+        <Button size="sm" onClick={onClose} className="bg-accent text-accent-on hover:bg-accent">
+          Klar{pickedTotal > 0 ? ` (${pickedTotal})` : ""}
+        </Button>
+      </div>
+      <TradePickerList
+        entries={entries} selected={selected} onAdjust={onAdjust} emptyMessage={emptyMessage}
+        flagUnavailable={flagUnavailable} controlsClassName="border-b px-4 py-2"
+      />
     </div>,
     document.body,
   );
