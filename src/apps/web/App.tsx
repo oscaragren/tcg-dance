@@ -21,7 +21,6 @@ import { ResetPasswordPage } from "./ResetPasswordPage";
 import { PrivacyPage } from "./PrivacyPage";
 import { TopplistaPage } from "./TopplistaPage";
 import { PlayerCollectionPage } from "./PlayerCollectionPage";
-import { TradeMarketPage } from "./TradeMarketPage";
 import { AdminPage } from "./AdminPage";
 import { featuredCollection } from "../../data/packs";
 
@@ -196,7 +195,7 @@ export default function App() {
         <Route path="/topplista" element={<TopplistaPage currentUser={currentUser} />} />
         <Route path="/byte"     element={<TradePage currentUser={currentUser} />} />
         <Route path="/byte/ny"  element={<NewTradePage currentUser={currentUser} />} />
-        <Route path="/byte/marknad" element={<TradeMarketPage currentUser={currentUser} />} />
+        <Route path="/byte/marknad" element={<Navigate to="/byte" replace />} />
         <Route path="/spelare/:userId" element={<PlayerCollectionPage currentUser={currentUser} />} />
         <Route path="/auth"                  element={<AuthPage onLogin={handleLogin} />} />
         <Route path="/aterstall-losenord"   element={<ResetPasswordPage />} />

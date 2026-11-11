@@ -1243,16 +1243,54 @@ function tallyIds(ids) {
   return counts;
 }
 
+// Per-Copy facts for whoever receives each side of a Trade. `recipientOwned`
+// is how many Copies the recipient holds now: 0 shows "Ny!", more shows "Har
+// redan (×N)". On the requested side a Copy the receiver has not made
+// Available for Trade is flagged `notForTrade` ("Inte till byte"); asking for
+// it is still allowed.
+function describeCopies(cardIds, recipientId, giverId = null) {
+  const recipientOwned = ownedCountMap(recipientId);
+  const giverAvailable = giverId
+    ? new Map(availableForTrade(giverId).map((a) => [a.cardId, a.quantity]))
+    : null;
+  const seen = new Map();
+  return cardIds.map((cardId) => {
+    const owned = recipientOwned.get(cardId) ?? 0;
+    const copy = { cardId, recipientOwned: owned, isNew: owned === 0 };
+    if (giverAvailable) {
+      const nth = (seen.get(cardId) ?? 0) + 1;
+      seen.set(cardId, nth);
+      copy.notForTrade = nth > (giverAvailable.get(cardId) ?? 0);
+    }
+    return copy;
+  });
+}
+
+function rarityTotals(cardIds) {
+  const totals = {};
+  for (const id of cardIds) {
+    const rarity = cardById.get(id)?.rarity;
+    if (rarity) totals[rarity] = (totals[rarity] ?? 0) + 1;
+  }
+  return totals;
+}
+
 function buildTrade(row) {
+  const offeredCardIds = JSON.parse(row.offered_card_ids);
+  const requestedCardIds = JSON.parse(row.requested_card_ids);
   return {
     id: row.id,
     status: row.status,
     sender: { id: row.sender_user_id, username: row.sender_username },
     receiver: { id: row.receiver_user_id, username: row.receiver_username },
-    offeredCardIds: JSON.parse(row.offered_card_ids),
+    offeredCardIds,
     offeredDiamonds: row.offered_diamonds,
-    requestedCardIds: JSON.parse(row.requested_card_ids),
+    requestedCardIds,
     requestedDiamonds: row.requested_diamonds,
+    offeredCopies: describeCopies(offeredCardIds, row.receiver_user_id),
+    requestedCopies: describeCopies(requestedCardIds, row.sender_user_id, row.receiver_user_id),
+    offeredRarity: rarityTotals(offeredCardIds),
+    requestedRarity: rarityTotals(requestedCardIds),
     createdAt: row.created_at,
     counterOfTradeId: row.counter_of_trade_id ?? null,
   };
@@ -1376,13 +1414,11 @@ app.get("/api/users/:userId/cards-for-trade", authed, (request, response) => {
   response.json({ cards: availableForTrade(request.params.userId) });
 });
 
-const RARITY_SORT = { special: 0, legendary: 1, epic: 2, rare: 3, common: 4 };
-
 // ── Trade market routes ───────────────────────────────────────────────────────
-// Two ways to find a trade besides searching for a username: search for a
-// specific card and see who offers it, or browse every player's shelf.
+// Ways to find a Trade partner besides searching for a username: Matchningar,
+// and "Hitta byte" (who has this Card available).
 
-// Every Available for Trade Copy in the game, per player. Shared by both market
+// Every Available for Trade Copy in the game, per player. Shared by the market
 // endpoints so the rule lives in one place.
 function liveMarketRows() {
   const rows = [];
@@ -1411,35 +1447,6 @@ app.get("/api/market/card/:cardId", authed, (request, response) => {
     .sort((a, b) => b.quantity - a.quantity || a.username.localeCompare(b.username, "sv"));
 
   response.json({ cardId, traders });
-});
-
-// Every player with at least one card up for trade, so the market can be
-// browsed without knowing who or what to look for.
-app.get("/api/market/traders", authed, (request, response) => {
-  const byUser = new Map();
-  for (const row of liveMarketRows()) {
-    if (row.userId === request.auth.userId) continue;
-    if (!byUser.has(row.userId)) {
-      byUser.set(row.userId, { userId: row.userId, username: row.username, cards: [] });
-    }
-    byUser.get(row.userId).cards.push({ cardId: row.cardId, quantity: row.quantity });
-  }
-
-  const traders = Array.from(byUser.values()).map((t) => ({
-    ...t,
-    cards: t.cards.sort((a, b) => {
-      const ca = cardById.get(a.cardId);
-      const cb = cardById.get(b.cardId);
-      return (
-        (RARITY_SORT[ca?.rarity] ?? 99) - (RARITY_SORT[cb?.rarity] ?? 99) ||
-        (ca?.name ?? "").localeCompare(cb?.name ?? "", "sv")
-      );
-    }),
-    totalCards: t.cards.reduce((sum, c) => sum + c.quantity, 0),
-  }));
-
-  traders.sort((a, b) => b.totalCards - a.totalCards || a.username.localeCompare(b.username, "sv"));
-  response.json({ traders });
 });
 
 // Matchningar: players who have Copies Available for Trade of Cards the caller

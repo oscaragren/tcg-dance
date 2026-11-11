@@ -62,7 +62,7 @@ export function CardSheet({ card, copies, kept = false, onToggleKept, onClose }:
         </div>
         {copies === 0 && (
           <Link
-            to={`/byte?flik=sok&kort=${encodeURIComponent(card.id)}`}
+            to={`/byte/ny?kort=${encodeURIComponent(card.id)}`}
             onClick={onClose}
             className="mt-4 block rounded-lg bg-accent py-2 text-center text-sm font-semibold text-accent-on"
           >

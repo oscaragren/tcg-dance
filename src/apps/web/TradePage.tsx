@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
-import { CardPlaceholder } from "../../components/web/CardPlaceholder";
+import { CardThumb } from "../../components/web/CardThumb";
 import { MatchningarTab } from "../../components/web/MatchningarTab";
-import { TradeMarket, UnownedDot } from "../../components/web/TradeMarket";
 import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
-import type { Trade } from "../../types/game";
-import { acceptTrade, cancelTrade, fetchGameState, fetchMyTrades, rejectTrade } from "../../utils/gameApi";
+import type { RarityTotals, Trade, TradeCopy, UserSearchResult } from "../../types/game";
+import { acceptTrade, cancelTrade, fetchMyTrades, rejectTrade, searchUsers } from "../../utils/gameApi";
+import { copyStatusLabel, formatRarityTotals } from "../../utils/tradeSummary";
 
-type Tab = "incoming" | "outgoing" | "history";
 type Section = "matchningar" | "mina" | "sok";
 
 type TradePageProps = { currentUser: AuthUser | null };
@@ -17,17 +16,14 @@ type TradePageProps = { currentUser: AuthUser | null };
 export function TradePage({ currentUser }: TradePageProps) {
   const navigate = useNavigate();
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [tab, setTab] = useState<Tab>("incoming");
   const [searchParams] = useSearchParams();
   const initialSection = searchParams.get("flik");
   const [section, setSection] = useState<Section>(
     initialSection === "sok" || initialSection === "mina" ? initialSection : "matchningar",
   );
-  const findCardId = searchParams.get("kort") ?? undefined;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!currentUser) { setIsLoading(false); return; }
@@ -36,20 +32,6 @@ export function TradePage({ currentUser }: TradePageProps) {
       .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda byten."))
       .finally(() => setIsLoading(false));
   }, [currentUser]);
-
-  // Same red-dot rule as the market: a card coming your way that you don't own
-  // yet is worth spotting before you decide on an offer. Refetched after an
-  // accept, since accepting is exactly what makes those cards yours.
-  useEffect(() => {
-    if (!currentUser) { setOwnedCardIds([]); return; }
-    let cancelled = false;
-    fetchGameState()
-      .then((state) => { if (!cancelled) setOwnedCardIds(state.ownedCardIds); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [currentUser, trades]);
-
-  const ownedSet = useMemo(() => new Set(ownedCardIds), [ownedCardIds]);
 
   async function handleAccept(tradeId: string) {
     setActionLoading(tradeId); setError(null);
@@ -109,13 +91,6 @@ export function TradePage({ currentUser }: TradePageProps) {
   const incoming = trades.filter((t) => t.receiver.id === myId && t.status === "pending");
   const outgoing = trades.filter((t) => t.sender.id === myId && t.status === "pending");
   const history  = trades.filter((t) => t.status !== "pending");
-  const tabTrades = tab === "incoming" ? incoming : tab === "outgoing" ? outgoing : history;
-
-  // The cards you would receive from a trade: what they offer on an incoming
-  // one, what you asked for on an outgoing one.
-  const incomingCardIds = (trade: Trade) =>
-    trade.receiver.id === myId ? trade.offeredCardIds : trade.requestedCardIds;
-  const tabHasMissing = tabTrades.some((t) => incomingCardIds(t).some((id) => !ownedSet.has(id)));
 
   return (
     <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
@@ -130,7 +105,7 @@ export function TradePage({ currentUser }: TradePageProps) {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild className="bg-accent text-accent-on hover:bg-accent/90 hover:">
-                <Link to="/byte/ny">Nytt byte</Link>
+                <Link to="/byte?flik=sok">Nytt byte</Link>
               </Button>
             </div>
           </div>
@@ -155,73 +130,43 @@ export function TradePage({ currentUser }: TradePageProps) {
 
           {section === "matchningar" && <MatchningarTab />}
 
-          {section === "sok" && (
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <Button asChild variant="outline" size="sm"><Link to="/byte/ny">Sök spelare med namn</Link></Button>
-              </div>
-              <TradeMarket initialCardId={findCardId} />
-            </div>
-          )}
+          {section === "sok" && <PlayerSearch />}
 
-          {/* Tabs */}
           {section === "mina" && (
-          <div>
-            <div className="flex gap-1 mb-6 border-b">
-              {([
-                ["incoming", `Inkommande (${incoming.length})`],
-                ["outgoing", `Utgående (${outgoing.length})`],
-                ["history",  "Historik"],
-              ] as [Tab, string][]).map(([t, label]) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                    tab === t
-                      ? "border-accent text-text"
-                      : "border-transparent text-secondary hover:text-text"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="space-y-8">
+              {error && <p className="text-sm text-danger">{error}</p>}
+              {isLoading ? (
+                <p className="text-secondary">Laddar...</p>
+              ) : (
+                <>
+                  {([
+                    ["Inkommande", incoming, "Inga inkommande förslag."],
+                    ["Utgående", outgoing, "Inga utgående förslag."],
+                    ["Historik", history, "Ingen historik ännu."],
+                  ] as [string, Trade[], string][]).map(([label, list, empty]) => (
+                    <section key={label} className="space-y-3">
+                      <h2 className="text-lg font-semibold">{label} ({list.length})</h2>
+                      {list.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-6 text-center text-sm text-secondary">{empty}</div>
+                      ) : (
+                        list.map((trade) => (
+                          <TradeCard
+                            key={trade.id}
+                            trade={trade}
+                            myId={myId}
+                            actionLoading={actionLoading}
+                            onAccept={handleAccept}
+                            onReject={handleReject}
+                            onCancel={handleCancel}
+                            onCounter={handleCounter}
+                          />
+                        ))
+                      )}
+                    </section>
+                  ))}
+                </>
+              )}
             </div>
-
-            {tabHasMissing && (
-              <p className="mb-4 flex items-center gap-2 text-xs text-secondary">
-                <UnownedDot label="Röd prick" />
-                Röd prick = ett kort du inte äger ännu.
-              </p>
-            )}
-
-            {error && <p className="mb-4 text-sm text-danger">{error}</p>}
-
-            {isLoading ? (
-              <p className="text-secondary">Laddar...</p>
-            ) : tabTrades.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-8 text-center text-secondary">
-                {tab === "incoming" ? "Inga inkommande bytesförfrågningar."
-                  : tab === "outgoing" ? "Inga utgående bytesförfrågningar."
-                  : "Ingen historik ännu."}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {tabTrades.map((trade) => (
-                  <TradeCard
-                    key={trade.id}
-                    trade={trade}
-                    myId={myId}
-                    ownedSet={ownedSet}
-                    actionLoading={actionLoading}
-                    onAccept={handleAccept}
-                    onReject={handleReject}
-                    onCancel={handleCancel}
-                    onCounter={handleCounter}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
           )}
 
         </div>
@@ -235,8 +180,8 @@ const STATUS_LABEL: Record<Trade["status"], string> = {
   countered: "Motbud lämnat",
 };
 
-function TradeCard({ trade, myId, ownedSet, actionLoading, onAccept, onReject, onCancel, onCounter }: {
-  trade: Trade; myId: string; ownedSet: Set<string>; actionLoading: string | null;
+function TradeCard({ trade, myId, actionLoading, onAccept, onReject, onCancel, onCounter }: {
+  trade: Trade; myId: string; actionLoading: string | null;
   onAccept: (id: string) => void; onReject: (id: string) => void; onCancel: (id: string) => void;
   onCounter: (trade: Trade) => void;
 }) {
@@ -259,19 +204,20 @@ function TradeCard({ trade, myId, ownedSet, actionLoading, onAccept, onReject, o
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_32px_1fr] gap-4 items-start">
-        {/* Always the side coming to you, so this is where the red dot belongs. */}
+        {/* Always the side coming to you, so Ny! / Har redan reads from your side. */}
         <TradeSide
-          cardIds={isIncoming ? trade.offeredCardIds  : trade.requestedCardIds}
+          copies={isIncoming ? trade.offeredCopies : trade.requestedCopies}
+          rarity={isIncoming ? trade.offeredRarity : trade.requestedRarity}
           diamonds={isIncoming ? trade.offeredDiamonds : trade.requestedDiamonds}
-          label={isIncoming ? `${otherUser.username} erbjuder` : "Du begär"}
-          ownedSet={ownedSet}
-          markMissing
+          label={`Du får av ${otherUser.username}`}
         />
         <div className="text-xl text-tertiary text-center pt-6 hidden md:block">⇄</div>
         <TradeSide
-          cardIds={isIncoming ? trade.requestedCardIds : trade.offeredCardIds}
+          copies={isIncoming ? trade.requestedCopies : trade.offeredCopies}
+          rarity={isIncoming ? trade.requestedRarity : trade.offeredRarity}
           diamonds={isIncoming ? trade.requestedDiamonds : trade.offeredDiamonds}
-          label={isIncoming ? "Du ger" : "Du erbjuder"}
+          label="Du ger"
+          showStatus={false}
         />
       </div>
 
@@ -296,51 +242,83 @@ function TradeCard({ trade, myId, ownedSet, actionLoading, onAccept, onReject, o
   );
 }
 
-function TradeSide({ cardIds, diamonds, label, ownedSet, markMissing = false }: {
-  cardIds: string[];
+function TradeSide({ copies, rarity, diamonds, label, showStatus = true }: {
+  copies: TradeCopy[];
+  rarity: RarityTotals;
   diamonds: number;
   label: string;
-  ownedSet?: Set<string>;
-  /** Ring + dot every card on this side that the viewer does not own. */
-  markMissing?: boolean;
+  /** Ny! / Har redan describe what lands with you, so only the receiving side shows them. */
+  showStatus?: boolean;
 }) {
   return (
     <div>
-      <div className="text-xs font-medium text-secondary mb-2">{label}</div>
-      {cardIds.length === 0 && diamonds === 0 ? (
+      <div className="text-xs font-medium text-secondary mb-1">{label}</div>
+      {copies.length === 0 && diamonds === 0 ? (
         <p className="text-xs text-tertiary">Inget</p>
       ) : (
         <div className="space-y-2">
-          {cardIds.length > 0 && (
+          <div className="text-sm font-semibold">
+            {[copies.length > 0 ? formatRarityTotals(rarity) : null, diamonds > 0 ? `${diamonds} ◆` : null].filter(Boolean).join(" + ")}
+          </div>
+          {copies.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {cardIds.map((cardId, index) => {
-                const card = cardById(cardId);
-                const isMissing = markMissing && !(ownedSet?.has(cardId) ?? true);
-                return card ? (
-                  // The same card can legitimately appear twice in one offer, so
-                  // the index is part of the key.
-                  <div key={`${cardId}-${index}`} style={{ width: 64 }}>
-                    <div className={`relative rounded-lg ${isMissing ? "ring-2 ring-danger ring-offset-2" : ""}`}>
-                      <CardPlaceholder rarity={card.rarity} size="small" name={card.name} designKey={card.designKey} showCaption />
-                      {isMissing && (
-                        <div
-                          title="Du äger inte det här kortet"
-                          className="absolute top-1 left-1 z-10 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-background pointer-events-none"
-                        />
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div key={`${cardId}-${index}`} className="w-16 h-20 bg-raised rounded text-[10px] text-tertiary flex items-center justify-center px-1 text-center">
-                    {cardId}
+              {copies.map((copy, index) => {
+                const card = cardById(copy.cardId);
+                return (
+                  // The same Card can appear twice in one Trade, so the index is part of the key.
+                  <div key={`${copy.cardId}-${index}`} className="w-16">
+                    {card ? (
+                      <CardThumb card={card} copies={1} />
+                    ) : (
+                      <div className="aspect-[4/5] rounded bg-raised text-[10px] text-tertiary flex items-center justify-center px-1 text-center">{copy.cardId}</div>
+                    )}
+                    {showStatus && (
+                      <span className={`mt-0.5 block text-center text-[10px] font-medium ${copy.isNew ? "text-success" : "text-secondary"}`}>
+                        {copyStatusLabel(copy.recipientOwned)}
+                      </span>
+                    )}
+                    {copy.notForTrade && <span className="block text-center text-[10px] font-medium text-danger">Inte till byte</span>}
                   </div>
                 );
               })}
             </div>
           )}
-          {diamonds > 0 && <div className="text-sm font-semibold text-diamonds">{diamonds} diamanter</div>}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Sök spelare: find a player by name and open the Trade builder with them. */
+function PlayerSearch() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<UserSearchResult[]>([]);
+
+  useEffect(() => {
+    if (query.length < 2) { setResults([]); return; }
+    const timer = setTimeout(() => { searchUsers(query).then(setResults).catch(() => {}); }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  return (
+    <div className="space-y-3 max-w-sm">
+      <input
+        type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Sök användarnamn..."
+        className="w-full h-10 rounded-md border border-hairline bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+      />
+      {results.length > 0 && (
+        <ul className="divide-y rounded-md border bg-surface">
+          {results.map((u) => (
+            <li key={u.id} className="flex items-center gap-3 px-4 py-2 text-sm">
+              <Link to={`/spelare/${u.id}`} className="flex-1 truncate font-medium hover:text-accent">{u.username}</Link>
+              <Button asChild size="sm" className="bg-accent text-accent-on hover:bg-accent">
+                <Link to={`/byte/ny?anvandare=${u.id}&namn=${encodeURIComponent(u.username)}`}>Föreslå byte</Link>
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {query.length >= 2 && results.length === 0 && <p className="text-xs text-tertiary">Inga spelare hittades.</p>}
     </div>
   );
 }

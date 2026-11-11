@@ -45,12 +45,10 @@ test("a Special card is never Available for Trade", async () => {
   assert.deepEqual(await theirCards(owner, viewer), []);
 });
 
-test("the Trade market and profile use the derived availability", async () => {
+test("Hitta byte and the profile use the derived availability", async () => {
   const { owner, viewer } = await setup();
   give(owner, "c1", 3);
   give(owner, "c2", 1);
-  const traders = (await t.request("GET", "/api/market/traders", { cookie: viewer.cookie })).body.traders;
-  assert.deepEqual(traders.map((x) => x.cards), [[{ cardId: "c1", quantity: 2 }]]);
   const card = (await t.request("GET", "/api/market/card/c1", { cookie: viewer.cookie })).body.traders;
   assert.equal(card[0].quantity, 2);
   const profile = (await t.request("GET", `/api/users/${owner.userId}/profile`, { cookie: viewer.cookie })).body;

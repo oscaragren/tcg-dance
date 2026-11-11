@@ -142,13 +142,6 @@ export type TradeMatch = {
   twoWay: boolean;
 };
 
-export type MarketTrader = {
-  userId: string;
-  username: string;
-  cards: CardForTrade[];
-  totalCards: number;
-};
-
 export type ChestType = "bronze" | "silver" | "gold";
 
 export type ChestTypeConfig = {
@@ -246,6 +239,19 @@ export type ClaimAchievementResponse = {
   state: GameState;
 };
 
+/** How many Copies of each Rarity one side of a Trade holds. */
+export type RarityTotals = Partial<Record<CardRarity, number>>;
+
+/** One Copy in a Trade, described for whoever receives it. */
+export type TradeCopy = {
+  cardId: string;
+  /** Copies the recipient already holds: 0 is "Ny!", more is "Har redan (×N)". */
+  recipientOwned: number;
+  isNew: boolean;
+  /** Requested side only: the receiver has not made this Copy Available for Trade ("Inte till byte"). */
+  notForTrade?: boolean;
+};
+
 export type Trade = {
   id: string;
   status: TradeStatus;
@@ -255,6 +261,10 @@ export type Trade = {
   offeredDiamonds: number;
   requestedCardIds: string[];
   requestedDiamonds: number;
+  offeredCopies: TradeCopy[];
+  requestedCopies: TradeCopy[];
+  offeredRarity: RarityTotals;
+  requestedRarity: RarityTotals;
   createdAt: string;
   /** Set when this offer was made in reply to another; null for a first offer. */
   counterOfTradeId: string | null;

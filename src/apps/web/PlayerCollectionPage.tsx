@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
+import { ProgressRing } from "../../components/web/ProgressRing";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
 import { collections } from "../../data/packs";
 import type { AuthUser } from "../../types/auth";
@@ -86,6 +87,16 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
     return result;
   }, [ownedCounts]);
 
+  // Collection progress (GLOSSARY): Cards owned at least once out of all non-Special Cards.
+  const progressByCollection = useMemo(
+    () =>
+      collections.map((c) => {
+        const inCollection = cards.filter((card) => card.collectionId === c.id && card.rarity !== "special");
+        return { id: c.id, label: c.label, owned: inCollection.filter((card) => (ownedCounts[card.id] ?? 0) > 0).length, total: inCollection.length };
+      }),
+    [ownedCounts],
+  );
+
   if (!currentUser) {
     return (
       <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
@@ -140,7 +151,7 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                         className="bg-accent text-accent-on hover:bg-accent/90 hover: text-accent-on"
                       >
                         <Link to={`/byte/ny?anvandare=${profile.user.id}&namn=${encodeURIComponent(profile.user.username)}`}>
-                          Föreslå ett byte
+                          Föreslå byte
                         </Link>
                       </Button>
                       <span className="text-xs text-secondary">
@@ -150,6 +161,12 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                       </span>
                     </div>
                   )}
+                </div>
+
+                <div className="flex gap-3" aria-label="Samlingsframsteg">
+                  {progressByCollection.map((p) => (
+                    <ProgressRing key={p.id} owned={p.owned} total={p.total} label={p.label} size={56} />
+                  ))}
                 </div>
 
                 <div className="w-full md:w-72 space-y-3">
@@ -221,7 +238,7 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                           )}
                           {tradeQty > 0 && (
                             <div className="absolute top-1.5 left-1.5 z-10 bg-accent text-accent-on text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
-                              ⇄ {tradeQty}
+                              Tillgängligt för byte{tradeQty > 1 ? ` ×${tradeQty}` : ""}
                             </div>
                           )}
                         </div>
