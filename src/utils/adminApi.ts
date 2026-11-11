@@ -162,6 +162,8 @@ export type AdminUserDetail = {
   partners: { id: string; username: string; acceptedTrades: number; netValue: number; flaggedTrades: number }[];
   packsOpened: number;
   upgrades: AdminUpgrade[];
+  /** Logged Diamond movements, newest first; grants carry their reason. */
+  diamondHistory: { type: string; diamonds: number; reason: string | null; createdAt: string }[];
 };
 
 export type AdminPoolEntry = {
@@ -401,4 +403,33 @@ export async function deleteAdminEvent(id: string): Promise<void> {
 
 export async function endAdminEvent(id: string): Promise<void> {
   await adminRequest<unknown>(`/api/admin/events/${id}/end`, { method: "POST" });
+}
+
+export type AdminDiamondFlowDay = {
+  date: string;
+  sources: { daily: number; streak: number; weeklyGoals: number; achievements: number; chestPayouts: number; eventGifts: number; adminGrants: number };
+  sinks: { packs: number; chests: number; slots: number };
+  earned: number;
+  spent: number;
+  /** Diamonds moved between players in Trades: neither earned nor spent. */
+  tradeDiamonds: number;
+  activePlayers: number;
+  earnedPerActivePlayer: number | null;
+};
+
+export type AdminDiamondFlow = {
+  target: number;
+  days: AdminDiamondFlowDay[];
+  totals: Omit<AdminDiamondFlowDay, "date" | "activePlayers" | "earnedPerActivePlayer">;
+};
+
+export async function fetchAdminDiamondFlow(days: number): Promise<AdminDiamondFlow> {
+  return adminRequest<AdminDiamondFlow>(`/api/admin/diamond-flow?days=${days}`, { method: "GET" });
+}
+
+export async function grantAdminDiamonds(userId: string, amount: number, reason: string): Promise<{ diamonds: number }> {
+  return adminRequest<{ diamonds: number }>(`/api/admin/users/${userId}/grant-diamonds`, {
+    method: "POST",
+    body: JSON.stringify({ amount, reason }),
+  });
 }

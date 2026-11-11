@@ -169,7 +169,8 @@ db.exec(`
 
   -- Lightweight timeline of economy actions: 'pack' (quantity packs bought for
   -- diamonds), 'daily' (diamonds claimed), 'streak_bonus' (Streak bonus), 'weekly_goal' (Weekly goal payout), 'achievement' (Achievement payout), 'chest_buy' (diamonds spent),
-  -- 'chest_open' (diamonds won, quantity = cards won).
+  -- 'chest_open' (diamonds won, quantity = cards won), 'admin_grant' (manual grant, with reason),
+  -- 'trade_diamonds' (Diamonds moved between players in an accepted Trade; neither earned nor spent).
   CREATE TABLE IF NOT EXISTS game_events (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id        TEXT NOT NULL REFERENCES users(id),
@@ -320,6 +321,11 @@ for (const column of ["banned_until", "ban_reason"]) {
     db.exec(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
     console.log(`Migrated users: added ${column} column.`);
   }
+}
+
+// game_events.reason: the admin's required note on a manual Diamond grant.
+if (db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('game_events') WHERE name = 'reason'").get().n === 0) {
+  db.exec("ALTER TABLE game_events ADD COLUMN reason TEXT");
 }
 
 // Add diamond_streak column if upgrading from an older schema

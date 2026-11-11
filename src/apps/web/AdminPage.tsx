@@ -1,9 +1,10 @@
-import { AlertTriangle, BarChart3, CalendarDays, Layers, Megaphone, Repeat, Search, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarDays, Gem, Layers, Megaphone, Repeat, Search, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { AdminStatsPanel, UpgradeRow } from "../../components/web/AdminStats";
+import { AdminDiamondFlowPanel, DiamondGrantControl, DiamondHistory } from "../../components/web/AdminDiamondFlow";
 import { AdminEvents } from "../../components/web/AdminEvents";
 import { AdminBanners, PoolSkewView } from "../../components/web/AdminTopUps";
 import { cardById, rarityOrder } from "../../data/cards";
@@ -388,6 +389,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <TabsTrigger value="stats" className="gap-1.5">
                   <BarChart3 className="w-3.5 h-3.5" /> Statistik
                 </TabsTrigger>
+                <TabsTrigger value="diamonds" className="gap-1.5">
+                  <Gem className="w-3.5 h-3.5" /> Diamanter
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -712,6 +716,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <AdminStatsPanel onOpenUser={(id) => void openUser(id)} />
             </TabsContent>
 
+            <TabsContent value="diamonds">
+              <AdminDiamondFlowPanel />
+            </TabsContent>
+
             <TabsContent value="pool" className="space-y-6 pt-2">
               <PoolSkewView skew={poolSkew} onChanged={reloadPool} />
 
@@ -891,6 +899,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     void openUser(selectedUser.user.id);
                   }}
                 />
+              )}
+              {selectedUser && (
+                <DiamondGrantControl key={`grant-${selectedUser.user.id}`} userId={selectedUser.user.id}
+                  onGranted={() => void openUser(selectedUser.user.id)} />
               )}
               {selectedUser && <UserDetail detail={selectedUser} />}
             </div>
@@ -1166,6 +1178,8 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
           </ul>
         )}
       </section>
+
+      <DiamondHistory history={detail.diamondHistory} />
 
       {/* Upgrade history */}
       <section className="space-y-2">

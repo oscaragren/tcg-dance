@@ -1036,11 +1036,11 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
 
 const stmtGiftClaimed = db.prepare("SELECT 1 FROM event_gift_claims WHERE event_id = ? AND user_id = ?");
 const stmtLogEvent = db.prepare(
-  "INSERT INTO game_events (user_id, type, collection_id, quantity, diamonds, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+  "INSERT INTO game_events (user_id, type, collection_id, quantity, diamonds, created_at, reason) VALUES (?, ?, ?, ?, ?, ?, ?)",
 );
 // Appends one row to the economy timeline the admin statistics page reads.
-function logGameEvent(userId, type, { collectionId = null, quantity = 0, diamonds = 0 } = {}) {
-  stmtLogEvent.run(userId, type, collectionId, quantity, diamonds, new Date(clock.now()).toISOString());
+function logGameEvent(userId, type, { collectionId = null, quantity = 0, diamonds = 0, reason = null } = {}) {
+  stmtLogEvent.run(userId, type, collectionId, quantity, diamonds, new Date(clock.now()).toISOString(), reason);
 }
 
 // The game's automatic pick for an Upgrade: Duplicates only, skipping Cards set
@@ -1784,6 +1784,9 @@ app.post("/api/trade/:id/accept", authed, (request, response) => {
       }
 
       db.prepare("UPDATE trades SET status = 'accepted' WHERE id = ?").run(row.id);
+      if (row.offered_diamonds + row.requested_diamonds > 0) {
+        logGameEvent(userId, "trade_diamonds", { diamonds: row.offered_diamonds + row.requested_diamonds });
+      }
 
       // A Trade only counts for a player who received at least one new Card.
       for (const [who, newCards] of Object.entries(newFor)) {
@@ -2835,6 +2838,11 @@ app.get("/api/admin/users/:id", requireAdmin, (request, response) => {
       claimedAt: r.claimed_at,
     })),
     trades,
+    // Every Diamond movement logged for this player, newest first (grants carry their reason).
+    diamondHistory: db
+      .prepare("SELECT type, diamonds, reason, created_at FROM game_events WHERE user_id = ? AND diamonds != 0 ORDER BY id DESC LIMIT 200")
+      .all(userId)
+      .map((r) => ({ type: r.type, diamonds: r.diamonds, reason: r.reason, createdAt: r.created_at })),
     partners: [...partners.values()].sort((a, b) => b.acceptedTrades - a.acceptedTrades),
     packsOpened: db.prepare("SELECT COALESCE(SUM(count), 0) AS n FROM packs_opened WHERE user_id = ?").get(userId).n,
     upgrades: db
@@ -2912,6 +2920,78 @@ function stockholmDay(iso) {
 // tables are small, and an on-demand report can never be stale. Upgrades and
 // game_events only exist from the release that introduced them, so `since`
 // tells the UI from when those numbers are complete.
+// ── Diamond economy: flow view and manual grants ───────────────────────────
+const DIAMOND_TARGET_PER_ACTIVE_PLAYER = 300;
+const FLOW_SOURCE_BY_TYPE = {
+  daily: "daily", streak_bonus: "streak", weekly_goal: "weeklyGoals", achievement: "achievements",
+  chest_open: "chestPayouts", event_gift: "eventGifts", admin_grant: "adminGrants",
+};
+const FLOW_SINK_BY_TYPE = { pack: "packs", chest_buy: "chests", slot_buy: "slots" };
+
+// Per Stockholm day: every Diamond source and sink, Diamonds earned per active
+// player against the target, and Diamonds moved in Trades (kept apart: a Trade
+// only moves Diamonds between players, it neither creates nor destroys any).
+// An admin grant does not make a player "active".
+app.get("/api/admin/diamond-flow", requireAdmin, (request, response) => {
+  const days = Math.min(90, Math.max(7, Number(request.query.days) || 30));
+  const DAY = 24 * 60 * 60 * 1000;
+  const now = clock.now();
+  const zero = (map) => Object.fromEntries(Object.values(map).map((k) => [k, 0]));
+  const emptyDay = (date) => ({
+    date, sources: zero(FLOW_SOURCE_BY_TYPE), sinks: zero(FLOW_SINK_BY_TYPE),
+    earned: 0, spent: 0, tradeDiamonds: 0, activePlayers: new Set(),
+  });
+  const byDay = new Map();
+  for (let i = days - 1; i >= 0; i--) {
+    const date = stockholmDay(new Date(now - i * DAY).toISOString());
+    byDay.set(date, emptyDay(date));
+  }
+  const events = db
+    .prepare("SELECT user_id, type, diamonds, created_at FROM game_events WHERE created_at >= ?")
+    .all(new Date(now - days * DAY).toISOString());
+  for (const e of events) {
+    const d = byDay.get(stockholmDay(e.created_at));
+    if (!d) continue;
+    if (e.type !== "admin_grant") d.activePlayers.add(e.user_id);
+    if (FLOW_SOURCE_BY_TYPE[e.type]) { d.sources[FLOW_SOURCE_BY_TYPE[e.type]] += e.diamonds; d.earned += e.diamonds; }
+    else if (FLOW_SINK_BY_TYPE[e.type]) { d.sinks[FLOW_SINK_BY_TYPE[e.type]] += e.diamonds; d.spent += e.diamonds; }
+    else if (e.type === "trade_diamonds") d.tradeDiamonds += e.diamonds;
+  }
+  const rows = [...byDay.values()].map((d) => {
+    const active = d.activePlayers.size;
+    return { ...d, activePlayers: active, earnedPerActivePlayer: active ? Math.round(d.earned / active) : null };
+  });
+  const totals = { sources: zero(FLOW_SOURCE_BY_TYPE), sinks: zero(FLOW_SINK_BY_TYPE), earned: 0, spent: 0, tradeDiamonds: 0 };
+  for (const d of rows) {
+    for (const k of Object.keys(totals.sources)) totals.sources[k] += d.sources[k];
+    for (const k of Object.keys(totals.sinks)) totals.sinks[k] += d.sinks[k];
+    totals.earned += d.earned; totals.spent += d.spent; totals.tradeDiamonds += d.tradeDiamonds;
+  }
+  response.json({ target: DIAMOND_TARGET_PER_ACTIVE_PLAYER, days: rows, totals });
+});
+
+// Manual grant of Diamonds to one player. Diamonds only: there is deliberately
+// no route for granting Copies, which are finite (see the Card pool).
+const MAX_GRANT = 100000;
+app.post("/api/admin/users/:id/grant-diamonds", requireAdmin, (request, response) => {
+  const userId = request.params.id;
+  const amount = Number(request.body?.amount);
+  const reason = String(request.body?.reason ?? "").trim().slice(0, 300);
+  if (!db.prepare("SELECT 1 FROM users WHERE id = ?").get(userId)) {
+    response.status(404).json({ message: "Användaren hittades inte." }); return;
+  }
+  if (!Number.isInteger(amount) || amount <= 0 || amount > MAX_GRANT) {
+    response.status(400).json({ message: `Ange ett heltal mellan 1 och ${MAX_GRANT}.` }); return;
+  }
+  if (!reason) { response.status(400).json({ message: "Ange en orsak." }); return; }
+  db.transaction(() => {
+    ensurePlayerState(userId);
+    db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(amount, userId);
+    logGameEvent(userId, "admin_grant", { diamonds: amount, reason });
+  })();
+  response.json({ diamonds: db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(userId).diamonds });
+});
+
 app.get("/api/admin/stats", requireAdmin, (request, response) => {
   const days = Math.min(90, Math.max(7, Number(request.query.days) || 30));
   const now = clock.now();
