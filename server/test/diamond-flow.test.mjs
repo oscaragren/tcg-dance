@@ -64,6 +64,8 @@ test("Trade Diamonds are shown separately and are not counted as earned or spent
   const f = await flow();
   const d = today(f);
   assert.equal(d.tradeDiamonds, 120);
+  const history = (await t.request("GET", `/api/admin/users/${alice.userId}`, { cookie: admin })).body.diamondHistory;
+  assert.equal(history.find((h) => h.type === "trade_diamonds").diamonds, 120);
   assert.equal(f.totals.tradeDiamonds, 120);
   assert.equal(d.earned, 0);
   assert.equal(Object.values(d.sinks).reduce((a, b) => a + b, 0), 0);

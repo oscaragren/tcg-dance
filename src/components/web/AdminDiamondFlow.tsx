@@ -26,7 +26,7 @@ const SINKS: { key: keyof AdminDiamondFlowDay["sinks"]; label: string }[] = [
 const HISTORY_LABEL: Record<string, string> = {
   daily: "Daglig", streak_bonus: "Streak", weekly_goal: "Veckomål", achievement: "Achievement",
   chest_open: "Kistutbetalning", event_gift: "Eventgåva", admin_grant: "Admin-gåva",
-  pack: "Pack", chest_buy: "Kista", slot_buy: "Kistplats", trade_diamonds: "Byte",
+  pack: "Pack", chest_buy: "Kista", slot_buy: "Kistplats", trade_diamonds: "Byte (gav bort)",
 };
 
 /** The "Diamanter" tab: every source and sink per day, earned per active player vs. the target. */

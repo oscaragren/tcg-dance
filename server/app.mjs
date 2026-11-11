@@ -1784,9 +1784,9 @@ app.post("/api/trade/:id/accept", authed, (request, response) => {
       }
 
       db.prepare("UPDATE trades SET status = 'accepted' WHERE id = ?").run(row.id);
-      if (row.offered_diamonds + row.requested_diamonds > 0) {
-        logGameEvent(userId, "trade_diamonds", { diamonds: row.offered_diamonds + row.requested_diamonds });
-      }
+      // Each side logs the Diamonds it handed over, so both histories show the Trade.
+      if (row.offered_diamonds > 0) logGameEvent(senderId, "trade_diamonds", { diamonds: row.offered_diamonds });
+      if (row.requested_diamonds > 0) logGameEvent(userId, "trade_diamonds", { diamonds: row.requested_diamonds });
 
       // A Trade only counts for a player who received at least one new Card.
       for (const [who, newCards] of Object.entries(newFor)) {
@@ -2916,10 +2916,6 @@ function stockholmDay(iso) {
   return new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" });
 }
 
-// Everything for the "Statistik" tab in one call. Computed on demand — the
-// tables are small, and an on-demand report can never be stale. Upgrades and
-// game_events only exist from the release that introduced them, so `since`
-// tells the UI from when those numbers are complete.
 // ── Diamond economy: flow view and manual grants ───────────────────────────
 const DIAMOND_TARGET_PER_ACTIVE_PLAYER = 300;
 const FLOW_SOURCE_BY_TYPE = {
@@ -2992,6 +2988,10 @@ app.post("/api/admin/users/:id/grant-diamonds", requireAdmin, (request, response
   response.json({ diamonds: db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(userId).diamonds });
 });
 
+// Everything for the "Statistik" tab in one call. Computed on demand — the
+// tables are small, and an on-demand report can never be stale. Upgrades and
+// game_events only exist from the release that introduced them, so `since`
+// tells the UI from when those numbers are complete.
 app.get("/api/admin/stats", requireAdmin, (request, response) => {
   const days = Math.min(90, Math.max(7, Number(request.query.days) || 30));
   const now = clock.now();
