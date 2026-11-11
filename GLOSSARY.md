@@ -80,7 +80,7 @@ A time-limited period tied to a real-world competition, with rewards chosen per 
 _Avoid_: Campaign, promo
 
 **Achievement**:
-A Collection milestone that a player can claim for a Diamond reward.
+A Collection milestone that a player can claim for a Diamond reward. Every Collection uses the same table (first Rare/Epic/Legendary, every Card of a Rarity, unique-Card counts, Full Collection), with Special cards left out.
 
 **Daily claim**:
 The once-per-day tap that collects a player's daily Diamonds; the day resets at midnight Swedish time.

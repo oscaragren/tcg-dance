@@ -2051,38 +2051,6 @@
         "common": 230,
         "special": 1
       },
-      "achievements": {
-        "packsOpened": [
-          {
-            "target": 1,
-            "reward": 10
-          },
-          {
-            "target": 25,
-            "reward": 50
-          },
-          {
-            "target": 100,
-            "reward": 200
-          },
-          {
-            "target": 500,
-            "reward": 1000
-          }
-        ],
-        "firstOfRarity": {
-          "rare": 50,
-          "epic": 150,
-          "legendary": 1000
-        },
-        "allOfRarity": {
-          "common": 500,
-          "rare": 1000,
-          "epic": 2000,
-          "legendary": 5000
-        },
-        "complete": 10000
-      },
       "cards": [
         {
           "id": "sm2125-SK6",

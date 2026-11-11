@@ -184,13 +184,14 @@ export type Achievement = {
   id: string;
   title: string;
   description: string;
+  /** Short milestone label for the chip in Samling, e.g. "Första Rare". */
+  chip: string;
   reward: number;
   progress: number;
   target: number;
   complete: boolean;
   claimed: boolean;
-  /** Set for achievements scoped to one collection; absent for global ones. */
-  collectionId?: string;
+  collectionId: string;
 };
 
 /** One of the three Weekly goals; progress is capped at the target. */

@@ -127,7 +127,7 @@ db.exec(`
   );
 
   -- How many packs each player has opened, per collection. Backs the
-  -- "open N packs" achievements; owned_cards can't answer that because cards
+  -- the Weekly goal and admin stats; owned_cards cannot answer that because cards
   -- get traded, upgraded away and also arrive from chests.
   CREATE TABLE IF NOT EXISTS packs_opened (
     user_id       TEXT NOT NULL REFERENCES users(id),
@@ -164,7 +164,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_upgrades_created ON upgrades(created_at);
 
   -- Lightweight timeline of economy actions: 'pack' (quantity packs bought for
-  -- diamonds), 'daily' (diamonds claimed), 'streak_bonus' (Streak bonus), 'weekly_goal' (Weekly goal payout), 'chest_buy' (diamonds spent),
+  -- diamonds), 'daily' (diamonds claimed), 'streak_bonus' (Streak bonus), 'weekly_goal' (Weekly goal payout), 'achievement' (Achievement payout), 'chest_buy' (diamonds spent),
   -- 'chest_open' (diamonds won, quantity = cards won).
   CREATE TABLE IF NOT EXISTS game_events (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,

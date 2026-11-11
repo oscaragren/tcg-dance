@@ -50,9 +50,9 @@ test("nothing is waiting once the Daily claim is taken", async () => {
 test("items come in order: Trades, Chest, Achievements, Daily claim", async () => {
   await sendTrade(other, player);
   addChest(player.userId, "ch1", -1000);
-  give(player.userId, "r1"); // first Rare → claimable Achievement
+  give(player.userId, "r1"); // the only Rare: first Rare and every Rare → two claimable Achievements
   const { body } = await waiting();
-  assert.deepEqual(body.items.map((i) => i.type), ["trade", "chest", "achievement", "daily"]);
+  assert.deepEqual(body.items.map((i) => i.type), ["trade", "chest", "achievement", "achievement", "daily"]);
 });
 
 test("an incoming Trade carries the trade and its sender", async () => {
@@ -82,10 +82,12 @@ test("a Chest is waiting only when ready", async () => {
 
 test("a claimed Achievement is no longer waiting", async () => {
   give(player.userId, "r1");
-  const item = (await waiting()).body.items.find((i) => i.type === "achievement");
-  assert.ok(item.achievement.reward > 0);
-  const res = await t.request("POST", `/api/achievements/${item.id}/claim`, { cookie: player.cookie });
-  assert.equal(res.status, 200);
+  const items = (await waiting()).body.items.filter((i) => i.type === "achievement");
+  assert.ok(items.every((i) => i.achievement.reward > 0));
+  for (const item of items) {
+    const res = await t.request("POST", `/api/achievements/${item.id}/claim`, { cookie: player.cookie });
+    assert.equal(res.status, 200);
+  }
   assert.equal((await types()).includes("achievement"), false);
 });
 

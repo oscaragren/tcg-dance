@@ -1053,30 +1053,21 @@ app.post("/api/game/upgrade", authed, (request, response) => {
 
 // ── Achievements ──────────────────────────────────────────────────────────────
 
-/** { [collectionId]: packs opened } for one player. */
-function packsOpenedFor(userId) {
-  const result = {};
-  for (const row of db.prepare("SELECT collection_id, count FROM packs_opened WHERE user_id = ?").all(userId)) {
-    result[row.collection_id] = row.count;
-  }
-  return result;
-}
-
 function buildAchievementsResponse(userId) {
   const ownedCardIdSet = new Set(
     db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?").all(userId).map((r) => r.card_id),
   );
-  const packsOpened = packsOpenedFor(userId);
   const claimedIds = new Set(
     db.prepare("SELECT achievement_id FROM achievement_claims WHERE user_id = ?").all(userId).map((r) => r.achievement_id),
   );
 
   return achievementDefinitions.map((definition) => {
-    const { progress, target, complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards, packsOpened);
+    const { progress, target, complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards);
     return {
       id: definition.id,
       title: definition.title,
       description: definition.description,
+      chip: definition.chip,
       reward: definition.reward,
       progress,
       target,
@@ -1103,7 +1094,7 @@ app.post("/api/achievements/:id/claim", authed, (request, response) => {
   const ownedCardIdSet = new Set(
     db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?").all(userId).map((r) => r.card_id),
   );
-  const { complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards, packsOpenedFor(userId));
+  const { complete } = computeAchievementProgress(definition, ownedCardIdSet, allCards);
   if (!complete) { response.status(400).json({ message: "Prestationen är inte klar än." }); return; }
 
   ensurePlayerState(userId);
@@ -1112,6 +1103,7 @@ app.post("/api/achievements/:id/claim", authed, (request, response) => {
       "INSERT INTO achievement_claims (user_id, achievement_id, claimed_at) VALUES (?, ?, ?)",
     ).run(userId, definition.id, new Date(clock.now()).toISOString());
     db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(definition.reward, userId);
+    logGameEvent(userId, "achievement", { collectionId: definition.collectionId, diamonds: definition.reward });
   })();
 
   response.json({ diamondsAwarded: definition.reward, achievements: buildAchievementsResponse(userId), state: buildStateResponse(userId) });
@@ -2468,11 +2460,12 @@ app.get("/api/admin/stats", requireAdmin, (request, response) => {
   };
 
   // ── Diamond flow in the window ──
-  const flow = { daily: 0, streakBonus: 0, weeklyGoals: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
+  const flow = { daily: 0, streakBonus: 0, weeklyGoals: 0, achievements: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
   for (const e of events) {
     if (e.type === "daily") flow.daily += e.diamonds;
     else if (e.type === "streak_bonus") flow.streakBonus += e.diamonds;
     else if (e.type === "weekly_goal") flow.weeklyGoals += e.diamonds;
+    else if (e.type === "achievement") flow.achievements += e.diamonds;
     else if (e.type === "chest_open") flow.chestRewards += e.diamonds;
     else if (e.type === "pack") flow.packs += e.diamonds;
     else if (e.type === "chest_buy") flow.chests += e.diamonds;
