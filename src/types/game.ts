@@ -12,6 +12,20 @@ export type GameState = {
   diamondStreak: number;
   /** Streak length that pays out the bonus (see ClaimDailyDiamondsResponse). */
   diamondStreakTarget: number;
+  /** The Event running right now, if any. */
+  event?: GameEvent | null;
+};
+
+/** A time-limited Event and the rewards active while it runs. */
+export type GameEvent = {
+  id: string;
+  label: string;
+  startsAt: string;
+  endsAt: string;
+  /** Daily claim amount during the Event; null when it doesn't change. */
+  dailyDiamonds: number | null;
+  /** Shortened Chest wait in hours per Chest type; null when unchanged. */
+  chestWaitHours: Partial<Record<string, number>> | null;
 };
 
 export type ClaimDailyDiamondsResponse = {
@@ -207,3 +221,12 @@ export type Trophy = {
   collectionId?: string;
   owner: { username: string; isYou: boolean } | null;
 };
+
+/** One thing the player can claim or act on right now ("Väntar på dig"). */
+export type WaitingItem =
+  | { type: "trade"; id: string; trade: Trade }
+  | { type: "chest"; id: string; chest: Chest }
+  | { type: "achievement"; id: string; achievement: Achievement }
+  | { type: "daily"; id: "daily"; diamonds: number };
+
+export type WaitingResponse = { items: WaitingItem[] };

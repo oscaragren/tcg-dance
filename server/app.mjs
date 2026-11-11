@@ -474,6 +474,19 @@ function activeEvent(now = clock.now()) {
   );
 }
 
+/** What the client may show about an Event: name, end, and the active rewards. */
+function publicEvent(event) {
+  if (!event) return null;
+  return {
+    id: event.id,
+    label: event.label,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+    dailyDiamonds: event.dailyDiamonds ?? null,
+    chestWaitHours: event.chestWaitHours ?? null,
+  };
+}
+
 /** Today's normal daily claim (before any streak bonus). */
 function dailyDiamondsNow(now = clock.now()) {
   return activeEvent(now)?.dailyDiamonds ?? dailyDiamonds;
@@ -514,6 +527,7 @@ function buildStateResponse(userId) {
     lastOpenedCards: JSON.parse(state.last_opened_cards),
     diamondStreak: state.diamond_streak,
     diamondStreakTarget: DIAMOND_STREAK_TARGET,
+    event: publicEvent(activeEvent()),
   };
 }
 
@@ -1894,6 +1908,43 @@ app.post("/api/game/chests/:id/collect", authed, (request, response) => {
     ...buildChestsResponse(userId),
     state: buildStateResponse(userId),
   });
+});
+
+// ── "Väntar på dig" ─────────────────────────────────────────────────────────
+// Everything the player can claim or act on right now, in display order. Each
+// item carries the same payload the item's own screen uses, so the client acts
+// on it with the same endpoint (accept trade, collect chest, claim achievement,
+// claim daily). Later item types are appended here.
+app.get("/api/game/waiting", authed, (request, response) => {
+  const userId = request.auth.userId;
+  applyEventChestCaps();
+  const items = [];
+
+  const incoming = db.prepare(`
+    SELECT t.*, su.username AS sender_username, ru.username AS receiver_username
+    FROM trades t
+    JOIN users su ON su.id = t.sender_user_id
+    JOIN users ru ON ru.id = t.receiver_user_id
+    WHERE t.receiver_user_id = ? AND t.status = 'pending'
+    ORDER BY t.created_at DESC
+  `).all(userId);
+  for (const row of incoming) items.push({ type: "trade", id: row.id, trade: buildTrade(row) });
+
+  for (const chest of buildChestsResponse(userId).chests) {
+    if (chest.ready) items.push({ type: "chest", id: chest.id, chest });
+  }
+
+  for (const achievement of buildAchievementsResponse(userId)) {
+    if (achievement.complete && !achievement.claimed) {
+      items.push({ type: "achievement", id: achievement.id, achievement });
+    }
+  }
+
+  if (buildStateResponse(userId).canClaimDailyDiamonds) {
+    items.push({ type: "daily", id: "daily", diamonds: dailyDiamondsNow() });
+  }
+
+  response.json({ items });
 });
 
 // ── Trade history cleanup ───────────────────────────────────────────────────────

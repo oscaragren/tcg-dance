@@ -1,17 +1,16 @@
-import { Flame } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPoolPeek } from "../../components/web/CardPoolPeek";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
-import { collections, dailyDiamonds, isPackPurchasable, packReleaseLabel } from "../../data/packs";
+import { collections, isPackPurchasable, packReleaseLabel } from "../../data/packs";
 import { useNow } from "../../utils/useNow";
 import type { AuthUser } from "../../types/auth";
 import type { DanceCard } from "../../types/danceCard";
 import type { GameState } from "../../types/game";
 import type { ChestsResponse, ChestType } from "../../types/game";
-import { buyChest, buyPack, claimDailyDiamonds, fetchChests, fetchGameState } from "../../utils/gameApi";
+import { buyChest, buyPack, fetchChests, fetchGameState } from "../../utils/gameApi";
 import { DiamondIcon } from "../../components/web/DiamondIcon";
 
 type ButikPageProps = { currentUser: AuthUser | null };
@@ -19,14 +18,12 @@ type ButikPageProps = { currentUser: AuthUser | null };
 export function ButikPage({ currentUser }: ButikPageProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoadingState, setIsLoadingState] = useState(!!currentUser);
-  const [isClaiming, setIsClaiming] = useState(false);
   const [buyingPack, setBuyingPack] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openedPack, setOpenedPack] = useState<{ label: string; cards: DanceCard[] } | null>(null);
   const [chests, setChests] = useState<ChestsResponse | null>(null);
   const [buyingChest, setBuyingChest] = useState<ChestType | null>(null);
   const [chestNotice, setChestNotice] = useState<string | null>(null);
-  const [streakBonusAwarded, setStreakBonusAwarded] = useState<number | null>(null);
   // Ticks so a scheduled pack release unlocks without reloading the page.
   const now = useNow();
 
@@ -57,22 +54,6 @@ export function ButikPage({ currentUser }: ButikPageProps) {
       setError(err instanceof Error ? err.message : "Kunde inte köpa kistan.");
     } finally {
       setBuyingChest(null);
-    }
-  }
-
-  async function handleClaimDailyDiamonds() {
-    if (isClaiming) return;
-    setIsClaiming(true);
-    setError(null);
-    setStreakBonusAwarded(null);
-    try {
-      const result = await claimDailyDiamonds();
-      setGameState(result.state);
-      if (result.streakBonusAwarded > 0) setStreakBonusAwarded(result.streakBonusAwarded);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kunde inte hämta diamanter.");
-    } finally {
-      setIsClaiming(false);
     }
   }
 
@@ -112,7 +93,6 @@ export function ButikPage({ currentUser }: ButikPageProps) {
   }
 
   const diamonds = gameState?.diamonds ?? 0;
-  const canClaim = gameState?.canClaimDailyDiamonds ?? false;
 
   return (
     <>
@@ -140,32 +120,8 @@ export function ButikPage({ currentUser }: ButikPageProps) {
                   </span>
                   <span className="text-diamonds"><DiamondIcon /></span>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={handleClaimDailyDiamonds}
-                  disabled={!canClaim || isLoadingState || isClaiming}
-                  variant={canClaim ? "default" : "outline"}
-                  className={canClaim ? "bg-accent hover:bg-accent/90 text-accent-on" : ""}
-                >
-                  {isClaiming
-                    ? "Hämtar..."
-                    : canClaim
-                      ? <>Hämta {gameState?.dailyDiamondsToday ?? dailyDiamonds} gratis <DiamondIcon /></>
-                      : "Diamanter hämtade idag"}
-                </Button>
-                {!isLoadingState && (
-                  <p className="text-[11px] text-rarity-legendary mt-1">
-                    <Flame className="inline h-4 w-4" aria-hidden /> {gameState?.diamondStreak ?? 0}/{gameState?.diamondStreakTarget ?? 7} dagar i rad
-                  </p>
-                )}
               </div>
             </div>
-
-            {!!streakBonusAwarded && (
-              <p className="text-sm font-medium text-rarity-legendary">
-                <Flame className="inline h-4 w-4" aria-hidden /> {gameState?.diamondStreakTarget ?? 7} dagar i rad! +{streakBonusAwarded} <DiamondIcon /> streak-bonus.
-              </p>
-            )}
 
             {error && <p className="text-sm text-danger">{error}</p>}
 

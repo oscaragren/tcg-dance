@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradeResponse, UserSearchResult } from "../types/game";
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradeResponse, UserSearchResult, WaitingResponse } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -217,4 +217,8 @@ export async function fetchCollectionProgress(collectionId?: string): Promise<Co
 
 export async function fetchTrophies(): Promise<Trophy[]> {
   return requestJson<Trophy[]>("/api/game/trophies", { method: "GET" });
+}
+
+export async function fetchWaiting(): Promise<WaitingResponse> {
+  return requestJson<WaitingResponse>("/api/game/waiting", { method: "GET" });
 }
