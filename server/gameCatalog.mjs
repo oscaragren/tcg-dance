@@ -110,6 +110,7 @@ export async function loadGameCatalog() {
     chestPayouts: gameContent.chestPayouts,
     weeklyGoals: Array.isArray(gameContent.weeklyGoals) ? gameContent.weeklyGoals : [],
     events: Array.isArray(gameContent.events) ? gameContent.events : [],
+    topUp: gameContent.topUp,
     copiesPerRarity: gameContent.copiesPerRarity ?? { legendary: 3, epic: 7, rare: 15, common: 40 },
   };
 }

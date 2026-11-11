@@ -209,6 +209,32 @@ db.exec(`
   INSERT OR IGNORE INTO ever_owned_cards (user_id, card_id) SELECT DISTINCT user_id, card_id FROM owned_cards;
 `);
 
+// Top-ups: Copies the admin has added to a Collection's Card pool. bonus_copies
+// is the part of total_copies that came from Top-ups, so the startup pool sync
+// (which resets total_copies to the configured amount) does not undo them.
+// topups holds at most one row per Collection: a pending Top-up, or a dismissed
+// one that stays quiet until the Rare+ share has risen above the trigger again.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS topups (
+    collection_id TEXT PRIMARY KEY,
+    status        TEXT NOT NULL CHECK (status IN ('pending', 'dismissed')),
+    rare          INTEGER NOT NULL DEFAULT 0,
+    epic          INTEGER NOT NULL DEFAULT 0,
+    created_at    TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS topup_log (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    collection_id TEXT NOT NULL,
+    rare          INTEGER NOT NULL,
+    epic          INTEGER NOT NULL,
+    source        TEXT NOT NULL CHECK (source IN ('approved', 'manual', 'event')),
+    created_at    TEXT NOT NULL
+  );
+`);
+if (db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('card_pool') WHERE name='bonus_copies'").get().n === 0) {
+  db.exec("ALTER TABLE card_pool ADD COLUMN bonus_copies INTEGER NOT NULL DEFAULT 0");
+}
+
 // Add collection_id column if upgrading from an older schema
 const hasCollectionId =
   db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('card_pool') WHERE name='collection_id'").get().n > 0;

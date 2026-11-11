@@ -1,6 +1,40 @@
 export type AdminRarityStat = { total: number; remaining: number; bought: number };
 
+export type AdminBanner =
+  | { kind: "topup_pending"; collectionId: string; rare: number; epic: number }
+  | { kind: "topup_fired"; collectionId: string; rare: number; epic: number; source: TopUpSource; at: string }
+  | { kind: "rarity_sold_out"; collectionId: string; rarity: string };
+
+export type TopUpSource = "approved" | "manual" | "event";
+
+export type AdminTopUpLogEntry = {
+  id: number;
+  collectionId: string;
+  rare: number;
+  epic: number;
+  source: TopUpSource;
+  at: string;
+};
+
+export type AdminPoolSkewRow = {
+  collectionId: string;
+  label: string;
+  remaining: Record<string, number>;
+  totalRemaining: number;
+  /** Null when nothing is left in the Collection. */
+  rarePlusShare: number | null;
+  pending: { rare: number; epic: number } | null;
+  topUps: AdminTopUpLogEntry[];
+  soldOutCards: { cardId: string; rarity: string }[];
+};
+
+export type AdminPoolSkew = {
+  thresholds: { trigger: number; target: number };
+  collections: AdminPoolSkewRow[];
+};
+
 export type AdminOverview = {
+  banners: AdminBanner[];
   userCount: number;
   totalOwnedCards: number;
   pool: {
@@ -303,4 +337,26 @@ export async function createAdminAnnouncement(title: string, body: string): Prom
 
 export async function deleteAdminAnnouncement(id: string): Promise<void> {
   await adminRequest<unknown>(`/api/admin/announcements/${id}`, { method: "DELETE" });
+}
+
+export async function fetchAdminPoolSkew(): Promise<AdminPoolSkew> {
+  return adminRequest<AdminPoolSkew>("/api/admin/pool-skew", { method: "GET" });
+}
+
+export async function approveAdminTopUp(collectionId: string, rare: number, epic: number): Promise<void> {
+  await adminRequest<unknown>(`/api/admin/topups/${collectionId}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ rare, epic }),
+  });
+}
+
+export async function dismissAdminTopUp(collectionId: string): Promise<void> {
+  await adminRequest<unknown>(`/api/admin/topups/${collectionId}/dismiss`, { method: "POST" });
+}
+
+export async function topUpAdminNow(collectionId: string, rare: number, epic: number): Promise<void> {
+  await adminRequest<unknown>("/api/admin/topups/now", {
+    method: "POST",
+    body: JSON.stringify({ collectionId, rare, epic }),
+  });
 }

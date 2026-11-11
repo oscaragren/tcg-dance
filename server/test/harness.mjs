@@ -20,7 +20,12 @@ export function seededRandom(values) {
 /** A mailer that records instead of sending. */
 export function fakeMailer() {
   const sent = [];
-  return { sent, async sendPasswordResetEmail(to, url) { sent.push({ to, url }); } };
+  const topUps = [];
+  return {
+    sent, topUps,
+    async sendPasswordResetEmail(to, url) { sent.push({ to, url }); },
+    async sendTopUpPendingEmail(to, info) { topUps.push({ to, ...info }); },
+  };
 }
 
 // A tiny catalog so tests don't depend on game-content.json (whose events and
@@ -63,6 +68,7 @@ export async function startTestApp({ clock = fakeClock(), random = seededRandom(
     config: {
       jwtSecret: "test-secret",
       adminPassword: "admin-pw",
+      adminEmail: "admin@example.com",
       corsOrigin: "http://localhost:5173",
       appUrl: "http://localhost:5173",
       isProduction: false,
@@ -94,8 +100,14 @@ export async function startTestApp({ clock = fakeClock(), random = seededRandom(
     return { cookie, userId: res.body.user.id, username: `p${n}` };
   }
 
+  /** Log in as admin and return the cookie. */
+  async function adminCookie() {
+    const res = await request("POST", "/api/admin/login", { body: { password: "admin-pw" } });
+    return res.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+  }
+
   return {
-    db, clock, mailer, baseUrl, request, registerPlayer,
+    db, clock, mailer, adminCookie, baseUrl, request, registerPlayer,
     close: () => new Promise((resolve) => { server.close(() => { db.close(); resolve(); }); }),
   };
 }

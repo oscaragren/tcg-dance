@@ -12,8 +12,8 @@ import { buildAchievementDefinitions, computeAchievementProgress } from "./achie
  *   db      - an opened better-sqlite3 database (see openDatabase)
  *   clock   - { now(): number } epoch milliseconds
  *   random  - () => number in [0, 1), like Math.random
- *   mailer  - { sendPasswordResetEmail(toEmail, resetUrl) }
- *   config  - { jwtSecret, adminPassword, corsOrigin, appUrl, isProduction, distPath }
+ *   mailer  - { sendPasswordResetEmail(toEmail, resetUrl), sendTopUpPendingEmail(toEmail, info) }
+ *   config  - { jwtSecret, adminPassword, adminEmail, corsOrigin, appUrl, isProduction, distPath }
  *   catalog - optional pre-loaded game catalog (defaults to loadGameCatalog())
  * Returns { app, startBackgroundJobs } where startBackgroundJobs() starts the
  * recurring timers and returns a function that stops them.
@@ -44,6 +44,12 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// Re-check Top-ups after any request that can change the Card pool (see Top-ups below).
+app.use("/api", (request, response, next) => {
+  if (request.method !== "GET") response.on("finish", () => { try { refreshTopUps(); } catch (err) { console.error(err); } });
+  next();
+});
+
 // ── Pool sync ─────────────────────────────────────────────────────────────────
 
 // A collection may override the global copies-per-rarity (e.g. SM 21-25 has
@@ -55,7 +61,7 @@ function copiesFor(card, copiesPerRarity, collectionsMap) {
 
 function syncCardPool(allCards, copiesPerRarity, collectionsMap) {
   const existingPool = new Map(
-    db.prepare("SELECT card_id, collection_id, rarity, total_copies FROM card_pool").all().map((r) => [r.card_id, r]),
+    db.prepare("SELECT card_id, collection_id, rarity, total_copies, bonus_copies FROM card_pool").all().map((r) => [r.card_id, r]),
   );
   const catalogIds = new Set(allCards.map((c) => c.id));
 
@@ -70,8 +76,9 @@ function syncCardPool(allCards, copiesPerRarity, collectionsMap) {
 
   db.transaction(() => {
     for (const card of allCards) {
-      const total = copiesFor(card, copiesPerRarity, collectionsMap);
       const existing = existingPool.get(card.id);
+      // Copies added by Top-ups stay on top of the configured amount.
+      const total = copiesFor(card, copiesPerRarity, collectionsMap) + (existing?.bonus_copies ?? 0);
       if (!existing) {
         const alreadyOwned = stmtCountOwned.get(card.id).n;
         const remaining = Math.max(0, total - alreadyOwned);
@@ -90,7 +97,7 @@ function syncCardPool(allCards, copiesPerRarity, collectionsMap) {
 
 // ── Startup: load catalog once ────────────────────────────────────────────────
 
-const { cards: allCards, collections, dailyDiamonds, copiesPerRarity, events, chestPayouts, weeklyGoals = [] } = (catalog ?? (await loadGameCatalog()));
+const { cards: allCards, collections, dailyDiamonds, copiesPerRarity, events, chestPayouts, weeklyGoals = [], topUp: topUpConfig } = (catalog ?? (await loadGameCatalog()));
 const cardById = new Map(allCards.map((c) => [c.id, c]));
 const collectionsMap = new Map(collections.map((c) => [c.id, c]));
 syncCardPool(allCards, copiesPerRarity, collectionsMap);
@@ -2194,6 +2201,203 @@ app.get("/api/admin/me", requireAdmin, (_request, response) => {
   response.json({ ok: true });
 });
 
+// ── Top-ups ───────────────────────────────────────────────────────────────────
+// When a Collection's Rare+ share of remaining Copies falls below the trigger,
+// a pending Top-up appears for the admin to approve, edit or dismiss. Its
+// amounts are pre-filled to reach the target share, split in the Collection's
+// original Rare:Epic ratio. Legendary and Special are never part of a Top-up.
+// The check re-runs whenever the pool may have changed (see the middleware
+// below) and on every admin read, and is idempotent.
+
+const TOPUP_TRIGGER = topUpConfig?.triggerShare ?? 0.03;
+const TOPUP_TARGET = topUpConfig?.targetShare ?? 0.07;
+const RARE_PLUS = ["rare", "epic", "legendary", "special"];
+const TOPUP_RARITIES = ["rare", "epic"];
+const TOPUP_FIRED_BANNER_DAYS = 7;
+
+function collectionPoolStats(collectionId) {
+  const remaining = {};
+  let total = 0;
+  for (const r of livePoolRows().filter((row) => row.collection_id === collectionId)) {
+    remaining[r.rarity] = (remaining[r.rarity] ?? 0) + r.copies_remaining;
+    total += r.copies_remaining;
+  }
+  const rarePlus = RARE_PLUS.reduce((sum, rarity) => sum + (remaining[rarity] ?? 0), 0);
+  return { remaining, total, rarePlus, share: total > 0 ? rarePlus / total : null };
+}
+
+/** The Copies of Rare and Epic needed to reach the target share, in the Collection's original ratio. */
+function computeTopUpAmounts(collectionId, stats) {
+  const base = { rare: 0, epic: 0 };
+  const available = { rare: 0, epic: 0 };
+  for (const card of allCards) {
+    if (card.collectionId !== collectionId || !TOPUP_RARITIES.includes(card.rarity)) continue;
+    base[card.rarity] += copiesFor(card, copiesPerRarity, collectionsMap);
+    available[card.rarity] += 1;
+  }
+  const needed = Math.max(0, Math.ceil((TOPUP_TARGET * stats.total - stats.rarePlus) / (1 - TOPUP_TARGET)));
+  if (needed === 0 || available.rare + available.epic === 0) return { rare: 0, epic: 0 };
+  const baseTotal = (available.rare ? base.rare : 0) + (available.epic ? base.epic : 0);
+  const rare = available.epic === 0 ? needed
+    : available.rare === 0 ? 0
+    : Math.round((needed * base.rare) / baseTotal);
+  return { rare, epic: needed - rare };
+}
+
+const stmtTopUpRow = db.prepare("SELECT * FROM topups WHERE collection_id = ?");
+
+/** Brings each Collection's pending/dismissed Top-up in line with its pool. */
+function refreshTopUps() {
+  for (const collection of collections) {
+    const stats = collectionPoolStats(collection.id);
+    if (stats.share === null) continue; // sold out entirely: no share to speak of
+    const row = stmtTopUpRow.get(collection.id);
+    if (stats.share >= TOPUP_TRIGGER) {
+      if (row) db.prepare("DELETE FROM topups WHERE collection_id = ?").run(collection.id);
+      continue;
+    }
+    if (row?.status === "dismissed") continue;
+    const { rare, epic } = computeTopUpAmounts(collection.id, stats);
+    if (row) {
+      db.prepare("UPDATE topups SET rare = ?, epic = ? WHERE collection_id = ?").run(rare, epic, collection.id);
+      continue;
+    }
+    db.prepare("INSERT INTO topups (collection_id, status, rare, epic, created_at) VALUES (?, 'pending', ?, ?, ?)")
+      .run(collection.id, rare, epic, new Date(clock.now()).toISOString());
+    if (config.adminEmail) {
+      Promise.resolve(mailer.sendTopUpPendingEmail?.(config.adminEmail, {
+        collectionId: collection.id,
+        collectionLabel: collection.label ?? collection.id,
+        share: stats.share,
+        rare,
+        epic,
+      })).catch((err) => console.error("Kunde inte skicka Top-up-mejl:", err));
+    }
+  }
+}
+
+try { refreshTopUps(); } catch (err) { console.error(err); }
+
+/** Adds Copies to the Collection's Cards of a Rarity, spread evenly, and logs it. */
+const applyTopUp = db.transaction((collectionId, amounts, source) => {
+  for (const rarity of TOPUP_RARITIES) {
+    const n = amounts[rarity];
+    if (!n) continue;
+    const rows = db
+      .prepare("SELECT card_id FROM card_pool WHERE collection_id = ? AND rarity = ? ORDER BY card_id")
+      .all(collectionId, rarity)
+      .filter((r) => cardById.has(r.card_id));
+    if (rows.length === 0) throw new Error(`Samlingen har inga ${rarity}-kort.`);
+    const stmt = db.prepare(
+      "UPDATE card_pool SET total_copies = total_copies + ?, copies_remaining = copies_remaining + ?, bonus_copies = bonus_copies + ? WHERE card_id = ?",
+    );
+    rows.forEach((r, i) => {
+      const share = Math.floor(n / rows.length) + (i < n % rows.length ? 1 : 0);
+      if (share) stmt.run(share, share, share, r.card_id);
+    });
+  }
+  db.prepare("INSERT INTO topup_log (collection_id, rare, epic, source, created_at) VALUES (?, ?, ?, ?, ?)")
+    .run(collectionId, amounts.rare ?? 0, amounts.epic ?? 0, source, new Date(clock.now()).toISOString());
+  db.prepare("DELETE FROM topups WHERE collection_id = ? AND status = 'pending'").run(collectionId);
+});
+
+function parseAmounts(body) {
+  const rare = Number(body?.rare ?? 0);
+  const epic = Number(body?.epic ?? 0);
+  if (![rare, epic].every((n) => Number.isInteger(n) && n >= 0 && n <= 100000) || rare + epic === 0) return null;
+  return { rare, epic };
+}
+
+function fireTopUp(request, response, collectionId, source) {
+  if (!collectionsMap.has(collectionId)) { response.status(400).json({ message: "Okänd samling." }); return; }
+  const amounts = parseAmounts(request.body);
+  if (!amounts) { response.status(400).json({ message: "Ange antal Rare och Epic (heltal, minst ett över 0)." }); return; }
+  try {
+    applyTopUp(collectionId, amounts, source);
+  } catch (err) {
+    response.status(400).json({ message: err.message });
+    return;
+  }
+  refreshTopUps();
+  response.json({ ok: true, ...amounts });
+}
+
+const topUpLogRow = (r) => ({ id: r.id, collectionId: r.collection_id, rare: r.rare, epic: r.epic, source: r.source, at: r.created_at });
+
+app.get("/api/admin/topups", requireAdmin, (_request, response) => {
+  refreshTopUps();
+  response.json({
+    pending: db.prepare("SELECT * FROM topups WHERE status = 'pending' ORDER BY created_at").all()
+      .map((r) => ({ collectionId: r.collection_id, rare: r.rare, epic: r.epic, createdAt: r.created_at })),
+    log: db.prepare("SELECT * FROM topup_log ORDER BY id DESC").all().map(topUpLogRow),
+  });
+});
+
+app.post("/api/admin/topups/now", requireAdmin, (request, response) => {
+  fireTopUp(request, response, String(request.body?.collectionId ?? ""), "manual");
+});
+
+app.post("/api/admin/topups/:collectionId/approve", requireAdmin, (request, response) => {
+  const row = stmtTopUpRow.get(request.params.collectionId);
+  if (row?.status !== "pending") { response.status(404).json({ message: "Ingen väntande Top-up för samlingen." }); return; }
+  fireTopUp(request, response, request.params.collectionId, "approved");
+});
+
+app.post("/api/admin/topups/:collectionId/dismiss", requireAdmin, (request, response) => {
+  const result = db.prepare("UPDATE topups SET status = 'dismissed' WHERE collection_id = ? AND status = 'pending'")
+    .run(request.params.collectionId);
+  if (result.changes === 0) { response.status(404).json({ message: "Ingen väntande Top-up för samlingen." }); return; }
+  response.json({ ok: true });
+});
+
+// One row per live Collection: where its pool stands and how it has been topped up.
+function poolSkewRows() {
+  const live = livePoolRows();
+  return collections.map((collection) => {
+    const stats = collectionPoolStats(collection.id);
+    const pendingRow = stmtTopUpRow.get(collection.id);
+    return {
+      collectionId: collection.id,
+      label: collection.label ?? collection.id,
+      remaining: stats.remaining,
+      totalRemaining: stats.total,
+      rarePlusShare: stats.share,
+      pending: pendingRow?.status === "pending" ? { rare: pendingRow.rare, epic: pendingRow.epic } : null,
+      topUps: db.prepare("SELECT * FROM topup_log WHERE collection_id = ? ORDER BY id DESC").all(collection.id).map(topUpLogRow),
+      soldOutCards: live
+        .filter((r) => r.collection_id === collection.id && r.copies_remaining === 0)
+        .map((r) => ({ cardId: r.card_id, rarity: r.rarity })),
+    };
+  });
+}
+
+app.get("/api/admin/pool-skew", requireAdmin, (_request, response) => {
+  refreshTopUps();
+  response.json({ thresholds: { trigger: TOPUP_TRIGGER, target: TOPUP_TARGET }, collections: poolSkewRows() });
+});
+
+function adminBanners() {
+  refreshTopUps();
+  const banners = [];
+  const since = clock.now() - TOPUP_FIRED_BANNER_DAYS * 24 * 60 * 60 * 1000;
+  for (const row of db.prepare("SELECT * FROM topups WHERE status = 'pending'").all()) {
+    banners.push({ kind: "topup_pending", collectionId: row.collection_id, rare: row.rare, epic: row.epic });
+  }
+  for (const row of db.prepare("SELECT * FROM topup_log ORDER BY id DESC").all()) {
+    if (Date.parse(row.created_at) >= since) {
+      banners.push({ kind: "topup_fired", collectionId: row.collection_id, rare: row.rare, epic: row.epic, source: row.source, at: row.created_at });
+    }
+  }
+  for (const collection of collections) {
+    const { remaining } = collectionPoolStats(collection.id);
+    const totals = new Set(allCards.filter((c) => c.collectionId === collection.id).map((c) => c.rarity));
+    for (const rarity of totals) {
+      if ((remaining[rarity] ?? 0) === 0) banners.push({ kind: "rarity_sold_out", collectionId: collection.id, rarity });
+    }
+  }
+  return banners;
+}
+
 // card_pool can retain rows from earlier catalog versions; scope admin views to
 // the cards currently in the live catalog so the numbers stay meaningful.
 function livePoolRows() {
@@ -2222,6 +2426,7 @@ app.get("/api/admin/overview", requireAdmin, (_request, response) => {
     userCount,
     totalOwnedCards: totalOwned,
     pool: { byRarity, totalCards, totalRemaining, totalBought: totalCards - totalRemaining },
+    banners: adminBanners(),
   });
 });
 

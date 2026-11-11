@@ -4,6 +4,7 @@ import { Button } from "../../components/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { AdminStatsPanel, UpgradeRow } from "../../components/web/AdminStats";
+import { AdminBanners, PoolSkewView } from "../../components/web/AdminTopUps";
 import { cardById, rarityOrder } from "../../data/cards";
 import {
   adminLogin,
@@ -17,6 +18,8 @@ import {
   fetchAdminAnnouncements,
   fetchAdminOverview,
   fetchAdminPool,
+  fetchAdminPoolSkew,
+  type AdminPoolSkew,
   fetchAdminSpecialCards,
   fetchAdminTradePairs,
   fetchAdminTrades,
@@ -174,6 +177,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pool, setPool] = useState<AdminPoolEntry[]>([]);
+  const [poolSkew, setPoolSkew] = useState<AdminPoolSkew | null>(null);
   const [specialCards, setSpecialCards] = useState<AdminSpecialCard[]>([]);
   const [trades, setTrades] = useState<AdminTrade[]>([]);
   const [tradePairs, setTradePairs] = useState<AdminTradePair[]>([]);
@@ -194,7 +198,15 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [pairQuery, setPairQuery] = useState("");
   const [poolQuery, setPoolQuery] = useState("");
 
+  // A Top-up changes the pool, banners and skew view, so re-read all three.
+  function reloadPool() {
+    Promise.all([fetchAdminOverview(), fetchAdminPool(), fetchAdminPoolSkew()])
+      .then(([o, p, sk]) => { setOverview(o); setPool(p); setPoolSkew(sk); })
+      .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda admin-data."));
+  }
+
   useEffect(() => {
+    fetchAdminPoolSkew().then(setPoolSkew).catch(() => { /* shown via the main load's error */ });
     Promise.all([
       fetchAdminOverview(), fetchAdminUsers(), fetchAdminPool(),
       fetchAdminTrades(), fetchAdminTradePairs(), fetchAdminAnnouncements(), fetchAdminSpecialCards(),
@@ -324,6 +336,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           </div>
 
           {error && <p className="text-sm text-danger">{error}</p>}
+
+          {overview && poolSkew && (
+            <AdminBanners
+              banners={overview.banners}
+              labels={Object.fromEntries(poolSkew.collections.map((c) => [c.collectionId, c.label]))}
+            />
+          )}
 
           {/* Overview — always visible, one glance at the state of things */}
           {overview && (
@@ -686,6 +705,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </TabsContent>
 
             <TabsContent value="pool" className="space-y-6 pt-2">
+              <PoolSkewView skew={poolSkew} onChanged={reloadPool} />
+
               <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-text">
                   Specialkort — ägare
@@ -774,7 +795,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <h2 className="text-sm font-semibold text-text">Per kort — sålda vs. kvar</h2>
+                  <h2 className="text-sm font-semibold text-text">Per kort — sålda vs. kvar (detaljvy)</h2>
                   <SearchBox value={poolQuery} onChange={setPoolQuery} placeholder="Sök på kortnamn..." />
                 </div>
                 <div className="rounded-xl border bg-surface overflow-x-auto max-h-[480px] overflow-y-auto">

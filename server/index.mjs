@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.mjs";
 import { openDatabase } from "./db.mjs";
-import { sendPasswordResetEmail } from "./mailer.mjs";
+import { sendPasswordResetEmail, sendTopUpPendingEmail } from "./mailer.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, "..");
@@ -22,10 +22,11 @@ const { app, startBackgroundJobs } = await createApp({
   db,
   clock: { now: () => Date.now() },
   random: Math.random,
-  mailer: { sendPasswordResetEmail },
+  mailer: { sendPasswordResetEmail, sendTopUpPendingEmail },
   config: {
     jwtSecret: process.env.AUTH_JWT_SECRET ?? "dev-only-secret-change-me",
     adminPassword: process.env.ADMIN_PASSWORD ?? "",
+    adminEmail: process.env.ADMIN_EMAIL ?? "",
     corsOrigin: process.env.AUTH_CORS_ORIGIN ?? "http://localhost:5173",
     appUrl: process.env.APP_URL ?? "http://localhost:5173",
     isProduction: IS_PRODUCTION,
