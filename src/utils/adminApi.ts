@@ -1,9 +1,12 @@
+import type { GameEvent } from "../types/game";
+
 export type AdminRarityStat = { total: number; remaining: number; bought: number };
 
 export type AdminBanner =
   | { kind: "topup_pending"; collectionId: string; rare: number; epic: number }
   | { kind: "topup_fired"; collectionId: string; rare: number; epic: number; source: TopUpSource; at: string }
-  | { kind: "rarity_sold_out"; collectionId: string; rarity: string };
+  | { kind: "rarity_sold_out"; collectionId: string; rarity: string }
+  | { kind: "event_soon"; eventId: string; label: string; startsAt: string };
 
 export type TopUpSource = "approved" | "manual" | "event";
 
@@ -114,7 +117,7 @@ export type AdminStats = {
     cardsOwned: number;
   };
   daily: { date: string; signups: number; activePlayers: number; packs: number; upgrades: number; trades: number }[];
-  diamondFlow: { daily: number; streakBonus: number; weeklyGoals: number; achievements: number; chestRewards: number; packs: number; chests: number; slots: number };
+  diamondFlow: { daily: number; eventGifts: number; streakBonus: number; weeklyGoals: number; achievements: number; chestRewards: number; packs: number; chests: number; slots: number };
   upgradesByTier: { from: string; to: string; count: number; cardsPerUpgrade: number }[];
   leaders: Record<"packs" | "upgrades" | "trades" | "diamonds" | "collection", AdminLeader[]>;
   topCards: { cardId: string; rarity: string; copies: number; owners: number }[];
@@ -359,4 +362,43 @@ export async function topUpAdminNow(collectionId: string, rare: number, epic: nu
     method: "POST",
     body: JSON.stringify({ collectionId, rare, epic }),
   });
+}
+
+export type AdminEventStatus = "upcoming" | "running" | "finished";
+
+/** What the builder sends; the server validates it. */
+export type AdminEventDraft = {
+  label: string;
+  startsAt: string;
+  endsAt: string;
+  dailyDiamonds: number | null;
+  chestWaitHours: Partial<Record<string, number>> | null;
+  chestMultiplier: number | null;
+  gift: GameEvent["gift"];
+  topUpCollectionId: string | null;
+};
+
+export type AdminEvent = AdminEventDraft & {
+  id: string;
+  status: AdminEventStatus;
+  topUpFiredAt: string | null;
+};
+
+export async function fetchAdminEvents(): Promise<AdminEvent[]> {
+  return (await adminRequest<{ events: AdminEvent[] }>("/api/admin/events", { method: "GET" })).events;
+}
+
+export async function saveAdminEvent(id: string | null, draft: AdminEventDraft): Promise<void> {
+  await adminRequest<unknown>(id ? `/api/admin/events/${id}` : "/api/admin/events", {
+    method: id ? "PUT" : "POST",
+    body: JSON.stringify(draft),
+  });
+}
+
+export async function deleteAdminEvent(id: string): Promise<void> {
+  await adminRequest<unknown>(`/api/admin/events/${id}`, { method: "DELETE" });
+}
+
+export async function endAdminEvent(id: string): Promise<void> {
+  await adminRequest<unknown>(`/api/admin/events/${id}/end`, { method: "POST" });
 }

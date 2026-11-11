@@ -28,7 +28,13 @@ export type GameEvent = {
   dailyDiamonds: number | null;
   /** Shortened Chest wait in hours per Chest type; null when unchanged. */
   chestWaitHours: Partial<Record<string, number>> | null;
+  /** Chest payout multiplier while the Event runs; null when unchanged. */
+  chestMultiplier?: number | null;
+  /** Login gift, claimed once per player from "Väntar på dig". */
+  gift?: EventGift | null;
 };
+
+export type EventGift = { type: "diamonds"; amount: number } | { type: "chest"; chestType: string };
 
 export type ClaimDailyDiamondsResponse = {
   /** Total diamonds credited by this claim, including any streak bonus. */
@@ -292,6 +298,7 @@ export type WaitingItem =
   | { type: "chest"; id: string; chest: Chest }
   | { type: "achievement"; id: string; achievement: Achievement }
   | { type: "weekly_goal"; id: string; goal: WeeklyGoal }
+  | { type: "event_gift"; id: string; label: string; gift: EventGift }
   | { type: "daily"; id: "daily"; diamonds: number };
 
 export type WaitingResponse = { items: WaitingItem[] };

@@ -28,8 +28,10 @@ export function AdminBanners({ banners, labels }: { banners: AdminBanner[]; labe
             ? `Top-up väntar i ${label(b.collectionId)}: ${b.rare} Rare + ${b.epic} Epic föreslås.`
             : b.kind === "topup_fired"
               ? `Top-up genomförd i ${label(b.collectionId)} (${SOURCE_LABEL[b.source]}): ${b.rare} Rare + ${b.epic} Epic.`
+              : b.kind === "event_soon"
+              ? `Event "${b.label}" startar ${new Date(b.startsAt).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })}.`
               : `Alla ${b.rarity}-kort är slutsålda i ${label(b.collectionId)}.`;
-        const tone = b.kind === "topup_fired" ? "bg-raised text-text" : "bg-rarity-legendary/15 text-rarity-legendary";
+        const tone = b.kind === "topup_fired" || b.kind === "event_soon" ? "bg-raised text-text" : "bg-rarity-legendary/15 text-rarity-legendary";
         return <p key={i} className={`rounded-xl px-4 py-2 text-sm font-medium ${tone}`}>{text}</p>;
       })}
     </div>

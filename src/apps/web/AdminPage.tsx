@@ -1,9 +1,10 @@
-import { AlertTriangle, BarChart3, Layers, Megaphone, Repeat, Search, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarDays, Layers, Megaphone, Repeat, Search, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { AdminStatsPanel, UpgradeRow } from "../../components/web/AdminStats";
+import { AdminEvents } from "../../components/web/AdminEvents";
 import { AdminBanners, PoolSkewView } from "../../components/web/AdminTopUps";
 import { cardById, rarityOrder } from "../../data/cards";
 import {
@@ -381,6 +382,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <TabsTrigger value="pool" className="gap-1.5">
                   <Layers className="w-3.5 h-3.5" /> Kortpool
                 </TabsTrigger>
+                <TabsTrigger value="events" className="gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5" /> Event
+                </TabsTrigger>
                 <TabsTrigger value="stats" className="gap-1.5">
                   <BarChart3 className="w-3.5 h-3.5" /> Statistik
                 </TabsTrigger>
@@ -700,6 +704,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </TabsContent>
 
             {/* Card pool */}
+            <TabsContent value="events">
+              <AdminEvents onChanged={reloadPool} />
+            </TabsContent>
+
             <TabsContent value="stats">
               <AdminStatsPanel onOpenUser={(id) => void openUser(id)} />
             </TabsContent>

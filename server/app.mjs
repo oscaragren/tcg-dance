@@ -46,6 +46,7 @@ app.use(cookieParser());
 
 // Re-check Top-ups after any request that can change the Card pool (see Top-ups below).
 app.use("/api", (request, response, next) => {
+  try { startDueEvents(); } catch (err) { console.error(err); }
   if (request.method !== "GET") response.on("finish", () => { try { refreshTopUps(); } catch (err) { console.error(err); } });
   next();
 });
@@ -537,19 +538,80 @@ function grantCard(userId, cardId) {
   return isNew;
 }
 
-// ── Time-limited events (game-content.json "events") ─────────────────────────
-// Each event has startsAt/endsAt (ISO, inclusive start, exclusive end) and may
-// override the daily diamond amount and/or chest wait times while it runs.
+// ── Time-limited Events (database, built in the admin panel) ───────────────
+// An Event runs from startsAt (inclusive) to endsAt (exclusive) and may combine
+// rewards: the Daily claim amount, shorter Chest waits, a Chest payout
+// multiplier, a login gift and a Top-up. Events in game-content.json "events"
+// are carried over once. Lifecycle: editable/deletable before it starts, only
+// endable early while running, read-only once finished.
+
+const EVENT_SOON_MS = 48 * 60 * 60 * 1000; // admin banner: "starting soon"
+const EVENT_CHEST_TYPES = ["bronze", "silver", "gold"];
+
+const iso = (ms) => new Date(ms).toISOString();
+
+function eventFromRow(r) {
+  return {
+    id: r.id,
+    label: r.label,
+    startsAt: r.starts_at,
+    endsAt: r.ends_at,
+    dailyDiamonds: r.daily_diamonds,
+    chestWaitHours: r.chest_wait_hours ? JSON.parse(r.chest_wait_hours) : null,
+    chestMultiplier: r.chest_multiplier,
+    gift: r.gift_type === "diamonds"
+      ? { type: "diamonds", amount: r.gift_diamonds }
+      : r.gift_type === "chest" ? { type: "chest", chestType: r.gift_chest_type } : null,
+    topUpCollectionId: r.topup_collection_id,
+    topUpFiredAt: r.topup_fired_at,
+  };
+}
+
+function allEvents() {
+  return db.prepare("SELECT * FROM events ORDER BY starts_at").all().map(eventFromRow);
+}
+
+function eventStatus(event, now = clock.now()) {
+  if (now < Date.parse(event.startsAt)) return "upcoming";
+  return now < Date.parse(event.endsAt) ? "running" : "finished";
+}
+
+const stmtInsertEvent = db.prepare(`
+  INSERT INTO events (id, label, starts_at, ends_at, daily_diamonds, chest_wait_hours, chest_multiplier,
+                      gift_type, gift_diamonds, gift_chest_type, topup_collection_id, created_at)
+  VALUES (@id, @label, @startsAt, @endsAt, @dailyDiamonds, @chestWaitHours, @chestMultiplier,
+          @giftType, @giftDiamonds, @giftChestType, @topUpCollectionId, @createdAt)
+`);
+
+function eventParams(id, e) {
+  return {
+    id,
+    label: e.label,
+    startsAt: e.startsAt,
+    endsAt: e.endsAt,
+    dailyDiamonds: e.dailyDiamonds ?? null,
+    chestWaitHours: e.chestWaitHours && Object.keys(e.chestWaitHours).length ? JSON.stringify(e.chestWaitHours) : null,
+    chestMultiplier: e.chestMultiplier ?? null,
+    giftType: e.gift?.type ?? null,
+    giftDiamonds: e.gift?.type === "diamonds" ? e.gift.amount : null,
+    giftChestType: e.gift?.type === "chest" ? e.gift.chestType : null,
+    topUpCollectionId: e.topUpCollectionId ?? null,
+    createdAt: iso(clock.now()),
+  };
+}
+
+// Carry over the content file's Events, once each.
+for (const e of events) {
+  if (db.prepare("INSERT OR IGNORE INTO events_seeded (id) VALUES (?)").run(e.id).changes === 0) continue;
+  const startsAt = Date.parse(e.startsAt);
+  const endsAt = Date.parse(e.endsAt);
+  if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt)) continue;
+  stmtInsertEvent.run(eventParams(e.id, { ...e, startsAt: iso(startsAt), endsAt: iso(endsAt) }));
+}
 
 /** The event running at `now`, if any (first match wins). */
 function activeEvent(now = clock.now()) {
-  return (
-    events.find((e) => {
-      const start = Date.parse(e.startsAt);
-      const end = Date.parse(e.endsAt);
-      return Number.isFinite(start) && Number.isFinite(end) && now >= start && now < end;
-    }) ?? null
-  );
+  return allEvents().find((e) => eventStatus(e, now) === "running") ?? null;
 }
 
 /** What the client may show about an Event: name, end, and the active rewards. */
@@ -562,6 +624,8 @@ function publicEvent(event) {
     endsAt: event.endsAt,
     dailyDiamonds: event.dailyDiamonds ?? null,
     chestWaitHours: event.chestWaitHours ?? null,
+    chestMultiplier: event.chestMultiplier ?? null,
+    gift: event.gift ?? null,
   };
 }
 
@@ -970,6 +1034,7 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
   response.json({ pulledCards, state: buildStateResponse(request.auth.userId) });
 });
 
+const stmtGiftClaimed = db.prepare("SELECT 1 FROM event_gift_claims WHERE event_id = ? AND user_id = ?");
 const stmtLogEvent = db.prepare(
   "INSERT INTO game_events (user_id, type, collection_id, quantity, diamonds, created_at) VALUES (?, ?, ?, ?, ?, ?)",
 );
@@ -2071,7 +2136,9 @@ app.post("/api/game/chests/:id/collect", authed, (request, response) => {
     return;
   }
 
-  const diamondsAwarded = rollDiamonds(chestPayout(chest.type, chest.payout_table));
+  // An Event's multiplier applies to Chests opened while it runs.
+  const eventMultiplier = activeEvent()?.chestMultiplier ?? 1;
+  const diamondsAwarded = Math.round(rollDiamonds(chestPayout(chest.type, chest.payout_table)) * eventMultiplier);
   let wonCardIds = [];
 
   try {
@@ -2141,6 +2208,11 @@ app.get("/api/game/waiting", authed, (request, response) => {
 
   for (const goal of buildWeeklyGoalsResponse(userId).goals) {
     if (goal.complete && !goal.claimed) items.push({ type: "weekly_goal", id: goal.id, goal });
+  }
+
+  const running = activeEvent();
+  if (running?.gift && !stmtGiftClaimed.get(running.id, userId)) {
+    items.push({ type: "event_gift", id: running.id, label: running.label, gift: running.gift });
   }
 
   if (buildStateResponse(userId).canClaimDailyDiamonds) {
@@ -2350,6 +2422,184 @@ app.post("/api/admin/topups/:collectionId/dismiss", requireAdmin, (request, resp
   response.json({ ok: true });
 });
 
+// ── Event Top-up on start ─────────────────────────────────────────────────────
+// An Event may carry a Top-up of a Collection that fires when the Event starts,
+// aiming for the target share, with no second confirmation. It only fires while
+// the Event runs: one that was missed entirely is marked done without firing.
+// Checked at the start of every API request and on a timer.
+
+function startDueEvents() {
+  const now = clock.now();
+  const due = db.prepare("SELECT * FROM events WHERE topup_collection_id IS NOT NULL AND topup_fired_at IS NULL").all();
+  for (const row of due) {
+    const event = eventFromRow(row);
+    const status = eventStatus(event, now);
+    if (status === "upcoming") continue;
+    db.transaction(() => {
+      db.prepare("UPDATE events SET topup_fired_at = ? WHERE id = ?").run(iso(now), event.id);
+      if (status !== "running" || !collectionsMap.has(event.topUpCollectionId)) return;
+      const amounts = computeTopUpAmounts(event.topUpCollectionId, collectionPoolStats(event.topUpCollectionId));
+      if (amounts.rare + amounts.epic > 0) applyTopUp(event.topUpCollectionId, amounts, "event");
+    })();
+    refreshTopUps();
+  }
+}
+
+try { startDueEvents(); } catch (err) { console.error(err); }
+
+// ── Admin: Event builder ──────────────────────────────────────────────────────
+
+class EventInputError extends Error {}
+
+/** Validates an Event draft from the admin panel; returns the clean fields or throws. */
+function parseEventInput(body, { excludeId = null } = {}) {
+  const fail = (message) => { throw new EventInputError(message); };
+  const label = String(body?.label ?? "").trim();
+  if (!label || label.length > 60) fail("Ange ett namn (högst 60 tecken).");
+  const start = Date.parse(body?.startsAt);
+  const end = Date.parse(body?.endsAt);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) fail("Ange start och slut.");
+  if (end <= start) fail("Eventet måste sluta efter att det startar.");
+  if (end <= clock.now()) fail("Eventet kan inte ligga helt i det förflutna.");
+
+  const out = { label, startsAt: iso(start), endsAt: iso(end) };
+
+  const daily = body?.dailyDiamonds ?? null;
+  if (daily !== null && !(Number.isInteger(daily) && daily > 0 && daily <= 100000)) fail("Dagliga diamanter måste vara ett heltal.");
+  out.dailyDiamonds = daily;
+
+  const waits = body?.chestWaitHours ?? null;
+  if (waits !== null) {
+    if (typeof waits !== "object") fail("Ogiltig väntetid för kistor.");
+    out.chestWaitHours = {};
+    for (const [type, hours] of Object.entries(waits)) {
+      if (hours == null) continue;
+      if (!EVENT_CHEST_TYPES.includes(type) || !(Number(hours) > 0 && Number(hours) <= 1000)) fail("Ogiltig väntetid för kistor.");
+      out.chestWaitHours[type] = Number(hours);
+    }
+  }
+
+  const multiplier = body?.chestMultiplier ?? null;
+  if (multiplier !== null && !(Number(multiplier) > 1 && Number(multiplier) <= 10)) fail("Kistmultiplikatorn måste vara över 1 (högst 10).");
+  out.chestMultiplier = multiplier === null ? null : Number(multiplier);
+
+  const gift = body?.gift ?? null;
+  if (gift !== null) {
+    if (gift.type === "diamonds" && Number.isInteger(gift.amount) && gift.amount > 0 && gift.amount <= 100000) {
+      out.gift = { type: "diamonds", amount: gift.amount };
+    } else if (gift.type === "chest" && EVENT_CHEST_TYPES.includes(gift.chestType)) {
+      out.gift = { type: "chest", chestType: gift.chestType };
+    } else fail("Ogiltig inloggningsgåva.");
+  }
+
+  const topUp = body?.topUpCollectionId ?? null;
+  if (topUp !== null && !collectionsMap.has(topUp)) fail("Okänd samling för Top-up.");
+  out.topUpCollectionId = topUp;
+
+  const hasReward = out.dailyDiamonds !== null || (out.chestWaitHours && Object.keys(out.chestWaitHours).length > 0)
+    || out.chestMultiplier !== null || out.gift || out.topUpCollectionId;
+  if (!hasReward) fail("Välj minst en belöning.");
+
+  const clash = allEvents().find((e) => e.id !== excludeId && start < Date.parse(e.endsAt) && end > Date.parse(e.startsAt));
+  if (clash) fail(`Eventet överlappar "${clash.label}".`);
+  return out;
+}
+
+const adminEventRow = (e) => ({ ...e, status: eventStatus(e) });
+
+app.get("/api/admin/events", requireAdmin, (_request, response) => {
+  response.json({ events: allEvents().map(adminEventRow), now: iso(clock.now()) });
+});
+
+app.post("/api/admin/events", requireAdmin, (request, response) => {
+  try {
+    const id = crypto.randomUUID();
+    stmtInsertEvent.run(eventParams(id, parseEventInput(request.body)));
+    startDueEvents();
+    response.status(201).json({ event: adminEventRow(allEvents().find((e) => e.id === id)) });
+  } catch (err) {
+    if (!(err instanceof EventInputError)) throw err;
+    response.status(400).json({ message: err.message });
+  }
+});
+
+/** Loads an Event and answers 404 / 409 itself unless it is in one of the allowed states. */
+function eventInState(request, response, allowed, message) {
+  const event = allEvents().find((e) => e.id === request.params.id);
+  if (!event) { response.status(404).json({ message: "Eventet hittades inte." }); return null; }
+  if (!allowed.includes(eventStatus(event))) { response.status(409).json({ message }); return null; }
+  return event;
+}
+
+app.put("/api/admin/events/:id", requireAdmin, (request, response) => {
+  const event = eventInState(request, response, ["upcoming"], "Bara Event som inte har startat kan ändras.");
+  if (!event) return;
+  try {
+    const params = eventParams(event.id, parseEventInput(request.body, { excludeId: event.id }));
+    db.prepare(`
+      UPDATE events SET label = @label, starts_at = @startsAt, ends_at = @endsAt, daily_diamonds = @dailyDiamonds,
+        chest_wait_hours = @chestWaitHours, chest_multiplier = @chestMultiplier, gift_type = @giftType,
+        gift_diamonds = @giftDiamonds, gift_chest_type = @giftChestType, topup_collection_id = @topUpCollectionId
+      WHERE id = @id
+    `).run(params);
+    startDueEvents();
+    response.json({ event: adminEventRow(allEvents().find((e) => e.id === event.id)) });
+  } catch (err) {
+    if (!(err instanceof EventInputError)) throw err;
+    response.status(400).json({ message: err.message });
+  }
+});
+
+app.delete("/api/admin/events/:id", requireAdmin, (request, response) => {
+  const event = eventInState(request, response, ["upcoming"], "Bara Event som inte har startat kan tas bort.");
+  if (!event) return;
+  db.prepare("DELETE FROM events WHERE id = ?").run(event.id);
+  response.json({ ok: true });
+});
+
+app.post("/api/admin/events/:id/end", requireAdmin, (request, response) => {
+  const event = eventInState(request, response, ["running"], "Bara ett pågående Event kan avslutas i förtid.");
+  if (!event) return;
+  db.prepare("UPDATE events SET ends_at = ?, ended_early_at = ? WHERE id = ?").run(iso(clock.now()), iso(clock.now()), event.id);
+  response.json({ event: adminEventRow(allEvents().find((e) => e.id === event.id)) });
+});
+
+// ── Event login gift ──────────────────────────────────────────────────────────
+// Claimed once per player per Event, from "Väntar på dig", while the Event runs.
+
+app.post("/api/game/events/:id/gift", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const event = activeEvent();
+  if (!event || event.id !== request.params.id || !event.gift) {
+    response.status(400).json({ message: "Ingen gåva att hämta just nu." });
+    return;
+  }
+  ensurePlayerState(userId);
+  try {
+    db.transaction(() => {
+      if (db.prepare("INSERT OR IGNORE INTO event_gift_claims (event_id, user_id, claimed_at) VALUES (?, ?, ?)")
+        .run(event.id, userId, iso(clock.now())).changes === 0) throw new Error("Du har redan hämtat gåvan.");
+      if (event.gift.type === "diamonds") {
+        db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(event.gift.amount, userId);
+        logGameEvent(userId, "event_gift", { collectionId: event.id, diamonds: event.gift.amount });
+        return;
+      }
+      const type = event.gift.chestType;
+      if (!canStoreChest(type, heldChestCounts(userId), dedicatedSlotsFor(userId))) {
+        throw new Error("Ingen ledig kistplats. Öppna en kista först och hämta gåvan sedan.");
+      }
+      const now = clock.now();
+      db.prepare("INSERT INTO chests (id, user_id, type, bought_at, ready_at, payout_table) VALUES (?, ?, ?, ?, ?, ?)")
+        .run(crypto.randomUUID(), userId, type, iso(now), iso(now), chestPayouts.current);
+      logGameEvent(userId, "event_gift", { collectionId: event.id, quantity: 1 });
+    })();
+  } catch (err) {
+    response.status(400).json({ message: err.message });
+    return;
+  }
+  response.json({ ...buildChestsResponse(userId), state: buildStateResponse(userId) });
+});
+
 // One row per live Collection: where its pool stands and how it has been topped up.
 function poolSkewRows() {
   const live = livePoolRows();
@@ -2387,6 +2637,11 @@ function adminBanners() {
     if (Date.parse(row.created_at) >= since) {
       banners.push({ kind: "topup_fired", collectionId: row.collection_id, rare: row.rare, epic: row.epic, source: row.source, at: row.created_at });
     }
+  }
+  const now = clock.now();
+  for (const e of allEvents()) {
+    const startsIn = Date.parse(e.startsAt) - now;
+    if (startsIn > 0 && startsIn <= EVENT_SOON_MS) banners.push({ kind: "event_soon", eventId: e.id, label: e.label, startsAt: e.startsAt });
   }
   for (const collection of collections) {
     const { remaining } = collectionPoolStats(collection.id);
@@ -2737,9 +2992,10 @@ app.get("/api/admin/stats", requireAdmin, (request, response) => {
   };
 
   // ── Diamond flow in the window ──
-  const flow = { daily: 0, streakBonus: 0, weeklyGoals: 0, achievements: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
+  const flow = { daily: 0, eventGifts: 0, streakBonus: 0, weeklyGoals: 0, achievements: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
   for (const e of events) {
     if (e.type === "daily") flow.daily += e.diamonds;
+    else if (e.type === "event_gift") flow.eventGifts += e.diamonds;
     else if (e.type === "streak_bonus") flow.streakBonus += e.diamonds;
     else if (e.type === "weekly_goal") flow.weeklyGoals += e.diamonds;
     else if (e.type === "achievement") flow.achievements += e.diamonds;
@@ -3132,6 +3388,7 @@ app.get(/^(?!\/api\/).*/, (_request, response) => {
 function startBackgroundJobs() {
   const timers = [
     setInterval(() => applyEventChestCaps(), 60 * 1000).unref(),
+    setInterval(() => { try { startDueEvents(); } catch (err) { console.error(err); } }, 60 * 1000).unref(),
     setInterval(settleWeeklyGoals, 60 * 1000).unref(),
     setInterval(clearOldTradeHistory, TRADE_CLEANUP_INTERVAL_MS).unref(),
   ];

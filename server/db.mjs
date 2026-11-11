@@ -231,6 +231,34 @@ db.exec(`
     created_at    TEXT NOT NULL
   );
 `);
+// Events are built in the admin panel. Times are UTC ISO strings. An Event that
+// is ended early has its ends_at moved to that moment. events_seeded remembers
+// which content-file Events were already carried over, so deleting one sticks.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS events (
+    id                  TEXT PRIMARY KEY,
+    label               TEXT NOT NULL,
+    starts_at           TEXT NOT NULL,
+    ends_at             TEXT NOT NULL,
+    daily_diamonds      INTEGER,
+    chest_wait_hours    TEXT,
+    chest_multiplier    REAL,
+    gift_type           TEXT CHECK (gift_type IN ('diamonds', 'chest')),
+    gift_diamonds       INTEGER,
+    gift_chest_type     TEXT,
+    topup_collection_id TEXT,
+    topup_fired_at      TEXT,
+    ended_early_at      TEXT,
+    created_at          TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS events_seeded (id TEXT PRIMARY KEY);
+  CREATE TABLE IF NOT EXISTS event_gift_claims (
+    event_id   TEXT NOT NULL,
+    user_id    TEXT NOT NULL,
+    claimed_at TEXT NOT NULL,
+    PRIMARY KEY (event_id, user_id)
+  );
+`);
 if (db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('card_pool') WHERE name='bonus_copies'").get().n === 0) {
   db.exec("ALTER TABLE card_pool ADD COLUMN bonus_copies INTEGER NOT NULL DEFAULT 0");
 }

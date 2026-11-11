@@ -10,7 +10,8 @@ import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
 import type { CollectionProgress, GameState, LeaderboardEntry, WaitingItem, WeeklyGoal } from "../../types/game";
 import {
-  acceptTrade, claimAchievement, claimDailyDiamonds, claimWeeklyGoal, collectChest,
+  acceptTrade, claimAchievement, claimDailyDiamonds, claimWeeklyGoal,
+  claimEventGift, collectChest,
   fetchCollectionProgress, fetchGameState, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
 } from "../../utils/gameApi";
 import { useNow } from "../../utils/useNow";
@@ -121,6 +122,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       if (item.type === "trade") await acceptTrade(item.id);
       else if (item.type === "achievement") await claimAchievement(item.id);
       else if (item.type === "weekly_goal") await claimWeeklyGoal(item.id);
+      else if (item.type === "event_gift") await claimEventGift(item.id);
       else if (item.type === "chest") {
         const result = await collectChest(item.id);
         setReward({ label: result.chestLabel, diamonds: result.diamondsAwarded, cards: result.cards });

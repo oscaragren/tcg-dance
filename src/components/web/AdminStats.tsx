@@ -172,7 +172,7 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
   if (!stats) return <p className="text-sm text-secondary pt-2">Laddar statistik...</p>;
 
   const { totals, diamondFlow: flow } = stats;
-  const earned = flow.daily + flow.streakBonus + flow.weeklyGoals + flow.achievements + flow.chestRewards;
+  const earned = flow.daily + flow.eventGifts + flow.streakBonus + flow.weeklyGoals + flow.achievements + flow.chestRewards;
   const spent = flow.packs + flow.chests + flow.slots;
 
   return (
@@ -248,6 +248,7 @@ export function AdminStatsPanel({ onOpenUser }: { onOpenUser: (userId: string) =
         <div className="rounded-xl border bg-surface p-4 space-y-2 text-sm">
           <h3 className="text-sm font-semibold text-text">Diamantflöde, senaste {stats.days} dagarna</h3>
           <div className="flex justify-between"><span className="text-text">In: dagliga diamanter</span><span className="tabular-nums">+{formatNumber(flow.daily)}</span></div>
+          <div className="flex justify-between"><span className="text-text">In: Event-gåvor</span><span className="tabular-nums">+{formatNumber(flow.eventGifts)}</span></div>
           <div className="flex justify-between"><span className="text-text">In: streak-bonus</span><span className="tabular-nums">+{formatNumber(flow.streakBonus)}</span></div>
           <div className="flex justify-between"><span className="text-text">In: veckomål</span><span className="tabular-nums">+{formatNumber(flow.weeklyGoals)}</span></div>
           <div className="flex justify-between"><span className="text-text">In: prestationer</span><span className="tabular-nums">+{formatNumber(flow.achievements)}</span></div>

@@ -24,6 +24,9 @@ export function eventRewards(event: GameEvent): string[] {
   for (const [type, hours] of Object.entries(event.chestWaitHours ?? {})) {
     rewards.push(`${CHEST_NAME[type] ?? type}: ${hours} h väntetid`);
   }
+  if (event.chestMultiplier != null) rewards.push(`Kistor ger ×${event.chestMultiplier} diamanter`);
+  if (event.gift?.type === "diamonds") rewards.push(`Inloggningsgåva: ${event.gift.amount} diamanter`);
+  if (event.gift?.type === "chest") rewards.push(`Inloggningsgåva: en ${CHEST_NAME[event.gift.chestType] ?? event.gift.chestType}`);
   return rewards;
 }
 

@@ -80,6 +80,10 @@ export async function setCardKept(cardId: string, keep: boolean): Promise<{ card
   });
 }
 
+export async function claimEventGift(eventId: string): Promise<void> {
+  await requestJson<unknown>(`/api/game/events/${eventId}/gift`, { method: "POST" });
+}
+
 export async function getUserCardsForTrade(userId: string): Promise<{ cards: CardForTrade[] }> {
   return requestJson<{ cards: CardForTrade[] }>(`/api/users/${userId}/cards-for-trade`, { method: "GET" });
 }
