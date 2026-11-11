@@ -28,6 +28,7 @@ import { AdminPage } from "./AdminPage";
 import { featuredCollection } from "../../data/packs";
 // PROTOTYPE — throwaway key-screen prototype, dev only. Remove before merging.
 import { RedesignPrototype } from "./prototype/RedesignPrototype";
+import { MoodPrototype } from "./prototype/MoodPrototype";
 
 
 function LandingPage() {
@@ -151,6 +152,9 @@ export default function App() {
   }
 
   // PROTOTYPE — dev-only throwaway route, renders without the real Header/Footer.
+  if (import.meta.env.DEV && location.pathname.startsWith("/prototyp/stamning")) {
+    return <MoodPrototype />;
+  }
   if (import.meta.env.DEV && location.pathname.startsWith("/prototyp/skarmar")) {
     return <RedesignPrototype />;
   }
