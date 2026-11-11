@@ -8,7 +8,7 @@ export type GameState = {
   /** Today's daily claim before any streak bonus — higher during events. */
   dailyDiamondsToday?: number;
   lastOpenedCards: DanceCard[];
-  /** Consecutive days the daily diamonds have been claimed with no gap. */
+  /** Streak position on the 7-step track (a missed day leaves it unchanged). */
   diamondStreak: number;
   /** Streak length that pays out the bonus (see ClaimDailyDiamondsResponse). */
   diamondStreakTarget: number;
@@ -31,7 +31,7 @@ export type GameEvent = {
 export type ClaimDailyDiamondsResponse = {
   /** Total diamonds credited by this claim, including any streak bonus. */
   diamondsAwarded: number;
-  /** 500 when this claim completed a 7-day streak, 0 otherwise. */
+  /** 500 when this claim reached the 7th step, 0 otherwise. */
   streakBonusAwarded: number;
   diamondStreak: number;
   state: GameState;

@@ -20,6 +20,29 @@ type LoggedInHomePageProps = {
   userEmail: string;
 };
 
+/** The 7-step Streak track in the Daily claim row; filled steps = current position. */
+function StreakTrack({ position, target, bonus }: { position: number; target: number; bonus: number | null }) {
+  return (
+    <div className="mt-1 flex items-center gap-1.5" role="img" aria-label={`Streak: steg ${position} av ${target}`}>
+      <Flame className="h-3.5 w-3.5 shrink-0 text-rarity-legendary" aria-hidden />
+      <div className="flex gap-1">
+        {Array.from({ length: target }, (_, i) => (
+          <span
+            key={i}
+            data-testid="streak-step"
+            data-filled={i < position}
+            className={`h-2 w-2 rounded-full ${i < position ? "bg-accent" : "bg-hairline-strong"}`}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-secondary">
+        {position}/{target}
+        {bonus ? ` · +${bonus} bonus!` : ""}
+      </span>
+    </div>
+  );
+}
+
 /** Hem, layout B "Kompakt": everything fits on one 390×844 screen. */
 export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -112,11 +135,11 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       <div className="mx-4 flex items-center justify-between gap-3 rounded-xl border bg-surface px-3 py-2">
         <div className="min-w-0 text-sm">
           <p className="font-semibold">Dagliga diamanter</p>
-          <p className="flex items-center gap-1 text-xs text-secondary">
-            <Flame className="h-3.5 w-3.5 text-rarity-legendary" aria-hidden />
-            {gameState?.diamondStreak ?? 0}/{gameState?.diamondStreakTarget ?? 7} dagar i rad
-            {streakBonus ? ` · +${streakBonus} bonus!` : ""}
-          </p>
+          <StreakTrack
+            position={gameState?.diamondStreak ?? 0}
+            target={gameState?.diamondStreakTarget ?? 7}
+            bonus={streakBonus}
+          />
         </div>
         {daily?.type === "daily" ? (
           <button

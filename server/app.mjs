@@ -451,14 +451,6 @@ function todayIso() {
   return stockholmDate.format(new Date(clock.now()));
 }
 
-function yesterdayIso() {
-  // Step back one calendar day from today's Stockholm date. Doing the
-  // arithmetic on the date string (as UTC noon) sidesteps DST entirely.
-  const d = new Date(`${todayIso()}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
-
 // ── Time-limited events (game-content.json "events") ─────────────────────────
 // Each event has startsAt/endsAt (ISO, inclusive start, exclusive end) and may
 // override the daily diamond amount and/or chest wait times while it runs.
@@ -494,11 +486,10 @@ function dailyDiamondsNow(now = clock.now()) {
 
 const STARTING_DIAMONDS = 500;
 
-// Claim the daily diamonds on 7 consecutive days (no gap) and get a one-time
-// bonus on top of that day's normal claim. The streak then resets to 0, so
-// the next claim starts a brand new 7-day run; missing a single day resets
-// it too (the next claim after a gap starts over at 1, not 0, since that
-// claim itself is day one of the new streak).
+// The Streak is a 7-step track: every Daily claim advances it one step. A
+// missed day pauses it (position unchanged), never resets it. The claim that
+// reaches step 7 pays a bonus on top of that day's normal claim and the track
+// goes back to step 0.
 const DIAMOND_STREAK_TARGET = 7;
 const DIAMOND_STREAK_BONUS = 500;
 
@@ -717,26 +708,25 @@ app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
     return;
   }
 
-  // A claim yesterday keeps the streak going; anything else (never claimed,
-  // or a gap of one day or more) starts a new streak at 1 — today is its
-  // first day.
-  const continuesStreak = state.last_daily_claim_date === yesterdayIso();
-  let streak = continuesStreak ? state.diamond_streak + 1 : 1;
-
+  let streak = state.diamond_streak + 1;
   let streakBonusAwarded = 0;
   if (streak >= DIAMOND_STREAK_TARGET) {
     streakBonusAwarded = DIAMOND_STREAK_BONUS;
-    streak = 0; // paid out — next claim starts a fresh 7-day run
+    streak = 0; // paid out — the track starts over
   }
 
   // During an event the base claim changes (e.g. 800 instead of 150); the
   // streak bonus is still paid on top.
-  const diamondsAwarded = dailyDiamondsNow() + streakBonusAwarded;
+  const dailyAmount = dailyDiamondsNow();
+  const diamondsAwarded = dailyAmount + streakBonusAwarded;
 
   db.prepare(
     "UPDATE player_state SET diamonds = diamonds + ?, last_daily_claim_date = ?, diamond_streak = ? WHERE user_id = ?",
   ).run(diamondsAwarded, todayIso(), streak, request.auth.userId);
-  logGameEvent(request.auth.userId, "daily", { diamonds: diamondsAwarded });
+  logGameEvent(request.auth.userId, "daily", { diamonds: dailyAmount });
+  if (streakBonusAwarded > 0) {
+    logGameEvent(request.auth.userId, "streak_bonus", { diamonds: streakBonusAwarded });
+  }
 
   response.json({
     diamondsAwarded,
@@ -2357,9 +2347,10 @@ app.get("/api/admin/stats", requireAdmin, (request, response) => {
   };
 
   // ── Diamond flow in the window ──
-  const flow = { daily: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
+  const flow = { daily: 0, streakBonus: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
   for (const e of events) {
     if (e.type === "daily") flow.daily += e.diamonds;
+    else if (e.type === "streak_bonus") flow.streakBonus += e.diamonds;
     else if (e.type === "chest_open") flow.chestRewards += e.diamonds;
     else if (e.type === "pack") flow.packs += e.diamonds;
     else if (e.type === "chest_buy") flow.chests += e.diamonds;

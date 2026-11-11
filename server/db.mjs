@@ -34,9 +34,8 @@ db.exec(`
     diamonds             INTEGER NOT NULL DEFAULT 0,
     last_daily_claim_date TEXT,
     last_opened_cards    TEXT NOT NULL DEFAULT '[]',
-    -- Consecutive days the daily diamonds have been claimed with no gap.
-    -- Resets to 1 (today counts) whenever a day is missed, and back to 0 the
-    -- moment it hits the 7-day bonus, so the next claim starts a fresh streak.
+    -- Streak position on the 7-step track: +1 per Daily claim, back to 0 when
+    -- the 7th step pays out. A missed day leaves it unchanged.
     diamond_streak       INTEGER NOT NULL DEFAULT 0,
     -- created_at of the newest announcement this player has opened the
     -- dropdown after. NULL means never opened it (or never any yet).
@@ -165,7 +164,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_upgrades_created ON upgrades(created_at);
 
   -- Lightweight timeline of economy actions: 'pack' (quantity packs bought for
-  -- diamonds), 'daily' (diamonds claimed), 'chest_buy' (diamonds spent),
+  -- diamonds), 'daily' (diamonds claimed), 'streak_bonus' (Streak bonus), 'chest_buy' (diamonds spent),
   -- 'chest_open' (diamonds won, quantity = cards won).
   CREATE TABLE IF NOT EXISTS game_events (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,

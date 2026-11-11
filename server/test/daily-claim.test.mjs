@@ -56,20 +56,51 @@ test("the day boundary follows summer time (CEST, UTC+2)", async () => {
   assert.equal((await claim()).status, 200);
 });
 
-test("a missed day resets the streak; 7 consecutive days pay the bonus", async () => {
-  const day = 24 * 60 * 60 * 1000;
+const DAY = 24 * 60 * 60 * 1000;
+
+test("each claim advances the Streak one step; the 7th pays 500 and the track restarts", async () => {
   for (let i = 1; i <= 6; i++) {
     const res = await claim();
     assert.equal(res.body.diamondStreak, i);
-    clock.advance(day);
+    assert.equal(res.body.streakBonusAwarded, 0);
+    clock.advance(DAY);
   }
   const seventh = await claim();
   assert.equal(seventh.body.streakBonusAwarded, 500);
   assert.equal(seventh.body.diamondsAwarded, 650);
   assert.equal(seventh.body.diamondStreak, 0);
 
-  clock.advance(day);
+  clock.advance(DAY);
   assert.equal((await claim()).body.diamondStreak, 1);
-  clock.advance(2 * day); // skip a day
+});
+
+test("a missed day pauses the Streak instead of resetting it", async () => {
+  for (let i = 1; i <= 3; i++) {
+    assert.equal((await claim()).body.diamondStreak, i);
+    clock.advance(DAY);
+  }
+  clock.advance(5 * DAY); // miss five days
+  assert.equal((await state()).diamondStreak, 3);
+  assert.equal((await claim()).body.diamondStreak, 4);
+});
+
+test("a gap across Stockholm midnight still only moves the Streak one step", async () => {
+  clock.set("2026-03-10T23:59:00+01:00");
   assert.equal((await claim()).body.diamondStreak, 1);
+  clock.set("2026-03-12T00:01:00+01:00"); // skipped the 11th entirely
+  assert.equal((await claim()).body.diamondStreak, 2);
+});
+
+test("the Streak bonus is logged as its own Diamond source", async () => {
+  for (let i = 1; i <= 7; i++) {
+    await claim();
+    clock.advance(DAY);
+  }
+  const rows = t.db
+    .prepare("SELECT type, diamonds FROM game_events WHERE user_id = ? ORDER BY id")
+    .all(player.userId)
+    .filter((r) => r.type === "daily" || r.type === "streak_bonus");
+  assert.equal(rows.filter((r) => r.type === "daily").length, 7);
+  assert.ok(rows.filter((r) => r.type === "daily").every((r) => r.diamonds === 150));
+  assert.deepEqual(rows.filter((r) => r.type === "streak_bonus"), [{ type: "streak_bonus", diamonds: 500 }]);
 });
