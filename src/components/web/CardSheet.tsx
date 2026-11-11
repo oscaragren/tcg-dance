@@ -5,6 +5,7 @@ import { ImageWithFallback } from "../shared/figma/ImageWithFallback";
 import { resolveCardDesignUrl } from "../../data/cardDesignUrls";
 import { rarityColor, rarityLabel, rarityPip } from "../../data/rarity";
 import type { DanceCard } from "../../types/danceCard";
+import { useIsDesktop } from "../../utils/useMediaQuery";
 import { initialsOf } from "./CardThumb";
 
 type CardSheetProps = {
@@ -18,26 +19,28 @@ type CardSheetProps = {
   onClose: () => void;
 };
 
-/** Bottom sheet with a large image, the Rarity and Copies owned. Pure presentation. */
+/** Bottom sheet on a phone, right side panel at ≥1024px, with a large image, the Rarity and Copies owned. Pure presentation. */
 export function CardSheet({ card, copies, kept = false, onToggleKept, onClose }: CardSheetProps) {
   const titleId = useId();
   const color = rarityColor(card.rarity);
   const owned = copies > 0;
   const art = owned ? resolveCardDesignUrl(card.designKey) : undefined;
+  const desktop = useIsDesktop();
   const subtitle = [card.event, card.danceStyle, card.club].filter(Boolean).join(" · ");
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
+    // As a right side panel (desktop) the page behind stays scrollable.
     const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (!desktop) document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
-  }, [onClose]);
+  }, [onClose, desktop]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <button type="button" className="absolute inset-0 bg-black/70" onClick={onClose} aria-label="Stäng" />
-      <div className="relative z-10 w-full max-w-md rounded-t-2xl border bg-surface p-5 pb-8 sm:rounded-2xl">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center lg:pointer-events-none lg:items-stretch lg:justify-end" role="dialog" aria-modal={!desktop} aria-labelledby={titleId}>
+      <button type="button" className="absolute inset-0 bg-black/70 lg:hidden" onClick={onClose} aria-label="Stäng" />
+      <div className="relative z-10 w-full max-w-md rounded-t-2xl border bg-surface p-5 pb-8 sm:rounded-2xl lg:pointer-events-auto lg:w-[26rem] lg:max-w-none lg:overflow-y-auto lg:rounded-none lg:border-y-0 lg:border-r-0 lg:pt-16 lg:shadow-2xl">
         <button type="button" onClick={onClose} aria-label="Stäng" className="absolute right-2 top-2 rounded-lg px-3 text-2xl leading-none text-secondary hover:text-text">×</button>
         <div
           className={`relative mx-auto aspect-[4/5] w-full max-w-[260px] overflow-hidden bg-raised ${owned && card.rarity === "special" ? "card-holo" : ""}`}

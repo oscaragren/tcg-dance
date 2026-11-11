@@ -327,6 +327,7 @@ export type AdminAnnouncement = {
   id: string;
   title: string;
   body: string;
+  bannerText: string;
   createdAt: string;
 };
 
@@ -338,6 +339,13 @@ export async function createAdminAnnouncement(title: string, body: string): Prom
   return adminRequest<AdminAnnouncement>("/api/admin/announcements", {
     method: "POST",
     body: JSON.stringify({ title, body }),
+  });
+}
+
+export async function setAdminAnnouncementBanner(id: string, text: string): Promise<void> {
+  await adminRequest<unknown>(`/api/admin/announcements/${id}/banner`, {
+    method: "PUT",
+    body: JSON.stringify({ text }),
   });
 }
 
