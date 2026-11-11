@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradeResponse, UserSearchResult } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -209,4 +209,12 @@ export async function fetchAnnouncements(): Promise<AnnouncementsResponse> {
 
 export async function markAnnouncementsSeen(): Promise<void> {
   await requestJson<unknown>("/api/announcements/seen", { method: "POST" });
+}
+export async function fetchCollectionProgress(collectionId?: string): Promise<CollectionProgress> {
+  const q = collectionId ? `?collectionId=${encodeURIComponent(collectionId)}` : "";
+  return requestJson<CollectionProgress>(`/api/game/collection-progress${q}`, { method: "GET" });
+}
+
+export async function fetchTrophies(): Promise<Trophy[]> {
+  return requestJson<Trophy[]>("/api/game/trophies", { method: "GET" });
 }

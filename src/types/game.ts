@@ -191,3 +191,19 @@ export type Trade = {
   /** Set when this offer was made in reply to another; null for a first offer. */
   counterOfTradeId: string | null;
 };
+
+/** Unique Cards owned out of all Cards. Special cards never count. */
+export type ProgressCount = { owned: number; total: number };
+
+export type CollectionProgress = {
+  collectionId: string | null;
+  total: ProgressCount;
+  byRarity: Record<"common" | "rare" | "epic" | "legendary", ProgressCount>;
+};
+
+/** A Special card and who holds its single Copy. */
+export type Trophy = {
+  cardId: string;
+  collectionId?: string;
+  owner: { username: string; isYou: boolean } | null;
+};

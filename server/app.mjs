@@ -586,6 +586,50 @@ app.get("/api/game/state", authed, (request, response) => {
   response.json(buildStateResponse(request.auth.userId));
 });
 
+// Collection progress: unique Cards owned out of all Cards, in total and per
+// Rarity. Special cards are left out entirely (see GLOSSARY: Collection progress).
+const PROGRESS_RARITIES = ["common", "rare", "epic", "legendary"];
+
+app.get("/api/game/collection-progress", authed, (request, response) => {
+  const collectionId = request.query.collectionId ? String(request.query.collectionId) : null;
+  if (collectionId && !collectionsMap.has(collectionId)) {
+    response.status(404).json({ message: "Samlingen hittades inte." });
+    return;
+  }
+  const owned = new Set(
+    db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?").all(request.auth.userId).map((r) => r.card_id),
+  );
+  const byRarity = Object.fromEntries(PROGRESS_RARITIES.map((r) => [r, { owned: 0, total: 0 }]));
+  for (const card of allCards) {
+    if (collectionId && card.collectionId !== collectionId) continue;
+    const bucket = byRarity[card.rarity];
+    if (!bucket) continue; // Special
+    bucket.total += 1;
+    if (owned.has(card.id)) bucket.owned += 1;
+  }
+  const total = { owned: 0, total: 0 };
+  for (const b of Object.values(byRarity)) { total.owned += b.owned; total.total += b.total; }
+  response.json({ collectionId, total, byRarity });
+});
+
+// Special cards ("Troféer") and who holds each one. Only one Copy exists, so
+// there is at most one owner.
+app.get("/api/game/trophies", authed, (request, response) => {
+  const ownerStmt = db.prepare(
+    "SELECT u.id, u.username FROM owned_cards oc JOIN users u ON u.id = oc.user_id WHERE oc.card_id = ? LIMIT 1",
+  );
+  response.json(
+    allCards.filter((c) => c.rarity === "special").map((c) => {
+      const o = ownerStmt.get(c.id);
+      return {
+        cardId: c.id,
+        collectionId: c.collectionId,
+        owner: o ? { username: o.username, isYou: o.id === request.auth.userId } : null,
+      };
+    }),
+  );
+});
+
 app.get("/api/game/pool", (_request, response) => {
   const rows = db
     .prepare("SELECT card_id, collection_id, total_copies, copies_remaining FROM card_pool")

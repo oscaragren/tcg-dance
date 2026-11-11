@@ -1,3 +1,30 @@
 @import './fonts.css';
 @import './theme.css';
 @import './tailwind.css';
+
+/* ── Card frame (shared Card grid / Card sheet) ───────────────────────────── */
+/* Each thumb is a size container so the shape pip can hide itself on tiny
+   thumbs (< 64px wide) however wide the grid column turns out to be. */
+.card-thumb { container-type: inline-size; }
+.card-thumb .card-pip { display: block; }
+@container (max-width: 63px) {
+  .card-thumb .card-pip { display: none; }
+}
+
+@keyframes card-holo {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.card-holo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 20%, rgba(255,138,216,.35) 35%, rgba(126,232,255,.35) 50%, rgba(242,195,91,.35) 65%, transparent 80%);
+  background-size: 200% 100%;
+  mix-blend-mode: screen;
+  animation: card-holo 3.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-holo::after { animation: none; }
+}
