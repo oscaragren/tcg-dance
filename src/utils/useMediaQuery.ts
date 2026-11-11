@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-/** Tracks a CSS media query. False on the server and until the first effect. */
+/** Tracks a CSS media query; updates when the viewport crosses it. False on the server. */
 export function useMediaQuery(query: string): boolean {
   const get = () => typeof window !== "undefined" && window.matchMedia(query).matches;
   const [matches, setMatches] = useState(get);
