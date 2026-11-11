@@ -78,8 +78,8 @@ test("Chests count their new Cards, and are not Packs", async () => {
 });
 
 test("an Upgrade counts its resulting Card when new", async () => {
-  give(player.userId, ...Array(20).fill("c1"));
-  const res = await t.request("POST", "/api/game/upgrade", { cookie: player.cookie, body: { cardIds: Array(20).fill("c1") } });
+  give(player.userId, ...Array(501).fill("c1")); // 500 Duplicates
+  const res = await t.request("POST", "/api/game/upgrade", { cookie: player.cookie, body: { cardIds: Array(500).fill("c1") } });
   assert.equal(res.status, 200);
   assert.equal((await goal("new-cards")).progress, 1);
 });

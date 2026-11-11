@@ -452,7 +452,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <TabsContent value="trades" className="space-y-3 pt-2">
               <p className="text-sm text-secondary">
                 Varje sida värderas efter spelets egen uppgraderingsstege
-                (20 common = 1 rare, 15 rare = 1 epic, 10 epic = 1 legendary).
+                (500 common = 1 rare, 15 rare = 1 epic, 10 epic = 1 legendary).
                 Ett byte flaggas när ena sidan är minst 3 gånger mer värd än den andra.
               </p>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">

@@ -73,6 +73,16 @@ export type UpgradeResponse = {
   state: GameState;
 };
 
+/** The game's automatic pick for an Upgrade (Duplicates only, skipping Behåll). */
+export type UpgradePick = {
+  cost: number;
+  needed: number;
+  have: number;
+  cardIds: string[];
+  targetRarity: CardRarity;
+  canUpgrade: boolean;
+};
+
 export const upgradeTierTarget: Record<CardRarity, CardRarity | null> = {
   common: "rare",
   rare: "epic",
@@ -83,7 +93,7 @@ export const upgradeTierTarget: Record<CardRarity, CardRarity | null> = {
 
 /** Cards required to upgrade, keyed by the source rarity being combined. */
 export const upgradeCardsRequired: Record<CardRarity, number | null> = {
-  common: 20,
+  common: 500,
   rare: 15,
   epic: 10,
   legendary: null,

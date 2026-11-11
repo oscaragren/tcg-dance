@@ -653,7 +653,7 @@ function openPackCards(packConfig, collectionId) {
 }
 
 // Cards required to upgrade, keyed by the source rarity being combined.
-const UPGRADE_CARDS_REQUIRED = { common: 20, rare: 15, epic: 10 };
+const UPGRADE_CARDS_REQUIRED = { common: 500, rare: 15, epic: 10 };
 const TIER_UPGRADE_TARGET = { common: "rare", rare: "epic", epic: "legendary" };
 
 // Uniform pick among the Cards of a rarity that still have Copies, using the
@@ -971,6 +971,30 @@ function logGameEvent(userId, type, { collectionId = null, quantity = 0, diamond
   stmtLogEvent.run(userId, type, collectionId, quantity, diamonds, new Date(clock.now()).toISOString());
 }
 
+// The game's automatic pick for an Upgrade: Duplicates only, skipping Cards set
+// to Behåll, taken from the Cards with the most spare Copies first. The player
+// can adjust it before confirming.
+app.get("/api/game/upgrade/pick/:collectionId/:rarity", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const { collectionId, rarity } = request.params;
+  const cost = UPGRADE_CARDS_REQUIRED[rarity];
+  const targetRarity = TIER_UPGRADE_TARGET[rarity];
+  if (!cost || !targetRarity) {
+    response.status(400).json({ message: "Den rariteten kan inte uppgraderas." });
+    return;
+  }
+  const spare = availableForTrade(userId)
+    .filter((a) => cardById.get(a.cardId)?.collectionId === collectionId && cardById.get(a.cardId)?.rarity === rarity)
+    .sort((a, b) => b.quantity - a.quantity || a.cardId.localeCompare(b.cardId));
+  const have = spare.reduce((n, a) => n + a.quantity, 0);
+  const cardIds = [];
+  for (const { cardId, quantity } of spare) {
+    for (let i = 0; i < quantity && cardIds.length < cost; i++) cardIds.push(cardId);
+  }
+  const poolHasTarget = stmtCountCardsOfRarity.get(collectionId, targetRarity).n > 0;
+  response.json({ cost, needed: cost, have, cardIds, targetRarity, canUpgrade: have >= cost && poolHasTarget });
+});
+
 app.post("/api/game/upgrade", authed, (request, response) => {
   const userId = request.auth.userId;
   const requestedCardIds = Array.isArray(request.body?.cardIds) ? request.body.cardIds.map(String) : [];
@@ -1008,6 +1032,16 @@ app.post("/api/game/upgrade", authed, (request, response) => {
 
   const requestedCounts = new Map();
   for (const id of requestedCardIds) requestedCounts.set(id, (requestedCounts.get(id) ?? 0) + 1);
+
+  // Only Duplicates can be given up (never a player's only Copy), and never a
+  // Card set to Behåll: the same Copies that are Available for Trade.
+  const spare = new Map(availableForTrade(userId).map((a) => [a.cardId, a.quantity]));
+  for (const [cardId, count] of requestedCounts) {
+    if ((spare.get(cardId) ?? 0) < count) {
+      response.status(400).json({ message: "Du kan bara byta in dubbletter av kort du inte har satt till Behåll." });
+      return;
+    }
+  }
 
   const ownedRows = db.prepare("SELECT id, card_id FROM owned_cards WHERE user_id = ?").all(userId);
   const ownedRowsByCard = new Map();
@@ -1117,7 +1151,7 @@ app.post("/api/achievements/:id/claim", authed, (request, response) => {
 // ── Trade helpers ─────────────────────────────────────────────────────────────
 
 // Relative card values come straight from the game's own upgrade ladder
-// (UPGRADE_CARDS_REQUIRED above): 20 commons make a rare, 15 rares an epic,
+// (UPGRADE_CARDS_REQUIRED above): 500 commons make a rare, 15 rares an epic,
 // 10 epics a legendary. That is the exchange rate the economy already declares,
 // so it is also the rate someone funnelling cards between their own accounts is
 // arbitraging. "special" sits outside the ladder (one copy each, extremely

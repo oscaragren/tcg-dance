@@ -5,12 +5,14 @@ import { AchievementsSection } from "../../components/web/AchievementsSection";
 import { CardGrid } from "../../components/web/CardGrid";
 import { CardSheet } from "../../components/web/CardSheet";
 import { CardThumb } from "../../components/web/CardThumb";
+import { UpgradeRevealModal } from "../../components/web/UpgradeRevealModal";
+import { UpgradeScreen } from "../../components/web/UpgradeScreen";
 import { Button } from "../../components/shared/ui/button";
 import { cards, type CardRarity, type DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
 import { rarityColor, rarityLabel } from "../../data/rarity";
-import { fetchCollectionProgress, fetchGameState, fetchTrophies, setCardKept } from "../../utils/gameApi";
-import type { CollectionProgress, Trophy } from "../../types/game";
+import { fetchCollectionProgress, fetchGameState, fetchTrophies, setCardKept, upgradeCards } from "../../utils/gameApi";
+import { upgradeCardsRequired, upgradeTierTarget, type CollectionProgress, type Trophy } from "../../types/game";
 
 type View = "alla" | "saknas" | "dubbletter";
 type GridRarity = Exclude<CardRarity, "special">;
@@ -37,6 +39,10 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
   const [trophies, setTrophies] = useState<Trophy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgradeRarity, setUpgradeRarity] = useState<CardRarity | null>(null);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [revealCard, setRevealCard] = useState<DanceCard | null>(null);
 
   useEffect(() => {
     if (!userEmail) { setOwnedCardIds([]); setKeptCardIds(new Set()); return; }
@@ -88,6 +94,33 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
       };
     }).filter((s) => s.total > 0);
   }, [collectionCards, copies, view, query]);
+
+  // Duplicates of Cards not set to Behåll, per Rarity: what an Upgrade can spend.
+  const spareByRarity = useMemo(() => {
+    const out: Partial<Record<CardRarity, number>> = {};
+    for (const c of collectionCards) {
+      const n = copies.get(c.id) ?? 0;
+      if (n > 1 && !keptCardIds.has(c.id)) out[c.rarity] = (out[c.rarity] ?? 0) + n - 1;
+    }
+    return out;
+  }, [collectionCards, copies, keptCardIds]);
+
+  async function confirmUpgrade(cardIds: string[]) {
+    if (isUpgrading) return;
+    setIsUpgrading(true);
+    setUpgradeError(null);
+    try {
+      const response = await upgradeCards(cardIds);
+      setOwnedCardIds(response.state.ownedCardIds);
+      setKeptCardIds(new Set(response.state.keptCardIds));
+      setUpgradeRarity(null);
+      setRevealCard(response.upgradedCard);
+    } catch (e) {
+      setUpgradeError(e instanceof Error ? e.message : "Kunde inte uppgradera korten.");
+    } finally {
+      setIsUpgrading(false);
+    }
+  }
 
   const toggle = useCallback((rarity: string) => {
     setClosed((prev) => {
@@ -223,18 +256,31 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
         ) : (
           sections.filter((s) => s.items.length > 0).map((s) => {
             const open = !closed.has(s.rarity);
+            const next = upgradeTierTarget[s.rarity];
+            const needed = upgradeCardsRequired[s.rarity];
+            const have = spareByRarity[s.rarity] ?? 0;
             return (
               <section key={s.rarity}>
-                <button
-                  type="button"
-                  onClick={() => toggle(s.rarity)}
-                  aria-expanded={open}
-                  className="mb-2 flex w-full items-center justify-between text-left"
-                  style={{ borderBottom: `2px solid ${rarityColor(s.rarity)}` }}
-                >
-                  <h2 className="font-display text-lg font-semibold">{rarityLabel[s.rarity]} {s.owned}/{s.total}</h2>
-                  <ChevronDown className={`h-5 w-5 text-secondary transition-transform ${open ? "" : "-rotate-90"}`} aria-hidden />
-                </button>
+                <div className="mb-2 flex w-full items-center justify-between" style={{ borderBottom: `2px solid ${rarityColor(s.rarity)}` }}>
+                  <button
+                    type="button"
+                    onClick={() => toggle(s.rarity)}
+                    aria-expanded={open}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  >
+                    <h2 className="font-display text-lg font-semibold">{rarityLabel[s.rarity]} {s.owned}/{s.total}</h2>
+                    <ChevronDown className={`h-5 w-5 text-secondary transition-transform ${open ? "" : "-rotate-90"}`} aria-hidden />
+                  </button>
+                  {next && needed ? (
+                    <button
+                      type="button"
+                      onClick={() => { setUpgradeError(null); setUpgradeRarity(s.rarity); }}
+                      className={`shrink-0 rounded px-2 py-1 text-sm font-semibold tabular-nums ${have >= needed ? "text-accent" : "text-secondary"}`}
+                    >
+                      ↑ {rarityLabel[next]} · {have}/{needed}
+                    </button>
+                  ) : null}
+                </div>
                 {open && <CardGrid items={s.items} onSelect={setSelected} />}
               </section>
             );
@@ -244,6 +290,20 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
         <AchievementsSection collectionId={collectionId} />
 
       </div>
+
+      {upgradeRarity && (
+        <UpgradeScreen
+          collectionId={collectionId}
+          rarity={upgradeRarity}
+          ownedCardIds={ownedCardIds}
+          keptCardIds={keptCardIds}
+          isSubmitting={isUpgrading}
+          error={upgradeError}
+          onConfirm={confirmUpgrade}
+          onClose={() => setUpgradeRarity(null)}
+        />
+      )}
+      {revealCard && <UpgradeRevealModal card={revealCard} onClose={() => setRevealCard(null)} />}
 
       {selected && (
         <CardSheet

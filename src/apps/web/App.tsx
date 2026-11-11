@@ -19,7 +19,6 @@ import { TradePage } from "./TradePage";
 import { NewTradePage } from "./NewTradePage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
 import { PrivacyPage } from "./PrivacyPage";
-import { UpgradePage } from "./UpgradePage";
 import { TopplistaPage } from "./TopplistaPage";
 import { PlayerCollectionPage } from "./PlayerCollectionPage";
 import { TradeMarketPage } from "./TradeMarketPage";
@@ -193,7 +192,7 @@ export default function App() {
         <Route path="/samling/byte" element={<Navigate to="/samling" replace />} />
         <Route path="/butik"    element={<ButikPage currentUser={currentUser} />} />
         <Route path="/handel"   element={<Navigate to="/butik" replace />} />
-        <Route path="/uppgradering" element={<UpgradePage currentUser={currentUser} />} />
+        <Route path="/uppgradering" element={<Navigate to="/samling" replace />} />
         <Route path="/topplista" element={<TopplistaPage currentUser={currentUser} />} />
         <Route path="/byte"     element={<TradePage currentUser={currentUser} />} />
         <Route path="/byte/ny"  element={<NewTradePage currentUser={currentUser} />} />

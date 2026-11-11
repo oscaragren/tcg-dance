@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -86,6 +86,10 @@ export async function getUserCardsForTrade(userId: string): Promise<{ cards: Car
 
 export async function searchUsers(q: string): Promise<UserSearchResult[]> {
   return requestJson<UserSearchResult[]>(`/api/users/search?q=${encodeURIComponent(q)}`, { method: "GET" });
+}
+
+export async function fetchUpgradePick(collectionId: string, rarity: string): Promise<UpgradePick> {
+  return requestJson<UpgradePick>(`/api/game/upgrade/pick/${encodeURIComponent(collectionId)}/${encodeURIComponent(rarity)}`, { method: "GET" });
 }
 
 export async function upgradeCards(cardIds: string[]): Promise<UpgradeResponse> {
