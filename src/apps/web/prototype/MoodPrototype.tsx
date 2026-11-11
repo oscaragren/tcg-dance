@@ -349,7 +349,7 @@ function MoodC() {
         {/* Scoreboard from mood A (map owner's pick), restyled for C: per-Rarity
             cells with a thin Rarity-coloured top edge; label always present. */}
         <div className="grid grid-cols-[1.25fr_repeat(4,1fr)] gap-1.5">
-          {([["87", "140", "Totalt", null], ["61", "80", "Common", "common"], ["18", "36", "Rare", "rare"], ["7", "18", "Epic", "epic"], ["1", "6", "Legend.", "legendary"]] as const).map(([a, b, l, r]) => {
+          {([["149", "215", "Totalt", null], ["140", "193", "Common", "common"], ["6", "11", "Rare", "rare"], ["2", "6", "Epic", "epic"], ["1", "5", "Legend.", "legendary"]] as const).map(([a, b, l, r]) => {
             const total = r === null;
             return (
               <div key={l} className="relative overflow-hidden rounded-xl px-1 pb-2 pt-3 text-center"
