@@ -345,9 +345,22 @@ function MoodC() {
         ))}
       </section>
       <section className="px-4 pt-6">
-        <H right="87 av 140">SM 2026</H>
-        <div className="h-3 rounded-full" style={{ background: surf }}><div className="h-full rounded-full" style={{ width: "62%", background: `linear-gradient(90deg, ${neon}, #ffb36b)` }} /></div>
-        <div className="mt-2 flex justify-between text-xs" style={{ color: muted }}><span>Common 61/80</span><span>Rare 18/36</span><span>Epic 7/18</span><span>Leg 1/6</span></div>
+        <H>SM 2026</H>
+        {/* Scoreboard from mood A (map owner's pick), restyled for C: per-Rarity
+            cells with a thin Rarity-coloured top edge; label always present. */}
+        <div className="grid grid-cols-[1.25fr_repeat(4,1fr)] gap-1.5">
+          {([["87", "140", "Totalt", null], ["61", "80", "Common", "common"], ["18", "36", "Rare", "rare"], ["7", "18", "Epic", "epic"], ["1", "6", "Legend.", "legendary"]] as const).map(([a, b, l, r]) => {
+            const total = r === null;
+            return (
+              <div key={l} className="relative overflow-hidden rounded-xl px-1 pb-2 pt-3 text-center"
+                style={total ? { background: neon, color: bg } : { background: surf, color: cream }}>
+                {!total && <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: frames[r] }} />}
+                <p className="text-[26px] leading-none tabular-nums" style={{ fontFamily: D }}>{a}<span className="text-sm" style={{ opacity: 0.6 }}>/{b}</span></p>
+                <p className="mt-1 text-[11px] font-bold uppercase tracking-wider" style={{ color: total ? bg : muted }}>{l}</p>
+              </div>
+            );
+          })}
+        </div>
       </section>
       <section className="px-4 pt-6">
         <H>Raritet</H>
