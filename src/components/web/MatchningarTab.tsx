@@ -25,6 +25,25 @@ function raritySummary(items: CardForTrade[]): string {
     .join(" · ");
 }
 
+type StripItem = CardForTrade & { card: ReturnType<typeof cardById> };
+
+/** A row of Card thumbs for a table cell. */
+function ThumbRow({ items, total, empty }: { items: StripItem[]; total: number; empty: string }) {
+  if (items.length === 0) return <span className="text-xs text-tertiary">{empty}</span>;
+  return (
+    <div>
+      <div className="flex max-w-[28rem] gap-2 overflow-x-auto pb-1">
+        {items.map(({ cardId, quantity, card }) => (
+          <div key={cardId} className="w-14 shrink-0">
+            <CardThumb card={card!} copies={quantity} />
+          </div>
+        ))}
+      </div>
+      <p className="mt-1 text-xs text-secondary">{total} kort</p>
+    </div>
+  );
+}
+
 /** The Trade page's default tab: players who have Cards you are missing, two-way matches first. */
 export function MatchningarTab() {
   const [matches, setMatches] = useState<TradeMatch[] | null>(null);
@@ -78,10 +97,50 @@ export function MatchningarTab() {
         </label>
       </div>
 
+      {/* Desktop (layout C, "Instrument"): one table, one row per player. */}
+      <div className="hidden lg:block overflow-x-auto rounded-2xl border bg-surface">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-xs text-secondary">
+              <th className="px-4 py-3 font-medium">Spelare</th>
+              <th className="px-2 py-3 font-medium text-center" aria-label="Tvåvägs">⇄</th>
+              <th className="px-4 py-3 font-medium">Kan ge dig</th>
+              <th className="px-4 py-3 font-medium">Du kan ge</th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {matches.map((m) => {
+              const theirs = strip(m.theyCanGive);
+              const mine = strip(m.youCanGive);
+              return (
+                <tr key={m.userId} className="align-top">
+                  <td className="px-4 py-3 font-semibold">{m.username}</td>
+                  <td className="px-2 py-3 text-center">
+                    {m.twoWay ? <span className="font-medium text-success" title="Ni kan byta med varandra">⇄</span> : <span className="text-tertiary" title="Envägs">→</span>}
+                  </td>
+                  <td className="px-4 py-3"><ThumbRow items={theirs} total={m.theyCanGive.length} empty="Inga kort i den valda kollektionen." /></td>
+                  <td className="px-4 py-3">
+                    {m.youCanGive.length === 0
+                      ? <span className="text-xs text-tertiary">Inget, erbjud Diamonds</span>
+                      : <ThumbRow items={mine} total={m.youCanGive.length} empty="Inga kort i den valda kollektionen." />}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button asChild size="sm" className="bg-accent text-accent-on hover:bg-accent">
+                      <Link to={newTradeLink(m)}>Föreslå byte</Link>
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
       {matches.map((m) => {
         const theirs = strip(m.theyCanGive);
         return (
-          <section key={m.userId} className="rounded-2xl border bg-surface p-5">
+          <section key={m.userId} className="lg:hidden rounded-2xl border bg-surface p-5">
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">{m.username}</div>

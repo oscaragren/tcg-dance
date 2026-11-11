@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardThumb } from "../../components/web/CardThumb";
-import { TradePickerSheet, type PickerEntry } from "../../components/web/TradePickerSheet";
+import { TradePickerList, TradePickerSheet, type PickerEntry } from "../../components/web/TradePickerSheet";
 import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
 import type { CardForTrade, MarketTraderForCard, RarityTotals, Trade, UserSearchResult } from "../../types/game";
@@ -228,7 +228,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
   return (
     <main className="bg-raised min-h-[calc(100vh-72px)] pt-8">
       <div className="container mx-auto px-4">
-        <div className="max-w-3xl mx-auto space-y-6 pb-8">
+        <div className="max-w-3xl lg:max-w-[1400px] mx-auto space-y-6 pb-8">
           <div>
             <h1 className="text-3xl font-bold mb-1">{isCounter ? "Motbud" : "Nytt byte"}</h1>
             <p className="text-text text-sm">
@@ -312,7 +312,21 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
           </section>
 
           {selectedUser && (
-            <>
+            // Phone: stacked. Desktop (layout C, "Instrument"): their Cards | the Trade | your Duplicates, all open.
+            <div className="space-y-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
+              <section className="hidden lg:flex lg:h-[calc(100vh-14rem)] lg:min-h-[480px] flex-col overflow-hidden rounded-2xl border bg-surface">
+                <h2 className="px-4 pt-4 text-lg font-semibold">{selectedUser.username}s kort</h2>
+                <TradePickerList
+                  entries={getEntries}
+                  selected={requested}
+                  onAdjust={(id, n, max) => adjust(setRequested, id, n, max)}
+                  emptyMessage={`${selectedUser.username} har inga kort.`}
+                  flagUnavailable
+                  gridClassName="grid-cols-2 xl:grid-cols-3"
+                  controlsClassName="px-4 pt-2"
+                />
+              </section>
+              <div className="space-y-6 lg:sticky lg:top-4">
               <SideSection
                 title="Du får"
                 counts={requested}
@@ -340,13 +354,37 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
                 onSuggest={(id) => adjust(setOffered, id, 1, myOwned[id] ?? 0)}
               />
               {error && <p className="text-sm text-danger">{error}</p>}
-            </>
+              {/* Desktop: the summary lives in the middle column instead of the sticky bar. */}
+              <div className="hidden lg:block rounded-2xl border bg-surface p-4 space-y-3">
+                <p className="text-sm font-medium" aria-live="polite">
+                  {sideText(requested, requestedDiamonds)} <span className="text-tertiary">⇄</span> {sideText(offered, offeredDiamonds)}
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => navigate("/byte")}>Avbryt</Button>
+                  <Button disabled={!canSubmit} onClick={() => void handleSubmit()} className="flex-1 bg-accent text-accent-on hover:bg-accent/90">
+                    {isSubmitting ? "Skickar..." : isCounter ? "Skicka motbud" : "Skicka förslag"}
+                  </Button>
+                </div>
+              </div>
+              </div>
+              <section className="hidden lg:flex lg:h-[calc(100vh-14rem)] lg:min-h-[480px] flex-col overflow-hidden rounded-2xl border bg-surface">
+                <h2 className="px-4 pt-4 text-lg font-semibold">Dina dubbletter</h2>
+                <TradePickerList
+                  entries={giveEntries}
+                  selected={offered}
+                  onAdjust={(id, n, max) => adjust(setOffered, id, n, max)}
+                  emptyMessage="Du har inga kort."
+                  gridClassName="grid-cols-2 xl:grid-cols-3"
+                  controlsClassName="px-4 pt-2"
+                />
+              </section>
+            </div>
           )}
         </div>
       </div>
 
       {selectedUser && (
-        <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] lg:bottom-0 z-40 border-t bg-surface">
+        <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] lg:hidden z-40 border-t bg-surface">
           <div className="container mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
             <p className="min-w-0 flex-1 text-sm font-medium" aria-live="polite">
               {sideText(requested, requestedDiamonds)} <span className="text-tertiary">⇄</span> {sideText(offered, offeredDiamonds)}
@@ -428,7 +466,7 @@ function SideSection({
         })}
         <button
           type="button" onClick={onAdd} aria-label={`Lägg till kort: ${title}`}
-          className="flex aspect-[4/5] w-full items-center justify-center rounded-[10px] border-2 border-dashed border-hairline-strong text-3xl text-secondary hover:text-text"
+          className="lg:hidden flex aspect-[4/5] w-full items-center justify-center rounded-[10px] border-2 border-dashed border-hairline-strong text-3xl text-secondary hover:text-text"
         >
           +
         </button>

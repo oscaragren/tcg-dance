@@ -95,7 +95,7 @@ export function TradePage({ currentUser }: TradePageProps) {
   return (
     <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl lg:max-w-6xl mx-auto space-y-8">
 
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
