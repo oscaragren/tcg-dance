@@ -61,8 +61,7 @@ export function HeroSection({
             </p>
             {!isLoading && (
               <p className="text-xs text-rarity-legendary mt-1">
-                <Flame className="inline h-4 w-4" aria-hidden /> Streak {diamondStreak}/{diamondStreakTarget} — varje hämtning tar dig ett steg
-                utan uppehåll för 500 <DiamondIcon /> bonus.
+                <Flame className="inline h-4 w-4" aria-hidden /> Streak {diamondStreak}/{diamondStreakTarget} — {diamondStreakTarget} steg ger 500 <DiamondIcon /> bonus.
               </p>
             )}
           </div>

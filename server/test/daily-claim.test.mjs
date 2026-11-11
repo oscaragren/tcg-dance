@@ -84,7 +84,7 @@ test("a missed day pauses the Streak instead of resetting it", async () => {
   assert.equal((await claim()).body.diamondStreak, 4);
 });
 
-test("a gap across Stockholm midnight still only moves the Streak one step", async () => {
+test("skipping a whole Stockholm day still only moves the Streak one step", async () => {
   clock.set("2026-03-10T23:59:00+01:00");
   assert.equal((await claim()).body.diamondStreak, 1);
   clock.set("2026-03-12T00:01:00+01:00"); // skipped the 11th entirely
