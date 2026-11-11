@@ -293,6 +293,16 @@ db.exec(`
   );
 `);
 db.exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+// Written once by the relaunch migration (server/relaunch-migration.mjs), one row
+// per player it paid or whose Trades it cancelled. Read by "Det här är nytt".
+db.exec(`
+  CREATE TABLE IF NOT EXISTS relaunch_migration_players (
+    user_id            TEXT PRIMARY KEY REFERENCES users(id),
+    achievement_payout INTEGER NOT NULL DEFAULT 0,
+    cancelled_trades   INTEGER NOT NULL DEFAULT 0,
+    migrated_at        TEXT NOT NULL
+  );
+`);
 if (db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('card_pool') WHERE name='bonus_copies'").get().n === 0) {
   db.exec("ALTER TABLE card_pool ADD COLUMN bonus_copies INTEGER NOT NULL DEFAULT 0");
 }

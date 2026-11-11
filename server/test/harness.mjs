@@ -63,7 +63,7 @@ export const TEST_CATALOG = {
  */
 export async function startTestApp({ clock = fakeClock(), random = seededRandom([0]), mailer = fakeMailer(), catalog = TEST_CATALOG } = {}) {
   const db = openDatabase(":memory:");
-  const { app } = await createApp({
+  const { app, runRelaunchMigration } = await createApp({
     db, clock, random, mailer, catalog,
     config: {
       jwtSecret: "test-secret",
@@ -107,7 +107,7 @@ export async function startTestApp({ clock = fakeClock(), random = seededRandom(
   }
 
   return {
-    db, clock, mailer, adminCookie, baseUrl, request, registerPlayer,
+    db, clock, mailer, adminCookie, runRelaunchMigration, baseUrl, request, registerPlayer,
     close: () => new Promise((resolve) => { server.close(() => { db.close(); resolve(); }); }),
   };
 }

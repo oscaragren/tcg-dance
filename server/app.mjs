@@ -5,6 +5,7 @@ import cors from "cors";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { loadGameCatalog } from "./gameCatalog.mjs";
+import { runRelaunchMigration } from "./relaunch-migration.mjs";
 import { buildAchievementDefinitions, computeAchievementProgress } from "./achievements.mjs";
 import { getMaintenance, setMaintenance } from "./maintenance.mjs";
 
@@ -3711,5 +3712,26 @@ function startBackgroundJobs() {
   return () => timers.forEach(clearInterval);
 }
 
-return { app, startBackgroundJobs };
+/**
+ * One-off relaunch migration (see relaunch-migration.mjs). Uses this app's
+ * Top-up rules so the first Top-ups are computed exactly as the admin's are.
+ */
+function runRelaunchMigrationNow(options) {
+  return runRelaunchMigration(db, {
+    allCards,
+    collections,
+    achievementById,
+    nowIso: new Date(clock.now()).toISOString(),
+    todayIso: todayIso(),
+    collectionTopUp(collectionId) {
+      const stats = collectionPoolStats(collectionId);
+      if (stats.share === null || stats.share >= TOPUP_TRIGGER) return null;
+      const amounts = computeTopUpAmounts(collectionId, stats);
+      return amounts.rare + amounts.epic > 0 ? amounts : null;
+    },
+    applyTopUp,
+  }, options);
+}
+
+return { app, startBackgroundJobs, runRelaunchMigration: runRelaunchMigrationNow };
 }
