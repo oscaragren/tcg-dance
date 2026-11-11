@@ -74,3 +74,68 @@ test("the public market endpoints are gone, but Hitta byte's who-has-this-Card l
   assert.equal(gone.status, 404);
   assert.equal((await t.request("GET", "/api/market/card/c1", { cookie: me.cookie })).status, 200);
 });
+
+// ── Trade limits (#40) ────────────────────────────────────────────────────────
+const DAY = 24 * 60 * 60 * 1000;
+const incomingCount = async (who) => (await t.request("GET", "/api/trade/incoming-count", { cookie: who.cookie })).body.count;
+const accept = (who, id) => t.request("POST", `/api/trade/${id}/accept`, { cookie: who.cookie });
+const owners = (cardId) => t.db.prepare("SELECT user_id FROM owned_cards WHERE card_id = ?").all(cardId).map((r) => r.user_id);
+
+async function pendingPair() {
+  t = await startTestApp();
+  const alice = await t.registerPlayer();
+  const bob = await t.registerPlayer();
+  give(alice, "c1", 1); give(bob, "c2", 1);
+  const { body } = await propose(alice, bob, { offeredCardIds: ["c1"], requestedCardIds: ["c2"] });
+  return { alice, bob, id: body.tradeId };
+}
+
+test("a Trade pending for more than 7 days is expired: cannot be accepted, and leaves lists and badge", async () => {
+  const { alice, bob, id } = await pendingPair();
+  t.clock.advance(7 * DAY);
+  assert.equal(await incomingCount(bob), 1); // exactly 7 days is still live
+  t.clock.advance(1000);
+  assert.equal(await incomingCount(bob), 0);
+  assert.equal((await trades(bob)).length, 0);
+  assert.equal((await trades(alice)).length, 0);
+  const res = await accept(bob, id);
+  assert.equal(res.status, 400);
+  assert.deepEqual(owners("c1"), [alice.userId]);
+});
+
+test("a Trade within 7 days can still be accepted", async () => {
+  const { bob, id } = await pendingPair();
+  t.clock.advance(6 * DAY);
+  assert.equal((await accept(bob, id)).status, 200);
+});
+
+test("an expired Trade cannot be countered", async () => {
+  const { bob, id } = await pendingPair();
+  t.clock.advance(8 * DAY);
+  const res = await t.request("POST", `/api/trade/${id}/counter`, { cookie: bob.cookie, body: { offeredCardIds: ["c2"], requestedCardIds: ["c1"] } });
+  assert.equal(res.status, 400);
+});
+
+test("the 11th outgoing pending Trade is refused; expired ones don't count", async () => {
+  t = await startTestApp();
+  const alice = await t.registerPlayer();
+  const bob = await t.registerPlayer();
+  give(alice, "c1", 11); give(bob, "c2", 1);
+  const send = () => propose(alice, bob, { offeredCardIds: ["c1"], requestedCardIds: ["c2"] });
+  for (let i = 0; i < 10; i++) assert.equal((await send()).status, 201);
+  const res = await send();
+  assert.equal(res.status, 400);
+  assert.match(res.body.message, /10/);
+  t.clock.advance(8 * DAY);
+  assert.equal((await send()).status, 201);
+});
+
+test("accepting a Trade whose Copy is gone fails and moves nothing", async () => {
+  const { alice, bob, id } = await pendingPair();
+  give(alice, "r1", 1);
+  t.db.prepare("DELETE FROM owned_cards WHERE user_id = ? AND card_id = 'c1'").run(alice.userId);
+  const res = await accept(bob, id);
+  assert.equal(res.status, 409);
+  assert.deepEqual(owners("c2"), [bob.userId]);
+  assert.equal((await trades(bob))[0].status, "pending");
+});

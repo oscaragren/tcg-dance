@@ -1482,6 +1482,14 @@ app.get("/api/market/matches", authed, (request, response) => {
 
 // ── Trade routes ──────────────────────────────────────────────────────────────
 
+// Trade limits: a pending Trade lives 7 days, and a player may have at most 10
+// outgoing at once. Expiry is derived from created_at and the injected clock —
+// nothing is stored, so an expired Trade simply stops counting as pending.
+const TRADE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_OUTGOING_PENDING_TRADES = 10;
+const tradeCutoffIso = () => new Date(clock.now() - TRADE_TTL_MS).toISOString();
+const isTradeExpired = (row) => row.created_at < tradeCutoffIso();
+
 // Shared by /api/trade and /api/trade/:id/counter — a counter is just a new
 // proposal with the two parties swapped, so it must clear exactly the same bar.
 // Returns { status, message } on failure, or null when the proposal is valid.
@@ -1500,6 +1508,12 @@ function validateTradeProposal({
   }
   if (isUserBanned(receiverUserId)) {
     return { status: 400, message: "Spelaren är avstängd och kan inte ta emot byten just nu." };
+  }
+  const { n: outgoing } = db
+    .prepare("SELECT COUNT(*) AS n FROM trades WHERE sender_user_id = ? AND status = 'pending' AND created_at >= ?")
+    .get(senderId, tradeCutoffIso());
+  if (outgoing >= MAX_OUTGOING_PENDING_TRADES) {
+    return { status: 400, message: `Du kan högst ha ${MAX_OUTGOING_PENDING_TRADES} utgående byten åt gången.` };
   }
   if (offeredCardIds.length === 0 && offeredDiamonds === 0) {
     return { status: 400, message: "Du måste erbjuda minst ett kort eller diamanter." };
@@ -1580,7 +1594,7 @@ app.post("/api/trade/:id/counter", authed, (request, response) => {
   if (original.receiver_user_id !== userId) {
     response.status(403).json({ message: "Bara mottagaren kan lämna ett motbud." }); return;
   }
-  if (original.status !== "pending") {
+  if (original.status !== "pending" || isTradeExpired(original)) {
     response.status(400).json({ message: "Handeln är inte längre aktiv." }); return;
   }
 
@@ -1629,17 +1643,18 @@ app.get("/api/trade", authed, (request, response) => {
     FROM trades t
     JOIN users su ON su.id = t.sender_user_id
     JOIN users ru ON ru.id = t.receiver_user_id
-    WHERE t.sender_user_id = ? OR t.receiver_user_id = ?
+    WHERE (t.sender_user_id = ? OR t.receiver_user_id = ?)
+      AND NOT (t.status = 'pending' AND t.created_at < ?)
     ORDER BY t.created_at DESC
-  `).all(userId, userId);
+  `).all(userId, userId, tradeCutoffIso());
   response.json(rows.map(buildTrade));
 });
 
 // Cheap poll for the "Byte" nav badge — how many trades are waiting on me.
 app.get("/api/trade/incoming-count", authed, (request, response) => {
   const { n } = db
-    .prepare("SELECT COUNT(*) AS n FROM trades WHERE receiver_user_id = ? AND status = 'pending'")
-    .get(request.auth.userId);
+    .prepare("SELECT COUNT(*) AS n FROM trades WHERE receiver_user_id = ? AND status = 'pending' AND created_at >= ?")
+    .get(request.auth.userId, tradeCutoffIso());
   response.json({ count: n });
 });
 
@@ -1649,7 +1664,7 @@ app.post("/api/trade/:id/accept", authed, (request, response) => {
 
   if (!row) { response.status(404).json({ message: "Handel hittades inte." }); return; }
   if (row.receiver_user_id !== userId) { response.status(403).json({ message: "Inte behörig." }); return; }
-  if (row.status !== "pending") { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
+  if (row.status !== "pending" || isTradeExpired(row)) { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
 
   const offeredCardIds = JSON.parse(row.offered_card_ids);
   const requestedCardIds = JSON.parse(row.requested_card_ids);
@@ -1715,7 +1730,7 @@ app.post("/api/trade/:id/reject", authed, (request, response) => {
   const userId = request.auth.userId;
   const row = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
   if (!row || row.receiver_user_id !== userId) { response.status(403).json({ message: "Inte behörig." }); return; }
-  if (row.status !== "pending") { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
+  if (row.status !== "pending" || isTradeExpired(row)) { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
   db.prepare("UPDATE trades SET status = 'rejected' WHERE id = ?").run(row.id);
   response.status(204).send();
 });
