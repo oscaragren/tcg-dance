@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -177,6 +177,10 @@ export async function findTradersForCard(cardId: string): Promise<{ cardId: stri
     `/api/market/card/${encodeURIComponent(cardId)}`,
     { method: "GET" },
   );
+}
+
+export async function fetchTradeMatches(): Promise<{ matches: TradeMatch[] }> {
+  return requestJson<{ matches: TradeMatch[] }>("/api/market/matches", { method: "GET" });
 }
 
 export async function fetchMarketTraders(): Promise<{ traders: MarketTrader[] }> {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
+import { MatchningarTab } from "../../components/web/MatchningarTab";
 import { TradeMarket, UnownedDot } from "../../components/web/TradeMarket";
 import { cardById } from "../../data/cards";
 import type { AuthUser } from "../../types/auth";
@@ -9,6 +10,7 @@ import type { Trade } from "../../types/game";
 import { acceptTrade, cancelTrade, fetchGameState, fetchMyTrades, rejectTrade } from "../../utils/gameApi";
 
 type Tab = "incoming" | "outgoing" | "history";
+type Section = "matchningar" | "mina" | "sok";
 
 type TradePageProps = { currentUser: AuthUser | null };
 
@@ -16,6 +18,12 @@ export function TradePage({ currentUser }: TradePageProps) {
   const navigate = useNavigate();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [tab, setTab] = useState<Tab>("incoming");
+  const [searchParams] = useSearchParams();
+  const initialSection = searchParams.get("flik");
+  const [section, setSection] = useState<Section>(
+    initialSection === "sok" || initialSection === "mina" ? initialSection : "matchningar",
+  );
+  const findCardId = searchParams.get("kort") ?? undefined;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -118,7 +126,7 @@ export function TradePage({ currentUser }: TradePageProps) {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-bold mb-2">Byte</h1>
-              <p className="text-text">Byt kort med andra spelare. Leta i bytesmarknaden nedan efter ett kort du saknar.</p>
+              <p className="text-text">Byt kort med andra spelare. Matchningar visar vilka som har kort du saknar.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild className="bg-accent text-accent-on hover:bg-accent/90 hover:">
@@ -127,7 +135,37 @@ export function TradePage({ currentUser }: TradePageProps) {
             </div>
           </div>
 
+          <div className="flex gap-1 border-b">
+            {([
+              ["matchningar", "Matchningar"],
+              ["mina", `Mina byten${incoming.length ? ` (${incoming.length})` : ""}`],
+              ["sok", "Sök spelare"],
+            ] as [Section, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setSection(id)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  section === id ? "border-accent text-text" : "border-transparent text-secondary hover:text-text"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {section === "matchningar" && <MatchningarTab />}
+
+          {section === "sok" && (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button asChild variant="outline" size="sm"><Link to="/byte/ny">Sök spelare med namn</Link></Button>
+              </div>
+              <TradeMarket initialCardId={findCardId} />
+            </div>
+          )}
+
           {/* Tabs */}
+          {section === "mina" && (
           <div>
             <div className="flex gap-1 mb-6 border-b">
               {([
@@ -184,23 +222,7 @@ export function TradePage({ currentUser }: TradePageProps) {
               </div>
             )}
           </div>
-
-          {/* The same market as /byte/marknad, rendered inline so a player with
-              an empty inbox can go straight from here to finding an offer. */}
-          <section className="border-t pt-10">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-1">Bytesmarknad</h2>
-                <p className="text-sm text-text">
-                  Hitta ett kort du saknar, eller bläddra bland allas byteshyllor.
-                </p>
-              </div>
-              <Button asChild variant="outline" size="sm" className="shrink-0">
-                <Link to="/byte/marknad">Öppna som egen sida</Link>
-              </Button>
-            </div>
-            <TradeMarket />
-          </section>
+          )}
 
         </div>
       </div>

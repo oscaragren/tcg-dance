@@ -130,6 +130,18 @@ export type PlayerProfile = {
 
 export type MarketTraderForCard = { userId: string; username: string; quantity: number };
 
+/** A player with Copies Available for Trade of Cards the viewer is missing. */
+export type TradeMatch = {
+  userId: string;
+  username: string;
+  /** Available Copies of the viewer's Missing Cards. */
+  theyCanGive: CardForTrade[];
+  /** The viewer's Available Copies of Cards this player is missing. */
+  youCanGive: CardForTrade[];
+  /** Both sides have something to give: "Ni kan byta med varandra". */
+  twoWay: boolean;
+};
+
 export type MarketTrader = {
   userId: string;
   username: string;

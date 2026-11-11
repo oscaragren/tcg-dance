@@ -1442,6 +1442,37 @@ app.get("/api/market/traders", authed, (request, response) => {
   response.json({ traders });
 });
 
+// Matchningar: players who have Copies Available for Trade of Cards the caller
+// is missing. Two-way matches ("Ni kan byta med varandra") are those where the
+// caller also has an Available Copy of a Card the other player is missing.
+// Ranked two-way first, then by how many of the caller's Missing Cards they have.
+app.get("/api/market/matches", authed, (request, response) => {
+  const me = request.auth.userId;
+  const myOwned = ownedCountMap(me);
+  const myAvailable = availableForTrade(me).filter((c) => cardById.has(c.cardId));
+
+  const theirByUser = new Map();
+  for (const row of liveMarketRows()) {
+    if (row.userId === me || myOwned.has(row.cardId)) continue;
+    if (!theirByUser.has(row.userId)) theirByUser.set(row.userId, { userId: row.userId, username: row.username, theyCanGive: [] });
+    theirByUser.get(row.userId).theyCanGive.push({ cardId: row.cardId, quantity: row.quantity });
+  }
+
+  const matches = [];
+  for (const entry of theirByUser.values()) {
+    const theirOwned = ownedCountMap(entry.userId);
+    const youCanGive = myAvailable.filter((c) => !theirOwned.has(c.cardId));
+    matches.push({ ...entry, youCanGive, twoWay: youCanGive.length > 0 });
+  }
+  matches.sort(
+    (a, b) =>
+      Number(b.twoWay) - Number(a.twoWay) ||
+      b.theyCanGive.length - a.theyCanGive.length ||
+      a.username.localeCompare(b.username, "sv"),
+  );
+  response.json({ matches });
+});
+
 // ── Trade routes ──────────────────────────────────────────────────────────────
 
 // Shared by /api/trade and /api/trade/:id/counter — a counter is just a new

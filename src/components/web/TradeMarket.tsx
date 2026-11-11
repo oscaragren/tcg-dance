@@ -46,7 +46,7 @@ export function UnownedLegend() {
  * The Bytesmarknad itself, without any page chrome, so it can be rendered both
  * as a section on /byte and as its own page on /byte/marknad.
  */
-export function TradeMarket() {
+export function TradeMarket({ initialCardId }: { initialCardId?: string } = {}) {
   const [tab, setTab] = useState<Tab>("card");
   const [ownedCardIds, setOwnedCardIds] = useState<Set<string>>(() => new Set());
 
@@ -84,16 +84,17 @@ export function TradeMarket() {
       <UnownedLegend />
 
       {tab === "card"
-        ? <CardSearchTab ownedCardIds={ownedCardIds} />
+        ? <CardSearchTab ownedCardIds={ownedCardIds} initialCardId={initialCardId} />
         : <BrowseTradersTab ownedCardIds={ownedCardIds} />}
     </div>
   );
 }
 
 /** Search the card catalog by name, then see who has that card up for trade. */
-function CardSearchTab({ ownedCardIds }: { ownedCardIds: Set<string> }) {
-  const [query, setQuery] = useState("");
-  const [selectedCard, setSelectedCard] = useState<DanceCard | null>(null);
+function CardSearchTab({ ownedCardIds, initialCardId }: { ownedCardIds: Set<string>; initialCardId?: string }) {
+  const initialCard = initialCardId ? cardById(initialCardId) ?? null : null;
+  const [query, setQuery] = useState(initialCard?.name ?? "");
+  const [selectedCard, setSelectedCard] = useState<DanceCard | null>(initialCard);
   const [traders, setTraders] = useState<MarketTraderForCard[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

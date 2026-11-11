@@ -1,5 +1,6 @@
 import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { ImageWithFallback } from "../shared/figma/ImageWithFallback";
 import { resolveCardDesignUrl } from "../../data/cardDesignUrls";
 import { rarityColor, rarityLabel, rarityPip } from "../../data/rarity";
@@ -59,6 +60,15 @@ export function CardSheet({ card, copies, kept = false, onToggleKept, onClose }:
           <span className="font-semibold" style={{ color }}>{rarityPip[card.rarity]} {rarityLabel[card.rarity]}</span>
           <span className="text-text">{copies === 0 ? "Du äger inget ex" : `Du äger ${copies} ex`}</span>
         </div>
+        {copies === 0 && (
+          <Link
+            to={`/byte?flik=sok&kort=${encodeURIComponent(card.id)}`}
+            onClick={onClose}
+            className="mt-4 block rounded-lg bg-accent py-2 text-center text-sm font-semibold text-accent-on"
+          >
+            Hitta byte
+          </Link>
+        )}
         {copies > 1 && onToggleKept && (
           <label className="mt-4 flex items-center justify-center gap-2 text-sm text-text">
             <input type="checkbox" checked={kept} onChange={(e) => onToggleKept(e.target.checked)} className="h-4 w-4" />
