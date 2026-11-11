@@ -14,9 +14,9 @@ const matches = async (me) => (await t.request("GET", "/api/market/matches", { c
 test("two-way matches come first, then by how many of my Missing Cards they have available", async () => {
   t = await startTestApp();
   const me = await t.registerPlayer();
-  const oneWay = await t.registerPlayer(); // has 2 of my Missing Cards, wants nothing I have spare
-  const twoWay = await t.registerPlayer(); // has 1 of my Missing Cards, and lacks a Card I have spare
-  give(me, "c1", 2); // I have c1 spare; I miss c2, r1, l1
+  const oneWay = await t.registerPlayer(); // has 2 of my Missing Cards, wants none of my Available for Trade Cards
+  const twoWay = await t.registerPlayer(); // has 1 of my Missing Cards, and lacks a Card I have Available for Trade
+  give(me, "c1", 2); // I have c1 Available for Trade; I miss c2, r1, l1
   give(oneWay, "c1", 1); give(oneWay, "c2", 2); give(oneWay, "r1", 2);
   give(twoWay, "l1", 3); give(twoWay, "c2", 1);
   const list = await matches(me);

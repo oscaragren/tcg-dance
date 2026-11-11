@@ -25,7 +25,7 @@ function raritySummary(items: CardForTrade[]): string {
     .join(" · ");
 }
 
-/** Byte's default tab: players who have Cards you are missing, two-way matches first. */
+/** The Trade page's default tab: players who have Cards you are missing, two-way matches first. */
 export function MatchningarTab() {
   const [matches, setMatches] = useState<TradeMatch[] | null>(null);
   const [error, setError] = useState<string | null>(null);

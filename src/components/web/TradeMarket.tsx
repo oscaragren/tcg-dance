@@ -44,7 +44,7 @@ export function UnownedLegend() {
 
 /**
  * The Bytesmarknad itself, without any page chrome, so it can be rendered both
- * as a section on /byte and as its own page on /byte/marknad.
+ * as a tab on /byte and as its own page on /byte/marknad.
  */
 export function TradeMarket({ initialCardId }: { initialCardId?: string } = {}) {
   const [tab, setTab] = useState<Tab>("card");
