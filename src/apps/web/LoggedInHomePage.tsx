@@ -1,10 +1,11 @@
-import { Flame } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChestRewardModal } from "../../components/web/ChestRewardModal";
 import { DiamondIcon } from "../../components/web/DiamondIcon";
 import { ComebackSheet } from "../../components/web/ComebackSheet";
 import { EventSheet } from "../../components/web/EventSheet";
+import { HemDesktop } from "../../components/web/HemDesktop";
+import { StreakTrack, WeeklyGoalTiles } from "../../components/web/HemParts";
 import { ProgressRing } from "../../components/web/ProgressRing";
 import { WaitingStrip } from "../../components/web/WaitingStrip";
 import type { DanceCard } from "../../data/cards";
@@ -15,73 +16,13 @@ import {
   claimComebackGift, claimEventGift, claimStarterPack, claimStarterStep, collectChest, fetchStarter,
   fetchCollectionProgress, fetchComeback, fetchGameState, markComebackSummarySeen, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
 } from "../../utils/gameApi";
+import { useMediaQuery } from "../../utils/useMediaQuery";
 import { useNow } from "../../utils/useNow";
 
 type LoggedInHomePageProps = {
   username: string;
   userEmail: string;
 };
-
-/** The 7-step Streak track in the Daily claim row; filled steps = current position. */
-function StreakTrack({ position, target, bonus }: { position: number; target: number; bonus: number | null }) {
-  return (
-    <div className="mt-1 flex items-center gap-1.5" role="img" aria-label={`Streak: steg ${position} av ${target}`}>
-      <Flame className="h-3.5 w-3.5 shrink-0 text-rarity-legendary" aria-hidden />
-      <div className="flex gap-1">
-        {Array.from({ length: target }, (_, i) => (
-          <span
-            key={i}
-            data-testid="streak-step"
-            data-filled={i < position}
-            className={`h-2 w-2 rounded-full ${i < position ? "bg-accent" : "bg-hairline-strong"}`}
-          />
-        ))}
-      </div>
-      <span className="text-xs text-secondary">
-        {position}/{target}
-        {bonus ? ` · +${bonus} bonus!` : ""}
-      </span>
-    </div>
-  );
-}
-
-/** The three Weekly goals as small tiles; a finished one is claimed with a tap. */
-function WeeklyGoalTiles({ goals, busyId, onClaim }: { goals: WeeklyGoal[]; busyId: string | null; onClaim: (goal: WeeklyGoal) => void }) {
-  if (goals.length === 0) return null;
-  return (
-    <section aria-label="Veckomål" className="mx-4">
-      <h2 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-tertiary">Veckomål</h2>
-      <ul className="grid grid-cols-3 gap-2">
-        {goals.map((g) => (
-          <li key={g.id} data-testid="weekly-goal" className="flex flex-col justify-between rounded-xl border bg-surface p-2">
-            <p className="text-xs font-semibold leading-tight">{g.title}</p>
-            <div className="mt-2">
-              <div className="h-1.5 overflow-hidden rounded-full bg-hairline-strong" role="progressbar" aria-valuemin={0} aria-valuemax={g.target} aria-valuenow={g.progress}>
-                <div className="h-full bg-accent" style={{ width: `${(g.progress / g.target) * 100}%` }} />
-              </div>
-              {g.claimed ? (
-                <p className="mt-1 text-xs text-secondary">Hämtad</p>
-              ) : g.complete ? (
-                <button
-                  type="button"
-                  onClick={() => onClaim(g)}
-                  disabled={busyId === g.id}
-                  className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-accent py-0.5 text-xs font-semibold text-accent-on disabled:opacity-60"
-                >
-                  +{g.reward} <DiamondIcon />
-                </button>
-              ) : (
-                <p className="mt-1 flex items-center gap-1 text-xs text-secondary">
-                  {g.progress}/{g.target} · +{g.reward} <span className="text-diamonds" aria-hidden><DiamondIcon /></span>
-                </p>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
 
 /** Hem, layout B "Kompakt": everything fits on one 390×844 screen. */
 export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps) {
@@ -98,6 +39,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const [reward, setReward] = useState<{ label: string; diamonds: number; cards: DanceCard[] } | null>(null);
   const [comeback, setComeback] = useState<ComebackSummary | null>(null);
   const now = useNow(1000);
+  const desktop = useMediaQuery("(min-width: 1024px)");
 
   const reload = useCallback(async () => {
     const [state, items, goals, starterState] = await Promise.all([fetchGameState(), fetchWaiting(), fetchWeeklyGoals(), fetchStarter()]);
@@ -161,8 +103,8 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const me = leaderboard.find((e) => e.username === username);
   const top = leaderboard.slice(0, 3).map((e) => e.username).join(", ");
 
-  return (
-    <main className="mx-auto flex max-w-md flex-col gap-3 py-3">
+  const overlays = (
+    <>
       {reward && (
         <ChestRewardModal chestLabel={reward.label} diamondsAwarded={reward.diamonds} cards={reward.cards} onClose={() => setReward(null)} />
       )}
@@ -173,6 +115,37 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
         />
       )}
       {event && eventOpen && <EventSheet event={event} now={now} onClose={() => setEventOpen(false)} />}
+    </>
+  );
+
+  if (desktop) {
+    return (
+      <>
+        {overlays}
+        <HemDesktop
+          username={username}
+          gameState={gameState}
+          daily={daily?.type === "daily" ? daily : null}
+          tiles={tiles}
+          weeklyGoals={weeklyGoals}
+          starter={starter}
+          progress={progress}
+          leaderboard={leaderboard}
+          event={eventLive ? event : null}
+          busyId={busyId}
+          error={error}
+          streakBonus={streakBonus}
+          onAct={(item) => void handleAct(item)}
+          onClaimGoal={(g) => void handleClaimGoal(g)}
+          onOpenEvent={() => setEventOpen(true)}
+        />
+      </>
+    );
+  }
+
+  return (
+    <main className="mx-auto flex max-w-md flex-col gap-3 py-3">
+      {overlays}
 
       <header className="flex items-baseline justify-between px-4">
         <h1 className="font-display text-xl font-bold">Hej, {username}!</h1>
