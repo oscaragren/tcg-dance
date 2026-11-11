@@ -368,7 +368,7 @@ export function NewTradePage({ currentUser }: NewTradePageProps) {
               </div>
               </div>
               <section className="hidden lg:flex lg:h-[calc(100vh-14rem)] lg:min-h-[480px] flex-col overflow-hidden rounded-2xl border bg-surface">
-                <h2 className="px-4 pt-4 text-lg font-semibold">Dina dubbletter</h2>
+                <h2 className="px-4 pt-4 text-lg font-semibold">Dina kort</h2>
                 <TradePickerList
                   entries={giveEntries}
                   selected={offered}

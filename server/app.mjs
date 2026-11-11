@@ -5,7 +5,7 @@ import cors from "cors";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { loadGameCatalog } from "./gameCatalog.mjs";
-import { runRelaunchMigration } from "./relaunch-migration.mjs";
+import { runRelaunchMigration, readRelaunchMigrationMarker } from "./relaunch-migration.mjs";
 import { buildAchievementDefinitions, computeAchievementProgress } from "./achievements.mjs";
 import { getMaintenance, setMaintenance } from "./maintenance.mjs";
 
@@ -969,15 +969,17 @@ app.post("/api/announcements/seen", authed, (request, response) => {
   response.status(204).send();
 });
 
-// The Hem banner: the newest Announcement with banner text this player hasn't dismissed.
+// The Hem banner: the newest Announcement with banner text, hidden once this
+// player has dismissed it (never falls back to an older one).
 app.get("/api/announcements/banner", authed, (request, response) => {
   const row = db.prepare(
-    `SELECT a.id, a.banner_text FROM announcements a
+    `SELECT a.id, a.banner_text,
+            EXISTS (SELECT 1 FROM announcement_banner_dismissals d WHERE d.announcement_id = a.id AND d.user_id = ?) AS dismissed
+     FROM announcements a
      WHERE a.banner_text <> ''
-       AND NOT EXISTS (SELECT 1 FROM announcement_banner_dismissals d WHERE d.announcement_id = a.id AND d.user_id = ?)
      ORDER BY a.created_at DESC LIMIT 1`,
   ).get(request.auth.userId);
-  response.json({ banner: row ? { announcementId: row.id, text: row.banner_text } : null });
+  response.json({ banner: row && !row.dismissed ? { announcementId: row.id, text: row.banner_text } : null });
 });
 
 app.post("/api/announcements/:id/banner/dismiss", authed, (request, response) => {
@@ -1143,9 +1145,8 @@ function daysBetweenDates(from, to) {
  * stays hidden (the gift is unaffected).
  */
 function whatsNewSheetDue(userId) {
-  const marker = db.prepare("SELECT value FROM settings WHERE key = 'relaunch_migration'").get();
-  if (!marker) return false;
-  const migratedAt = JSON.parse(marker.value).at;
+  const migratedAt = readRelaunchMigrationMarker(db)?.at;
+  if (!migratedAt) return false;
   const user = db.prepare("SELECT created_at FROM users WHERE id = ?").get(userId);
   if (!user || Date.parse(user.created_at) > Date.parse(migratedAt)) return false;
   return !db.prepare("SELECT 1 FROM whats_new_seen WHERE user_id = ?").get(userId);
@@ -3724,10 +3725,7 @@ app.post("/api/admin/announcements", requireAdmin, (request, response) => {
   }
 
   const bannerText = String(request.body?.bannerText ?? "").trim();
-  if (bannerText.length > ANNOUNCEMENT_BANNER_MAX) {
-    response.status(400).json({ message: `Bannertexten får vara högst ${ANNOUNCEMENT_BANNER_MAX} tecken.` });
-    return;
-  }
+  if (rejectLongBanner(bannerText, response)) return;
 
   const id = crypto.randomUUID();
   const createdAt = new Date(clock.now()).toISOString();
@@ -3738,14 +3736,18 @@ app.post("/api/admin/announcements", requireAdmin, (request, response) => {
   response.status(201).json({ id, title, body, bannerText, createdAt });
 });
 
+// Sends the 400 and returns true when the banner text is too long.
+function rejectLongBanner(text, response) {
+  if (text.length <= ANNOUNCEMENT_BANNER_MAX) return false;
+  response.status(400).json({ message: `Bannertexten får vara högst ${ANNOUNCEMENT_BANNER_MAX} tecken.` });
+  return true;
+}
+
 // Set, change or clear (empty text) the Hem banner. A changed text is a new
 // message, so players who dismissed the old one see it again.
 app.put("/api/admin/announcements/:id/banner", requireAdmin, (request, response) => {
   const text = String(request.body?.text ?? "").trim();
-  if (text.length > ANNOUNCEMENT_BANNER_MAX) {
-    response.status(400).json({ message: `Bannertexten får vara högst ${ANNOUNCEMENT_BANNER_MAX} tecken.` });
-    return;
-  }
+  if (rejectLongBanner(text, response)) return;
   const current = db.prepare("SELECT banner_text FROM announcements WHERE id = ?").get(request.params.id);
   if (!current) {
     response.status(404).json({ message: "Meddelandet hittades inte." });

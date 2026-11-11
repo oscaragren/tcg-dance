@@ -4,7 +4,7 @@
 //   2. cancel all pending Trades, counting them per player
 //   3. pay Achievements: earned-but-unclaimed ones being removed, and the full
 //      difference where the new table pays more than was claimed (no clawback)
-//   4. set each Streak position to the current streak count (0-6)
+//   4. set each Streak position to the current streak count (0-6; a lapsed one is 0)
 //   5. tag existing Chests with the old payout table
 //   6. fire the first Top-ups for every Collection under the trigger share
 // Old Trade marks (cards_for_trade) are dropped when the database is opened;
@@ -58,16 +58,8 @@ export function runRelaunchMigration(db, deps, { reopensAt = null, note = null }
 
     // 3. Achievement payouts
     const legacy = buildLegacyAchievementDefinitions(allCards, collections);
-    const claims = new Map(); // userId -> Set(achievementId)
-    for (const r of db.prepare("SELECT user_id, achievement_id FROM achievement_claims").all()) {
-      if (!claims.has(r.user_id)) claims.set(r.user_id, new Set());
-      claims.get(r.user_id).add(r.achievement_id);
-    }
-    const owned = new Map(); // userId -> Set(cardId)
-    for (const r of db.prepare("SELECT DISTINCT user_id, card_id FROM owned_cards").all()) {
-      if (!owned.has(r.user_id)) owned.set(r.user_id, new Set());
-      owned.get(r.user_id).add(r.card_id);
-    }
+    const claims = groupBy(db.prepare("SELECT user_id, achievement_id FROM achievement_claims").all(), (r) => r.achievement_id, () => new Set(), (set, v) => set.add(v));
+    const owned = groupBy(db.prepare("SELECT DISTINCT user_id, card_id FROM owned_cards").all(), (r) => r.card_id, () => new Set(), (set, v) => set.add(v));
     const packs = new Map(); // userId -> { collectionId: count }
     for (const r of db.prepare("SELECT user_id, collection_id, count FROM packs_opened").all()) {
       if (!packs.has(r.user_id)) packs.set(r.user_id, {});
@@ -76,8 +68,10 @@ export function runRelaunchMigration(db, deps, { reopensAt = null, note = null }
     const logPayout = db.prepare(
       "INSERT INTO game_events (user_id, type, collection_id, quantity, diamonds, created_at) VALUES (?, 'achievement', ?, 0, ?, ?)",
     );
+    const hasState = db.prepare("SELECT 1 FROM player_state WHERE user_id = ?");
     const addDiamonds = db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?");
     for (const { id: userId } of db.prepare("SELECT id FROM users").all()) {
+      const hasPlayerState = !!hasState.get(userId);
       const claimed = claims.get(userId) ?? new Set();
       const ownedSet = owned.get(userId) ?? new Set();
       for (const old of legacy) {
@@ -89,7 +83,7 @@ export function runRelaunchMigration(db, deps, { reopensAt = null, note = null }
           pay = old.reward;
         }
         if (pay <= 0) continue;
-        if (!db.prepare("SELECT 1 FROM player_state WHERE user_id = ?").get(userId)) continue;
+        if (!hasPlayerState) continue;
         addDiamonds.run(pay, userId);
         logPayout.run(userId, old.collectionId ?? null, pay, nowIso);
         slot(userId).payout += pay;
@@ -129,12 +123,27 @@ export function runRelaunchMigration(db, deps, { reopensAt = null, note = null }
   return { alreadyRun: false, ...summarise(db) };
 }
 
+// Groups rows by user_id into a Map of accumulators.
+function groupBy(rows, valueOf, make, add) {
+  const map = new Map();
+  for (const r of rows) {
+    if (!map.has(r.user_id)) map.set(r.user_id, make());
+    add(map.get(r.user_id), valueOf(r));
+  }
+  return map;
+}
+
+/** The recorded run ({ at, topUps, cancelledTrades }), or null if the migration has not run. */
+export function readRelaunchMigrationMarker(db) {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(MARKER);
+  return row ? JSON.parse(row.value) : null;
+}
+
 function summarise(db) {
   const row = db.prepare(
     "SELECT COUNT(*) AS players, COALESCE(SUM(achievement_payout), 0) AS payout, COALESCE(SUM(cancelled_trades), 0) AS cancelled FROM relaunch_migration_players",
   ).get();
-  const marker = db.prepare("SELECT value FROM settings WHERE key = ?").get(MARKER);
-  const recorded = marker ? JSON.parse(marker.value) : { topUps: [], cancelledTrades: 0 };
+  const recorded = readRelaunchMigrationMarker(db) ?? { topUps: [], cancelledTrades: 0 };
   return {
     players: db.prepare("SELECT * FROM relaunch_migration_players ORDER BY user_id").all(),
     playersAffected: row.players,

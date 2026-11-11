@@ -79,6 +79,10 @@ _Avoid_: Gems, coins
 A bought container that becomes collectable after a wait time and then pays out rewards.
 _Avoid_: Box, crate
 
+**Legacy chest payout table**:
+The pre-relaunch reward table (`v1`) that Chests bought before the relaunch keep paying from; Chests bought afterwards use the current table.
+_Avoid_: Old chests, v1 chests
+
 **Event**:
 A time-limited period tied to a real-world competition, with rewards chosen per Event, such as boosted daily Diamonds, shorter Chest waits, a gift for logging in, or a Top-up.
 _Avoid_: Campaign, promo
@@ -114,3 +118,15 @@ _Avoid_: Leaderboard (in Swedish UI text)
 **Announcement**:
 A message from the game to all players, kept in the feed behind the bell and marked unseen until a player opens it.
 _Avoid_: News, notice, post
+
+**Hem banner**:
+An Announcement's optional dismissible banner text, shown on Hem for the newest Announcement that has one until the player dismisses it; editing the text shows it again to everyone.
+_Avoid_: Alert, popup
+
+**"Det här är nytt" sheet**:
+The one-time swipeable sheet shown to players who existed at the relaunch migration, explaining the new rules with personal lines (Achievement payout, cancelled Trades).
+_Avoid_: Changelog, tutorial
+
+**Relaunch migration**:
+The one-off, idempotent script that moved every existing player to the new rules while the game was in Maintenance mode: cancel pending Trades, pay Achievement differences, carry over Streak positions, tag existing Chests with the Legacy chest payout table, fire the first Top-ups.
+_Avoid_: Reset, wipe

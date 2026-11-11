@@ -70,3 +70,14 @@ test("banner text is validated and unknown Announcements 404", async () => {
   assert.equal((await setBanner(admin, a.id, "x".repeat(101))).status, 400);
   assert.equal((await setBanner(admin, "nope", "hej")).status, 404);
 });
+
+test("dismissing the newest banner hides it without falling back to an older undismissed one", async () => {
+  t = await startTestApp();
+  const admin = await t.adminCookie();
+  const p = await t.registerPlayer();
+  await publish(admin, "Äldre", "Äldre banner");
+  t.clock.advance(60_000);
+  const newest = await publish(admin, "Nyare", "Nyare banner");
+  await t.request("POST", `/api/announcements/${newest.id}/banner/dismiss`, { cookie: p.cookie });
+  assert.equal(await banner(p.cookie), null);
+});

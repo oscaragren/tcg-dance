@@ -4,6 +4,8 @@ One-off script that moves every player to the new rules (issue #47). Code: `serv
 
 Order: maintenance on, cancel pending Trades (count per player), pay Achievements, set Streak positions, tag existing Chests with the old payout table (`v1`), fire the first Top-ups for every Collection under 3% Rare+. Copies, Diamond balances (bar payouts) and Chest slots are untouched. Maintenance is left on; reopen by hand in the admin panel after checking.
 
+Streak rule (step 4): every Streak position is carried over as the player's current streak count clamped to 0-6. A Streak that had already lapsed under the old reset rule (last Daily claim neither today nor yesterday) counts as 0, because under the old rules it would have reset on the next claim; one still alive keeps its position unchanged.
+
 Achievement payouts use the old table frozen in `server/legacy-achievements.mjs`: earned-but-unclaimed Achievements that no longer exist are paid at their old reward; claimed Achievements that still exist are topped up by the difference when the new reward is higher. Nothing is clawed back.
 
 Old Trade marks (`cards_for_trade`) are dropped by `openDatabase` on deploy; availability is derived from Copies and Behåll.
