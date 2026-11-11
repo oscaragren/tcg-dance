@@ -279,6 +279,7 @@ app.post("/api/auth/register", async (request, response) => {
   ).run(id, username, email, passwordHash, new Date(clock.now()).toISOString(), firstName, lastName);
 
   ensurePlayerState(id);
+  ensureStarterState(id);
 
   const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
   setAuthCookie(response, { userId: id, email });
@@ -976,6 +977,125 @@ function isPackOnSale(pack, now = clock.now()) {
   return true;
 }
 
+/** Hands over the Cards of opened Packs and records it. Call inside a transaction; `price` is the Diamonds paid (0 for a free Pack). */
+function receivePacks(userId, collectionId, quantity, pulledCards, price) {
+  let newCards = 0;
+  for (const card of pulledCards) if (grantCard(userId, card.id)) newCards += 1;
+  addWeeklyGoalProgress(userId, "packsOpened", quantity);
+  addWeeklyGoalProgress(userId, "newCards", newCards);
+  db.prepare(
+    `INSERT INTO packs_opened (user_id, collection_id, count) VALUES (?, ?, ?)
+     ON CONFLICT (user_id, collection_id) DO UPDATE SET count = count + excluded.count`,
+  ).run(userId, collectionId, quantity);
+  logGameEvent(userId, "pack", { collectionId, quantity, diamonds: price });
+}
+
+// ── Starter: free Pack and "Kom igång" checklist ────────────────────────────
+// A new account gets one free Pack (from the newest Collection on sale), shown
+// first in "Väntar på dig", and a four-step checklist paying STARTER_STEP_REWARD
+// each. The rows are created lazily, so accounts that predate this feature get
+// them on first look, but only if they have never opened a Pack.
+
+const STARTER_STEP_REWARD = 100;
+const STARTER_STEPS = [
+  { id: "first-pack", title: "Öppna ditt första Pack" },
+  { id: "daily", title: "Hämta dagliga diamanter" },
+  { id: "collection", title: "Kolla din Samling" },
+  { id: "trade", title: "Skicka ditt första bytesförslag" },
+];
+
+function totalPacksOpened(userId) {
+  return db.prepare("SELECT COALESCE(SUM(count), 0) AS n FROM packs_opened WHERE user_id = ?").get(userId).n;
+}
+
+function ensureStarterState(userId) {
+  if (db.prepare("SELECT 1 FROM starter_state WHERE user_id = ?").get(userId)) return;
+  const eligible = totalPacksOpened(userId) === 0 ? 1 : 0;
+  db.prepare("INSERT INTO starter_state (user_id, free_pack, checklist) VALUES (?, ?, ?)").run(userId, eligible, eligible);
+}
+
+/** The newest Collection whose Pack is on sale and still has Copies. */
+function starterCollection() {
+  for (let i = collections.length - 1; i >= 0; i--) {
+    const c = collections[i];
+    if (isPackOnSale(c.pack) && stmtSumAvailableCopies.get(c.id).total > 0) return c;
+  }
+  return null;
+}
+
+function starterStepDone(userId, stepId, state) {
+  switch (stepId) {
+    case "first-pack": return totalPacksOpened(userId) > 0;
+    case "daily": return db.prepare("SELECT last_daily_claim_date FROM player_state WHERE user_id = ?").get(userId)?.last_daily_claim_date != null;
+    case "collection": return Boolean(state.viewed_collection);
+    case "trade": return Boolean(db.prepare("SELECT 1 FROM trades WHERE sender_user_id = ?").get(userId));
+    default: return false;
+  }
+}
+
+function buildStarterResponse(userId) {
+  ensureStarterState(userId);
+  const state = db.prepare("SELECT * FROM starter_state WHERE user_id = ?").get(userId);
+  const claimed = new Set(db.prepare("SELECT step FROM starter_claims WHERE user_id = ?").all(userId).map((r) => r.step));
+  const steps = STARTER_STEPS.map((s) => ({
+    id: s.id, title: s.title, reward: STARTER_STEP_REWARD,
+    done: starterStepDone(userId, s.id, state), claimed: claimed.has(s.id),
+  }));
+  const collection = state.free_pack ? starterCollection() : null;
+  return {
+    visible: Boolean(state.checklist) && steps.some((s) => !s.claimed),
+    steps,
+    freePack: collection ? { collectionId: collection.id, label: collection.pack.label ?? collection.label } : null,
+  };
+}
+
+app.get("/api/game/starter", authed, (request, response) => {
+  response.json(buildStarterResponse(request.auth.userId));
+});
+
+app.post("/api/game/starter/free-pack/claim", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const { freePack } = buildStarterResponse(userId);
+  if (!freePack) { response.status(400).json({ message: "Ingen gratis pack att hämta." }); return; }
+  const collection = collectionsMap.get(freePack.collectionId);
+  const pulledCards = openPackCards(collection.pack, collection.id);
+  db.transaction(() => {
+    db.prepare("UPDATE starter_state SET free_pack = 0 WHERE user_id = ?").run(userId);
+    db.prepare("UPDATE player_state SET last_opened_cards = ? WHERE user_id = ?").run(JSON.stringify(pulledCards), userId);
+    receivePacks(userId, collection.id, 1, pulledCards, 0);
+  })();
+  response.json({ pulledCards, state: buildStateResponse(userId) });
+});
+
+app.post("/api/game/starter/collection-viewed", authed, (request, response) => {
+  const userId = request.auth.userId;
+  ensureStarterState(userId);
+  db.prepare("UPDATE starter_state SET viewed_collection = 1 WHERE user_id = ?").run(userId);
+  response.json(buildStarterResponse(userId));
+});
+
+app.post("/api/game/starter/:step/claim", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const starter = buildStarterResponse(userId);
+  const step = starter.steps.find((s) => s.id === request.params.step);
+  if (!step || !db.prepare("SELECT checklist FROM starter_state WHERE user_id = ?").get(userId).checklist) {
+    response.status(400).json({ message: "Okänt steg." }); return;
+  }
+  if (!step.done) { response.status(400).json({ message: "Steget är inte klart än." }); return; }
+  try {
+    db.transaction(() => {
+      if (db.prepare("INSERT OR IGNORE INTO starter_claims (user_id, step) VALUES (?, ?)").run(userId, step.id).changes === 0) {
+        throw new Error("Du har redan hämtat den här belöningen.");
+      }
+      db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(step.reward, userId);
+      logGameEvent(userId, "starter_step", { collectionId: step.id, diamonds: step.reward });
+    })();
+  } catch (err) {
+    response.status(400).json({ message: err.message }); return;
+  }
+  response.json({ diamondsAwarded: step.reward, starter: buildStarterResponse(userId), state: buildStateResponse(userId) });
+});
+
 app.post("/api/game/buy-pack", authed, (request, response) => {
   const collectionId = String(request.body?.collectionId ?? "").trim();
   if (!collectionId) {
@@ -1030,15 +1150,7 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
     db.prepare(
       "UPDATE player_state SET diamonds = diamonds - ?, last_opened_cards = ? WHERE user_id = ?",
     ).run(totalPrice, JSON.stringify(pulledCards), request.auth.userId);
-    let newCards = 0;
-    for (const card of pulledCards) if (grantCard(request.auth.userId, card.id)) newCards += 1;
-    addWeeklyGoalProgress(request.auth.userId, "packsOpened", quantity);
-    addWeeklyGoalProgress(request.auth.userId, "newCards", newCards);
-    db.prepare(
-      `INSERT INTO packs_opened (user_id, collection_id, count) VALUES (?, ?, ?)
-       ON CONFLICT (user_id, collection_id) DO UPDATE SET count = count + excluded.count`,
-    ).run(request.auth.userId, collectionId, quantity);
-    logGameEvent(request.auth.userId, "pack", { collectionId, quantity, diamonds: totalPrice });
+    receivePacks(request.auth.userId, collectionId, quantity, pulledCards, totalPrice);
   })();
 
   response.json({ pulledCards, state: buildStateResponse(request.auth.userId) });
@@ -2199,6 +2311,9 @@ app.get("/api/game/waiting", authed, (request, response) => {
   applyEventChestCaps();
   const items = [];
 
+  const starter = buildStarterResponse(userId);
+  if (starter.freePack) items.push({ type: "starter_pack", id: "starter-pack", ...starter.freePack });
+
   const incoming = db.prepare(`
     SELECT t.*, su.username AS sender_username, ru.username AS receiver_username
     FROM trades t
@@ -2221,6 +2336,12 @@ app.get("/api/game/waiting", authed, (request, response) => {
 
   for (const goal of buildWeeklyGoalsResponse(userId).goals) {
     if (goal.complete && !goal.claimed) items.push({ type: "weekly_goal", id: goal.id, goal });
+  }
+
+  if (starter.visible) {
+    for (const step of starter.steps) {
+      if (step.done && !step.claimed) items.push({ type: "starter_step", id: step.id, title: step.title, reward: step.reward });
+    }
   }
 
   const running = activeEvent();
@@ -2946,7 +3067,7 @@ function stockholmDay(iso) {
 const DIAMOND_TARGET_PER_ACTIVE_PLAYER = 300;
 const FLOW_SOURCE_BY_TYPE = {
   daily: "daily", streak_bonus: "streak", weekly_goal: "weeklyGoals", achievement: "achievements",
-  chest_open: "chestPayouts", event_gift: "eventGifts", admin_grant: "adminGrants",
+  chest_open: "chestPayouts", event_gift: "eventGifts", admin_grant: "adminGrants", starter_step: "starterRewards",
 };
 const FLOW_SINK_BY_TYPE = { pack: "packs", chest_buy: "chests", slot_buy: "slots" };
 
@@ -3098,7 +3219,7 @@ app.get("/api/admin/stats", requireAdmin, (request, response) => {
   };
 
   // ── Diamond flow in the window ──
-  const flow = { daily: 0, eventGifts: 0, streakBonus: 0, weeklyGoals: 0, achievements: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
+  const flow = { daily: 0, eventGifts: 0, streakBonus: 0, weeklyGoals: 0, achievements: 0, chestRewards: 0, starterRewards: 0, packs: 0, chests: 0, slots: 0 };
   for (const e of events) {
     if (e.type === "daily") flow.daily += e.diamonds;
     else if (e.type === "event_gift") flow.eventGifts += e.diamonds;
@@ -3106,6 +3227,7 @@ app.get("/api/admin/stats", requireAdmin, (request, response) => {
     else if (e.type === "weekly_goal") flow.weeklyGoals += e.diamonds;
     else if (e.type === "achievement") flow.achievements += e.diamonds;
     else if (e.type === "chest_open") flow.chestRewards += e.diamonds;
+    else if (e.type === "starter_step") flow.starterRewards += e.diamonds;
     else if (e.type === "pack") flow.packs += e.diamonds;
     else if (e.type === "chest_buy") flow.chests += e.diamonds;
     else if (e.type === "slot_buy") flow.slots += e.diamonds;

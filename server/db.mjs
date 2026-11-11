@@ -210,6 +210,24 @@ db.exec(`
   INSERT OR IGNORE INTO ever_owned_cards (user_id, card_id) SELECT DISTINCT user_id, card_id FROM owned_cards;
 `);
 
+// Starter checklist ("Kom igång"). One row per player: free_pack says whether
+// they are entitled to the free Pack (1 until claimed, 0 after or if they had
+// already opened Packs), viewed_collection records that the Samling screen was
+// opened. starter_claims holds the checklist steps whose reward was taken.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS starter_state (
+    user_id           TEXT PRIMARY KEY REFERENCES users(id),
+    free_pack         INTEGER NOT NULL DEFAULT 0,
+    viewed_collection INTEGER NOT NULL DEFAULT 0,
+    checklist         INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS starter_claims (
+    user_id TEXT NOT NULL REFERENCES users(id),
+    step    TEXT NOT NULL,
+    PRIMARY KEY (user_id, step)
+  );
+`);
+
 // Top-ups: Copies the admin has added to a Collection's Card pool. bonus_copies
 // is the part of total_copies that came from Top-ups, so the startup pool sync
 // (which resets total_copies to the configured amount) does not undo them.

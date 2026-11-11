@@ -118,7 +118,7 @@ export type AdminStats = {
     cardsOwned: number;
   };
   daily: { date: string; signups: number; activePlayers: number; packs: number; upgrades: number; trades: number }[];
-  diamondFlow: { daily: number; eventGifts: number; streakBonus: number; weeklyGoals: number; achievements: number; chestRewards: number; packs: number; chests: number; slots: number };
+  diamondFlow: { daily: number; eventGifts: number; streakBonus: number; weeklyGoals: number; achievements: number; chestRewards: number; starterRewards: number; packs: number; chests: number; slots: number };
   upgradesByTier: { from: string; to: string; count: number; cardsPerUpgrade: number }[];
   leaders: Record<"packs" | "upgrades" | "trades" | "diamonds" | "collection", AdminLeader[]>;
   topCards: { cardId: string; rarity: string; copies: number; owners: number }[];
@@ -408,7 +408,7 @@ export async function endAdminEvent(id: string): Promise<void> {
 
 export type AdminDiamondFlowDay = {
   date: string;
-  sources: { daily: number; streak: number; weeklyGoals: number; achievements: number; chestPayouts: number; eventGifts: number; adminGrants: number };
+  sources: { daily: number; streak: number; weeklyGoals: number; achievements: number; chestPayouts: number; eventGifts: number; adminGrants: number; starterRewards: number };
   sinks: { packs: number; chests: number; slots: number };
   earned: number;
   spent: number;

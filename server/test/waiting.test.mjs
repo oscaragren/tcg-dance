@@ -9,6 +9,8 @@ beforeEach(async () => {
   t = await startTestApp({ clock });
   player = await t.registerPlayer();
   other = await t.registerPlayer();
+  // These tests are about the other tiles; the Starter has its own file.
+  t.db.prepare("UPDATE starter_state SET free_pack = 0, checklist = 0").run();
 });
 afterEach(() => t.close());
 
@@ -95,6 +97,7 @@ test("Trades are ordered newest first and only the player's own show", async () 
   const a = await sendTrade(other, player);
   clock.advance(1000);
   const third = await t.registerPlayer();
+  t.db.prepare("UPDATE starter_state SET free_pack = 0, checklist = 0").run();
   const b = await sendTrade(third, player);
   const ids = (await waiting()).body.items.filter((i) => i.type === "trade").map((i) => i.id);
   assert.deepEqual(ids, [b.body.tradeId, a.body.tradeId]);
@@ -109,6 +112,7 @@ test("during an Event the Daily claim shows the Event's amount", async () => {
   const t2 = await startTestApp({ clock, catalog });
   try {
     const p = await t2.registerPlayer();
+    t2.db.prepare("UPDATE starter_state SET free_pack = 0, checklist = 0").run();
     const { body } = await t2.request("GET", "/api/game/waiting", { cookie: p.cookie });
     assert.equal(body.items[0].diamonds, 800);
   } finally { await t2.close(); }
@@ -123,6 +127,7 @@ test("game state exposes the running Event, or null", async () => {
   const t2 = await startTestApp({ clock, catalog });
   try {
     const p = await t2.registerPlayer();
+    t2.db.prepare("UPDATE starter_state SET free_pack = 0, checklist = 0").run();
     const { event } = (await t2.request("GET", "/api/game/state", { cookie: p.cookie })).body;
     assert.equal(event.label, "Lördagsbonus");
     assert.equal(event.dailyDiamonds, 800);

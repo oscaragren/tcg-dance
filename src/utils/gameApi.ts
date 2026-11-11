@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, StarterResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
 
 export const MAINTENANCE_EVENT = "tcg:maintenance";
 
@@ -245,4 +245,21 @@ export async function fetchTrophies(): Promise<Trophy[]> {
 
 export async function fetchWaiting(): Promise<WaitingResponse> {
   return requestJson<WaitingResponse>("/api/game/waiting", { method: "GET" });
+}
+
+export async function fetchStarter(): Promise<StarterResponse> {
+  return requestJson<StarterResponse>("/api/game/starter", { method: "GET" });
+}
+
+export async function claimStarterPack(): Promise<BuyPackResponse> {
+  return requestJson<BuyPackResponse>("/api/game/starter/free-pack/claim", { method: "POST" });
+}
+
+export async function claimStarterStep(stepId: string): Promise<void> {
+  await requestJson<unknown>(`/api/game/starter/${stepId}/claim`, { method: "POST" });
+}
+
+/** Tells the server the player opened Samling (a Starter step). */
+export async function markCollectionViewed(): Promise<void> {
+  await requestJson<unknown>("/api/game/starter/collection-viewed", { method: "POST" });
 }

@@ -11,7 +11,7 @@ import { Button } from "../../components/shared/ui/button";
 import { cards, type CardRarity, type DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
 import { rarityColor, rarityLabel } from "../../data/rarity";
-import { fetchCollectionProgress, fetchGameState, fetchTrophies, setCardKept, upgradeCards } from "../../utils/gameApi";
+import { fetchCollectionProgress, fetchGameState, fetchTrophies, markCollectionViewed, setCardKept, upgradeCards } from "../../utils/gameApi";
 import { upgradeCardsRequired, upgradeTierTarget, type CollectionProgress, type Trophy } from "../../types/game";
 
 type View = "alla" | "saknas" | "dubbletter";
@@ -46,6 +46,7 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
 
   useEffect(() => {
     if (!userEmail) { setOwnedCardIds([]); setKeptCardIds(new Set()); return; }
+    markCollectionViewed().catch(() => undefined); // Starter step "Kolla din Samling"
     let cancelled = false;
     setIsLoading(true);
     setError(null);

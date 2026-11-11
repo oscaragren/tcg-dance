@@ -299,6 +299,18 @@ export type WaitingItem =
   | { type: "achievement"; id: string; achievement: Achievement }
   | { type: "weekly_goal"; id: string; goal: WeeklyGoal }
   | { type: "event_gift"; id: string; label: string; gift: EventGift }
-  | { type: "daily"; id: "daily"; diamonds: number };
+  | { type: "daily"; id: "daily"; diamonds: number }
+  | { type: "starter_pack"; id: "starter-pack"; collectionId: string; label: string }
+  | { type: "starter_step"; id: string; title: string; reward: number };
+
+export type StarterStep = { id: string; title: string; reward: number; done: boolean; claimed: boolean };
+
+/** The "Kom igång" checklist and the free Pack of a new player. */
+export type StarterResponse = {
+  /** False once every step is claimed (or for players who never get the checklist). */
+  visible: boolean;
+  steps: StarterStep[];
+  freePack: { collectionId: string; label: string } | null;
+};
 
 export type WaitingResponse = { items: WaitingItem[] };

@@ -8,10 +8,10 @@ import { ProgressRing } from "../../components/web/ProgressRing";
 import { WaitingStrip } from "../../components/web/WaitingStrip";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
-import type { CollectionProgress, GameState, LeaderboardEntry, WaitingItem, WeeklyGoal } from "../../types/game";
+import type { CollectionProgress, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WeeklyGoal } from "../../types/game";
 import {
   acceptTrade, claimAchievement, claimDailyDiamonds, claimWeeklyGoal,
-  claimEventGift, collectChest,
+  claimEventGift, claimStarterPack, claimStarterStep, collectChest, fetchStarter,
   fetchCollectionProgress, fetchGameState, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
 } from "../../utils/gameApi";
 import { useNow } from "../../utils/useNow";
@@ -93,12 +93,14 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const [error, setError] = useState<string | null>(null);
   const [streakBonus, setStreakBonus] = useState<number | null>(null);
   const [eventOpen, setEventOpen] = useState(false);
+  const [starter, setStarter] = useState<StarterResponse | null>(null);
   const [reward, setReward] = useState<{ label: string; diamonds: number; cards: DanceCard[] } | null>(null);
   const now = useNow(1000);
 
   const reload = useCallback(async () => {
-    const [state, items, goals] = await Promise.all([fetchGameState(), fetchWaiting(), fetchWeeklyGoals()]);
+    const [state, items, goals, starterState] = await Promise.all([fetchGameState(), fetchWaiting(), fetchWeeklyGoals(), fetchStarter()]);
     setGameState(state);
+    setStarter(starterState);
     setWaiting(items.items);
     setWeeklyGoals(goals.goals);
   }, []);
@@ -123,7 +125,11 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       else if (item.type === "achievement") await claimAchievement(item.id);
       else if (item.type === "weekly_goal") await claimWeeklyGoal(item.id);
       else if (item.type === "event_gift") await claimEventGift(item.id);
-      else if (item.type === "chest") {
+      else if (item.type === "starter_step") await claimStarterStep(item.id);
+      else if (item.type === "starter_pack") {
+        const result = await claimStarterPack();
+        setReward({ label: item.label, diamonds: 0, cards: result.pulledCards });
+      } else if (item.type === "chest") {
         const result = await collectChest(item.id);
         setReward({ label: result.chestLabel, diamonds: result.diamondsAwarded, cards: result.cards });
       } else {
@@ -202,6 +208,22 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
           <span className="shrink-0 text-xs text-secondary">Hämtad idag</span>
         )}
       </div>
+
+      {starter?.visible && (
+        <section aria-label="Kom igång" className="mx-4 rounded-xl border bg-surface px-3 py-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-tertiary">Kom igång</h2>
+          <ul className="mt-1 flex flex-col gap-1">
+            {starter.steps.map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-2 text-sm">
+                <span className={s.claimed ? "text-secondary line-through" : ""}>{s.title}</span>
+                <span className="flex shrink-0 items-center gap-1 text-xs text-secondary">
+                  {s.claimed ? "Hämtad" : s.done ? "Klar – hämta ovan" : <>+{s.reward} <span className="text-diamonds" aria-hidden><DiamondIcon /></span></>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <WeeklyGoalTiles goals={weeklyGoals} busyId={busyId} onClaim={(g) => void handleClaimGoal(g)} />
 
