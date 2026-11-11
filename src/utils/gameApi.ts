@@ -1,5 +1,15 @@
 import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
 
+export const MAINTENANCE_EVENT = "tcg:maintenance";
+
+export type MaintenanceStatus = { on: boolean; reopensAt: string | null; note: string | null };
+
+export async function fetchMaintenance(): Promise<MaintenanceStatus> {
+  const response = await fetch("/api/maintenance", { credentials: "include" });
+  if (!response.ok) throw new Error("Maintenance status unavailable.");
+  return (await response.json()) as MaintenanceStatus;
+}
+
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
     const json = (await response.json()) as { message?: string };
@@ -23,6 +33,8 @@ async function requestJson<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    // Maintenance mode: tell the app shell, which swaps in the "Vi uppdaterar" page.
+    if (response.status === 503) window.dispatchEvent(new Event(MAINTENANCE_EVENT));
     throw new Error(await parseErrorMessage(response));
   }
 

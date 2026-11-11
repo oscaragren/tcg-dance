@@ -260,6 +260,7 @@ db.exec(`
     PRIMARY KEY (event_id, user_id)
   );
 `);
+db.exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
 if (db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('card_pool') WHERE name='bonus_copies'").get().n === 0) {
   db.exec("ALTER TABLE card_pool ADD COLUMN bonus_copies INTEGER NOT NULL DEFAULT 0");
 }

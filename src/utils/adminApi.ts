@@ -1,4 +1,5 @@
 import type { GameEvent } from "../types/game";
+import type { MaintenanceStatus } from "./gameApi";
 
 export type AdminRarityStat = { total: number; remaining: number; bought: number };
 
@@ -432,4 +433,14 @@ export async function grantAdminDiamonds(userId: string, amount: number, reason:
     method: "POST",
     body: JSON.stringify({ amount, reason }),
   });
+}
+
+export type { MaintenanceStatus };
+
+export async function fetchAdminMaintenance(): Promise<MaintenanceStatus> {
+  return adminRequest<MaintenanceStatus>("/api/admin/maintenance", { method: "GET" });
+}
+
+export async function saveAdminMaintenance(body: { on: boolean; reopensAt?: string; note?: string }): Promise<MaintenanceStatus> {
+  return adminRequest<MaintenanceStatus>("/api/admin/maintenance", { method: "PUT", body: JSON.stringify(body) });
 }

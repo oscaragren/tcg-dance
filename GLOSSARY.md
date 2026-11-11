@@ -51,6 +51,10 @@ _Avoid_: Stock, deck
 Adding new Rare and Epic Copies to a Collection's Card pool when too little of what remains is Rare or better.
 _Avoid_: Refill, restock, reprint
 
+**Maintenance mode**:
+An admin switch that closes the game for players: every player route refuses and the web client shows "Vi uppdaterar" with the expected reopening time and a short note. Admin routes keep working.
+_Avoid_: Downtime, lockdown
+
 ### Actions
 
 **Pack**:

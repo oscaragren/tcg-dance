@@ -8,7 +8,8 @@ import { HowItWorks } from "../../components/web/HowItWorks";
 import { Faq } from "../../components/web/Faq";
 import { Footer } from "../../components/web/Footer";
 import { fetchCurrentUser, logoutUser } from "../../utils/authApi";
-import { DIAMONDS_EVENT, fetchChests, fetchGameState, fetchIncomingTradeCount } from "../../utils/gameApi";
+import { DIAMONDS_EVENT, MAINTENANCE_EVENT, fetchChests, fetchGameState, fetchIncomingTradeCount, fetchMaintenance, type MaintenanceStatus } from "../../utils/gameApi";
+import MaintenancePage from "./MaintenancePage";
 import type { AuthUser } from "../../types/auth";
 import { AuthPage } from "./AuthPage";
 import { CompleteProfilePage } from "./CompleteProfilePage";
@@ -48,13 +49,30 @@ const TRADE_BADGE_POLL_MS = 60_000;
 /** Poll interval for the ready-chest badge on "Samling". */
 const CHEST_BADGE_POLL_MS = 60_000;
 
+/** Poll interval for the maintenance switch. */
+const MAINTENANCE_POLL_MS = 60_000;
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [pendingTradeCount, setPendingTradeCount] = useState(0);
   const [diamonds, setDiamonds] = useState<number | null>(null);
   const [hasReadyChest, setHasReadyChest] = useState(false);
+  const [maintenance, setMaintenance] = useState<MaintenanceStatus | null>(null);
   const location = useLocation();
+
+  // Maintenance mode: check on load, on a slow timer, and whenever any API
+  // call comes back 503. The admin panel stays reachable while it is on.
+  useEffect(() => {
+    let cancelled = false;
+    function refresh() {
+      fetchMaintenance().then((m) => { if (!cancelled) setMaintenance(m); }).catch(() => {});
+    }
+    refresh();
+    const timer = setInterval(refresh, MAINTENANCE_POLL_MS);
+    window.addEventListener(MAINTENANCE_EVENT, refresh);
+    return () => { cancelled = true; clearInterval(timer); window.removeEventListener(MAINTENANCE_EVENT, refresh); };
+  }, []);
 
   // Header diamond balance. Seeded on login and on each navigation; kept live
   // in between by the DIAMONDS_EVENT any diamond-moving request emits.
@@ -143,6 +161,10 @@ export default function App() {
     setPendingTradeCount(0);
     setDiamonds(null);
     setHasReadyChest(false);
+  }
+
+  if (maintenance?.on && !/^\/admin(\/|$)/.test(location.pathname)) {
+    return <MaintenancePage status={maintenance} />;
   }
 
   if (isAuthLoading) {

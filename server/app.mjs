@@ -6,6 +6,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { loadGameCatalog } from "./gameCatalog.mjs";
 import { buildAchievementDefinitions, computeAchievementProgress } from "./achievements.mjs";
+import { getMaintenance, setMaintenance } from "./maintenance.mjs";
 
 /**
  * Build the game server. Everything that touches the outside world is injected:
@@ -43,6 +44,15 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+
+// Maintenance mode: while on, everything under /api except admin routes, the
+// public status endpoint and the health check refuses with 503.
+app.use("/api", (request, response, next) => {
+  if (/^\/(admin(\/|$)|maintenance$|health$)/.test(request.path)) { next(); return; }
+  const m = getMaintenance(db);
+  if (!m.on) { next(); return; }
+  response.status(503).json({ maintenance: true, message: "Vi uppdaterar", reopensAt: m.reopensAt, note: m.note });
+});
 
 // Re-check Top-ups after any request that can change the Card pool (see Top-ups below).
 app.use("/api", (request, response, next) => {
@@ -2274,6 +2284,22 @@ app.post("/api/admin/logout", (_request, response) => {
 
 app.get("/api/admin/me", requireAdmin, (_request, response) => {
   response.json({ ok: true });
+});
+
+// ── Maintenance mode ──────────────────────────────────────────────────────────
+
+app.get("/api/maintenance", (_request, response) => { response.json(getMaintenance(db)); });
+app.get("/api/admin/maintenance", requireAdmin, (_request, response) => { response.json(getMaintenance(db)); });
+app.put("/api/admin/maintenance", requireAdmin, (request, response) => {
+  const { on, reopensAt, note } = request.body ?? {};
+  if (typeof on !== "boolean") { response.status(400).json({ message: "on måste vara true eller false." }); return; }
+  let reopen = null;
+  if (reopensAt) {
+    if (Number.isNaN(Date.parse(reopensAt))) { response.status(400).json({ message: "Ogiltig tid för återöppning." }); return; }
+    reopen = new Date(reopensAt).toISOString();
+  }
+  const text = typeof note === "string" && note.trim() ? note.trim().slice(0, 200) : null;
+  response.json(setMaintenance(db, { on, reopensAt: reopen, note: text }));
 });
 
 // ── Top-ups ───────────────────────────────────────────────────────────────────

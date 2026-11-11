@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/share
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { AdminStatsPanel, UpgradeRow } from "../../components/web/AdminStats";
 import { AdminDiamondFlowPanel, DiamondGrantControl, DiamondHistory } from "../../components/web/AdminDiamondFlow";
+import { AdminMaintenance } from "../../components/web/AdminMaintenance";
 import { AdminEvents } from "../../components/web/AdminEvents";
 import { AdminBanners, PoolSkewView } from "../../components/web/AdminTopUps";
 import { cardById, rarityOrder } from "../../data/cards";
@@ -345,6 +346,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               labels={Object.fromEntries(poolSkew.collections.map((c) => [c.collectionId, c.label]))}
             />
           )}
+
+          <AdminMaintenance />
 
           {/* Overview — always visible, one glance at the state of things */}
           {overview && (
