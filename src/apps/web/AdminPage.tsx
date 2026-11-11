@@ -16,6 +16,7 @@ import {
   banAdminUser,
   unbanAdminUser,
   createAdminAnnouncement,
+  setAdminAnnouncementBanner,
   deleteAdminAnnouncement,
   deleteAdminUser,
   fetchAdminAnnouncements,
@@ -696,6 +697,27 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           <span className="text-xs text-tertiary">{formatDate(a.createdAt)}</span>
                         </div>
                         <p className="text-sm text-text mt-0.5">{a.body}</p>
+                        <form
+                          className="mt-2 flex gap-2"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const text = String(new FormData(e.currentTarget).get("banner") ?? "").trim();
+                            setAdminAnnouncementBanner(a.id, text)
+                              .then(() => setAnnouncements((prev) => prev.map((x) => (x.id === a.id ? { ...x, bannerText: text } : x))))
+                              .catch((err) => setAnnouncementError(err instanceof Error ? err.message : "Kunde inte spara bannern."));
+                          }}
+                        >
+                          <input
+                            name="banner"
+                            key={a.bannerText}
+                            defaultValue={a.bannerText}
+                            maxLength={100}
+                            placeholder="Hem-banner (tom = ingen)"
+                            aria-label="Bannertext på Hem"
+                            className="flex-1 h-8 rounded-md border border-hairline px-2 text-xs"
+                          />
+                          <button type="submit" className="text-xs font-medium underline">Spara</button>
+                        </form>
                       </div>
                       <button
                         onClick={() => void handleDeleteAnnouncement(a.id)}

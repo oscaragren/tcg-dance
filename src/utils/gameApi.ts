@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, ComebackSummary, StarterResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
+import type { Achievement, AnnouncementBanner, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, ComebackSummary, StarterResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
 
 export const MAINTENANCE_EVENT = "tcg:maintenance";
 
@@ -229,6 +229,15 @@ export async function collectChest(chestId: string): Promise<CollectChestRespons
 
 export async function fetchAnnouncements(): Promise<AnnouncementsResponse> {
   return requestJson<AnnouncementsResponse>("/api/announcements", { method: "GET" });
+}
+
+export async function fetchAnnouncementBanner(): Promise<AnnouncementBanner | null> {
+  const res = await requestJson<{ banner: AnnouncementBanner | null }>("/api/announcements/banner", { method: "GET" });
+  return res.banner;
+}
+
+export async function dismissAnnouncementBanner(announcementId: string): Promise<void> {
+  await requestJson<unknown>(`/api/announcements/${announcementId}/banner/dismiss`, { method: "POST" });
 }
 
 export async function markAnnouncementsSeen(): Promise<void> {

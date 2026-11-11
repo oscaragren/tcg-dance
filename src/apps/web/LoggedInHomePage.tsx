@@ -6,12 +6,13 @@ import { DiamondIcon } from "../../components/web/DiamondIcon";
 import { ComebackSheet } from "../../components/web/ComebackSheet";
 import { EventSheet } from "../../components/web/EventSheet";
 import { ProgressRing } from "../../components/web/ProgressRing";
+import { OPEN_ANNOUNCEMENT_EVENT } from "../../components/web/AnnouncementsMenu";
 import { WaitingStrip } from "../../components/web/WaitingStrip";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
-import type { CollectionProgress, ComebackSummary, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WeeklyGoal } from "../../types/game";
+import type { AnnouncementBanner, CollectionProgress, ComebackSummary, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WeeklyGoal } from "../../types/game";
 import {
-  acceptTrade, claimAchievement, claimDailyDiamonds, claimWeeklyGoal,
+  acceptTrade, dismissAnnouncementBanner, fetchAnnouncementBanner, claimAchievement, claimDailyDiamonds, claimWeeklyGoal,
   claimComebackGift, claimEventGift, claimStarterPack, claimStarterStep, collectChest, fetchStarter,
   fetchCollectionProgress, fetchComeback, fetchGameState, markComebackSummarySeen, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
 } from "../../utils/gameApi";
@@ -97,6 +98,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const [starter, setStarter] = useState<StarterResponse | null>(null);
   const [reward, setReward] = useState<{ label: string; diamonds: number; cards: DanceCard[] } | null>(null);
   const [comeback, setComeback] = useState<ComebackSummary | null>(null);
+  const [banner, setBanner] = useState<AnnouncementBanner | null>(null);
   const now = useNow(1000);
 
   const reload = useCallback(async () => {
@@ -116,6 +118,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
         .then((p) => setProgress((prev) => ({ ...prev, [c.id]: p })))
         .catch(() => undefined);
     }
+    fetchAnnouncementBanner().then(setBanner).catch(() => undefined);
     fetchLeaderboard().then(setLeaderboard).catch(() => undefined);
   }, [reload, userEmail]);
 
@@ -192,6 +195,30 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
           <span className="truncate font-semibold">{event.label}</span>
           <span className="shrink-0 text-xs text-secondary">pågår · se belöningar</span>
         </button>
+      )}
+
+      {banner && (
+        <div className="mx-4 flex items-center gap-2 rounded-xl border bg-surface px-3 py-2">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent(OPEN_ANNOUNCEMENT_EVENT, { detail: banner.announcementId }))}
+            className="min-w-0 flex-1 text-left text-sm font-semibold"
+          >
+            {banner.text}
+          </button>
+          <button
+            type="button"
+            aria-label="Stäng"
+            onClick={() => {
+              const id = banner.announcementId;
+              setBanner(null);
+              dismissAnnouncementBanner(id).catch(() => undefined);
+            }}
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-secondary"
+          >
+            ×
+          </button>
+        </div>
       )}
 
       <WaitingStrip items={tiles} busyId={busyId} onAct={(item) => void handleAct(item)} />
