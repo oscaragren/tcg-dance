@@ -1,4 +1,6 @@
-# TCG Dance
+# Peppelinos Bar
+
+_Formerly "TCG Dance": a legacy name kept only in the repo and code. Players see Peppelinos Bar._
 
 A Swedish web-based trading card game where players collect cards of real competitive bugg dance couples, open packs with diamonds, upgrade and trade cards.
 
@@ -14,6 +16,18 @@ _Avoid_: Card type, design
 One owned or available instance of a Card; a player may hold several Copies of the same Card.
 _Avoid_: Duplicate (use only for Copies beyond the first a player owns)
 
+**Duplicate**:
+Any Copy of a Card beyond the first one a player owns.
+_Avoid_: Extra, spare
+
+**Missing Card**:
+A Card in a live Collection of which a player owns no Copies.
+_Avoid_: Wanted card, wishlist
+
+**Available for Trade**:
+A Copy other players can find and ask for in Trades: by default every Duplicate, unless the player has set that Card to keep (Behåll).
+_Avoid_: Listed, marked, vill byta (in English text)
+
 **Rarity**:
 The tier of a Card: Common, Rare, Epic, Legendary, or Special. Fixed per Card.
 _Avoid_: Tier, level
@@ -25,9 +39,17 @@ A Card of Rarity Special, of which only a single Copy exists in the whole game.
 A themed, released set of Cards (e.g. SM 2026) with its own Pack.
 _Avoid_: Set, series, expansion
 
+**Collection progress**:
+How many of a Collection's Cards a player owns at least one Copy of, counted out of all its Cards except Special cards; a Collection is completed when every non-Special Card is owned.
+_Avoid_: Completion rate, percentage
+
 **Card pool**:
 The finite, game-wide supply of Copies not yet owned by any player; Packs and Upgrades draw from it.
 _Avoid_: Stock, deck
+
+**Top-up**:
+Adding new Rare and Epic Copies to a Collection's Card pool when too little of what remains is Rare or better.
+_Avoid_: Refill, restock, reprint
 
 ### Actions
 
@@ -54,8 +76,37 @@ A bought container that becomes collectable after a wait time and then pays out 
 _Avoid_: Box, crate
 
 **Event**:
-A time-limited period that changes economy rules, such as boosted daily Diamonds or shorter Chest waits.
+A time-limited period tied to a real-world competition, with rewards chosen per Event, such as boosted daily Diamonds, shorter Chest waits, a gift for logging in, or a Top-up.
 _Avoid_: Campaign, promo
 
 **Achievement**:
 A Collection milestone that a player can claim for a Diamond reward.
+
+**Daily claim**:
+The once-per-day tap that collects a player's daily Diamonds; the day resets at midnight Swedish time.
+
+**Streak**:
+A 7-step track advanced by each Daily claim; a missed day pauses it rather than resetting it, and the 7th step pays a bonus.
+_Avoid_: Login streak, consecutive days
+
+**Weekly goal**:
+One of a small fixed set of tasks that resets every Monday and is claimed for a reward once done.
+_Avoid_: Quest, mission, challenge
+
+**Starter checklist**:
+The one-time steps that guide a new player through the game, each claimable for Diamonds once done (UI: "Kom igång").
+_Avoid_: Tutorial, onboarding quest
+
+**Comeback gift**:
+A one-off Diamond reward for a player returning after a long absence.
+_Avoid_: Welcome-back bonus
+
+**Topplista**:
+The ranking of players shown to everyone, by unique Cards owned across all Collections (Special left out); ties break on unique Legendary, then Epic, then Rare, and players still tied share the rank.
+_Avoid_: Leaderboard (in Swedish UI text)
+
+### Communication
+
+**Announcement**:
+A message from the game to all players, kept in the feed behind the bell and marked unseen until a player opens it.
+_Avoid_: News, notice, post
