@@ -80,7 +80,7 @@ export type AdminStats = {
     cardsOwned: number;
   };
   daily: { date: string; signups: number; activePlayers: number; packs: number; upgrades: number; trades: number }[];
-  diamondFlow: { daily: number; chestRewards: number; packs: number; chests: number; slots: number };
+  diamondFlow: { daily: number; streakBonus: number; weeklyGoals: number; chestRewards: number; packs: number; chests: number; slots: number };
   upgradesByTier: { from: string; to: string; count: number; cardsPerUpgrade: number }[];
   leaders: Record<"packs" | "upgrades" | "trades" | "diamonds" | "collection", AdminLeader[]>;
   topCards: { cardId: string; rarity: string; copies: number; owners: number }[];

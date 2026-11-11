@@ -164,7 +164,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_upgrades_created ON upgrades(created_at);
 
   -- Lightweight timeline of economy actions: 'pack' (quantity packs bought for
-  -- diamonds), 'daily' (diamonds claimed), 'streak_bonus' (Streak bonus), 'chest_buy' (diamonds spent),
+  -- diamonds), 'daily' (diamonds claimed), 'streak_bonus' (Streak bonus), 'weekly_goal' (Weekly goal payout), 'chest_buy' (diamonds spent),
   -- 'chest_open' (diamonds won, quantity = cards won).
   CREATE TABLE IF NOT EXISTS game_events (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -177,6 +177,32 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_game_events_created ON game_events(created_at);
   CREATE INDEX IF NOT EXISTS idx_game_events_user ON game_events(user_id);
+`);
+
+// Weekly goals. Progress is kept per player, per goal, per week (week_start is
+// the Monday's Stockholm date). Rows from finished weeks are settled and
+// removed lazily, see settleWeeklyGoals in app.mjs.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS weekly_goal_progress (
+    user_id    TEXT NOT NULL REFERENCES users(id),
+    week_start TEXT NOT NULL,
+    goal_id    TEXT NOT NULL,
+    progress   INTEGER NOT NULL DEFAULT 0,
+    claimed    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, week_start, goal_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_weekly_goal_week ON weekly_goal_progress(week_start);
+
+  -- Every Card a player has ever held a Copy of. owned_cards forgets a Card the
+  -- moment its last Copy is traded or upgraded away, so "new to your
+  -- Collection" (Weekly goals) needs this, or trading a Card back and forth
+  -- would count as new every time.
+  CREATE TABLE IF NOT EXISTS ever_owned_cards (
+    user_id TEXT NOT NULL REFERENCES users(id),
+    card_id TEXT NOT NULL,
+    PRIMARY KEY (user_id, card_id)
+  );
+  INSERT OR IGNORE INTO ever_owned_cards (user_id, card_id) SELECT DISTINCT user_id, card_id FROM owned_cards;
 `);
 
 // Add collection_id column if upgrading from an older schema

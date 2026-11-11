@@ -21,6 +21,8 @@ function tileText(item: WaitingItem): { title: string; sub: string; action: stri
       return { title: `${item.chest.label} redo`, sub: "Öppna din kista", action: "Öppna" };
     case "achievement":
       return { title: item.achievement.title, sub: `+${item.achievement.reward} diamanter`, action: "Hämta" };
+    case "weekly_goal":
+      return { title: item.goal.title, sub: `Veckomål +${item.goal.reward}`, action: "Hämta" };
     case "daily":
       return { title: "Dagliga diamanter", sub: `+${item.diamonds}`, action: "Hämta" };
   }
@@ -43,7 +45,7 @@ export function WaitingStrip({ items, busyId, onAct }: WaitingStripProps) {
                 <p className="truncate text-sm font-semibold">{title}</p>
               )}
               <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-secondary">
-                {sub}{item.type === "achievement" && <span className="text-diamonds" aria-hidden><DiamondIcon /></span>}
+                {sub}{(item.type === "achievement" || item.type === "weekly_goal") && <span className="text-diamonds" aria-hidden><DiamondIcon /></span>}
               </p>
               <button
                 type="button"

@@ -1,5 +1,10 @@
 {
   "dailyDiamonds": 150,
+  "weeklyGoals": [
+    { "id": "packs", "kind": "packsOpened", "title": "Öppna 5 Packs", "target": 5, "reward": 100 },
+    { "id": "new-cards", "kind": "newCards", "title": "Få 3 nya kort", "target": 3, "reward": 100 },
+    { "id": "trade", "kind": "tradeCompleted", "title": "Genomför 1 byte", "target": 1, "reward": 100 }
+  ],
   "events": [
     {
       "id": "lordag-2026-09-26",

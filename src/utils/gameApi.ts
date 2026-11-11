@@ -1,4 +1,4 @@
-import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradeResponse, UserSearchResult, WaitingResponse } from "../types/game";
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, Trophy, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -109,6 +109,14 @@ export async function fetchAchievements(): Promise<Achievement[]> {
 
 export async function claimAchievement(achievementId: string): Promise<ClaimAchievementResponse> {
   return requestJson<ClaimAchievementResponse>(`/api/achievements/${achievementId}/claim`, { method: "POST" });
+}
+
+export async function fetchWeeklyGoals(): Promise<WeeklyGoalsResponse> {
+  return requestJson<WeeklyGoalsResponse>("/api/game/weekly-goals", { method: "GET" });
+}
+
+export async function claimWeeklyGoal(goalId: string): Promise<ClaimWeeklyGoalResponse> {
+  return requestJson<ClaimWeeklyGoalResponse>(`/api/game/weekly-goals/${goalId}/claim`, { method: "POST" });
 }
 
 export async function getUserCards(userId: string): Promise<{ ownedCardIds: string[] }> {

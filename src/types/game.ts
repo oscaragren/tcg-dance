@@ -193,6 +193,28 @@ export type Achievement = {
   collectionId?: string;
 };
 
+/** One of the three Weekly goals; progress is capped at the target. */
+export type WeeklyGoal = {
+  id: string;
+  title: string;
+  reward: number;
+  progress: number;
+  target: number;
+  complete: boolean;
+  claimed: boolean;
+};
+
+export type WeeklyGoalsResponse = {
+  /** Stockholm date of the Monday this week started. */
+  weekStart: string;
+  goals: WeeklyGoal[];
+};
+
+export type ClaimWeeklyGoalResponse = WeeklyGoalsResponse & {
+  diamondsAwarded: number;
+  state: GameState;
+};
+
 export type ClaimAchievementResponse = {
   diamondsAwarded: number;
   achievements: Achievement[];
@@ -234,6 +256,7 @@ export type WaitingItem =
   | { type: "trade"; id: string; trade: Trade }
   | { type: "chest"; id: string; chest: Chest }
   | { type: "achievement"; id: string; achievement: Achievement }
+  | { type: "weekly_goal"; id: string; goal: WeeklyGoal }
   | { type: "daily"; id: "daily"; diamonds: number };
 
 export type WaitingResponse = { items: WaitingItem[] };

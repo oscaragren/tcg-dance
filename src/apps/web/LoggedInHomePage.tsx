@@ -8,10 +8,10 @@ import { ProgressRing } from "../../components/web/ProgressRing";
 import { WaitingStrip } from "../../components/web/WaitingStrip";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
-import type { CollectionProgress, GameState, LeaderboardEntry, WaitingItem } from "../../types/game";
+import type { CollectionProgress, GameState, LeaderboardEntry, WaitingItem, WeeklyGoal } from "../../types/game";
 import {
-  acceptTrade, claimAchievement, claimDailyDiamonds, collectChest,
-  fetchCollectionProgress, fetchGameState, fetchLeaderboard, fetchWaiting,
+  acceptTrade, claimAchievement, claimDailyDiamonds, claimWeeklyGoal, collectChest,
+  fetchCollectionProgress, fetchGameState, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
 } from "../../utils/gameApi";
 import { useNow } from "../../utils/useNow";
 
@@ -43,10 +43,49 @@ function StreakTrack({ position, target, bonus }: { position: number; target: nu
   );
 }
 
+/** The three Weekly goals as small tiles; a finished one is claimed with a tap. */
+function WeeklyGoalTiles({ goals, busyId, onClaim }: { goals: WeeklyGoal[]; busyId: string | null; onClaim: (goal: WeeklyGoal) => void }) {
+  if (goals.length === 0) return null;
+  return (
+    <section aria-label="Veckomål" className="mx-4">
+      <h2 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-tertiary">Veckomål</h2>
+      <ul className="grid grid-cols-3 gap-2">
+        {goals.map((g) => (
+          <li key={g.id} data-testid="weekly-goal" className="flex flex-col justify-between rounded-xl border bg-surface p-2">
+            <p className="text-xs font-semibold leading-tight">{g.title}</p>
+            <div className="mt-2">
+              <div className="h-1.5 overflow-hidden rounded-full bg-hairline-strong" role="progressbar" aria-valuemin={0} aria-valuemax={g.target} aria-valuenow={g.progress}>
+                <div className="h-full bg-accent" style={{ width: `${(g.progress / g.target) * 100}%` }} />
+              </div>
+              {g.claimed ? (
+                <p className="mt-1 text-xs text-secondary">Hämtad</p>
+              ) : g.complete ? (
+                <button
+                  type="button"
+                  onClick={() => onClaim(g)}
+                  disabled={busyId === g.id}
+                  className="mt-1 flex w-full items-center justify-center gap-1 rounded-lg bg-accent py-0.5 text-xs font-semibold text-accent-on disabled:opacity-60"
+                >
+                  +{g.reward} <DiamondIcon />
+                </button>
+              ) : (
+                <p className="mt-1 flex items-center gap-1 text-xs text-secondary">
+                  {g.progress}/{g.target} · +{g.reward} <span className="text-diamonds" aria-hidden><DiamondIcon /></span>
+                </p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** Hem, layout B "Kompakt": everything fits on one 390×844 screen. */
 export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [waiting, setWaiting] = useState<WaitingItem[]>([]);
+  const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
   const [progress, setProgress] = useState<Record<string, CollectionProgress>>({});
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -57,9 +96,10 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const now = useNow(1000);
 
   const reload = useCallback(async () => {
-    const [state, items] = await Promise.all([fetchGameState(), fetchWaiting()]);
+    const [state, items, goals] = await Promise.all([fetchGameState(), fetchWaiting(), fetchWeeklyGoals()]);
     setGameState(state);
     setWaiting(items.items);
+    setWeeklyGoals(goals.goals);
   }, []);
 
   useEffect(() => {
@@ -80,6 +120,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     try {
       if (item.type === "trade") await acceptTrade(item.id);
       else if (item.type === "achievement") await claimAchievement(item.id);
+      else if (item.type === "weekly_goal") await claimWeeklyGoal(item.id);
       else if (item.type === "chest") {
         const result = await collectChest(item.id);
         setReward({ label: result.chestLabel, diamonds: result.diamondsAwarded, cards: result.cards });
@@ -93,6 +134,11 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     } finally {
       setBusyId(null);
     }
+  }
+
+  async function handleClaimGoal(goal: WeeklyGoal) {
+    const item = waiting.find((i) => i.type === "weekly_goal" && i.id === goal.id);
+    if (item) await handleAct(item);
   }
 
   const daily = waiting.find((i) => i.type === "daily");
@@ -154,6 +200,8 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
           <span className="shrink-0 text-xs text-secondary">Hämtad idag</span>
         )}
       </div>
+
+      <WeeklyGoalTiles goals={weeklyGoals} busyId={busyId} onClaim={(g) => void handleClaimGoal(g)} />
 
       {/* One progress ring per live Collection. */}
       <section aria-label="Samlingar" className="mx-4 rounded-xl border bg-surface px-2 py-3">

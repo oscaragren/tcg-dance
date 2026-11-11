@@ -38,6 +38,11 @@ export const TEST_CATALOG = {
   dailyDiamonds: 150,
   copiesPerRarity: { common: 10, rare: 5, epic: 2, legendary: 1, special: 1 },
   events: [],
+  weeklyGoals: [
+    { id: "packs", kind: "packsOpened", title: "Öppna 5 Packs", target: 5, reward: 100 },
+    { id: "new-cards", kind: "newCards", title: "Få 3 nya kort", target: 3, reward: 100 },
+    { id: "trade", kind: "tradeCompleted", title: "Genomför 1 byte", target: 1, reward: 100 },
+  ],
 };
 
 /**

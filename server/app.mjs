@@ -90,7 +90,7 @@ function syncCardPool(allCards, copiesPerRarity, collectionsMap) {
 
 // ── Startup: load catalog once ────────────────────────────────────────────────
 
-const { cards: allCards, collections, dailyDiamonds, copiesPerRarity, events } = (catalog ?? (await loadGameCatalog()));
+const { cards: allCards, collections, dailyDiamonds, copiesPerRarity, events, weeklyGoals = [] } = (catalog ?? (await loadGameCatalog()));
 const cardById = new Map(allCards.map((c) => [c.id, c]));
 const collectionsMap = new Map(collections.map((c) => [c.id, c]));
 syncCardPool(allCards, copiesPerRarity, collectionsMap);
@@ -451,6 +451,85 @@ function todayIso() {
   return stockholmDate.format(new Date(clock.now()));
 }
 
+// ── Weekly goals (game-content.json "weeklyGoals") ───────────────────────────
+// A fixed set of tasks that reset every Monday 00:00 Stockholm time. Each has a
+// `kind` saying what advances it: "packsOpened" (+1 per Pack), "newCards" (+1
+// per Card the player never held a Copy of before) or "tradeCompleted" (+1 per
+// accepted Trade in which the player received at least one such new Card).
+
+const weeklyGoalById = new Map(weeklyGoals.map((g) => [g.id, g]));
+
+/** The Stockholm date (YYYY-MM-DD) of the Monday starting the current week. */
+function weekStartIso() {
+  const d = new Date(`${todayIso()}T12:00:00Z`); // noon UTC sidesteps DST
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+const stmtAddGoalProgress = db.prepare(
+  `INSERT INTO weekly_goal_progress (user_id, week_start, goal_id, progress) VALUES (?, ?, ?, ?)
+   ON CONFLICT (user_id, week_start, goal_id) DO UPDATE SET progress = progress + excluded.progress`,
+);
+
+function addWeeklyGoalProgress(userId, kind, amount = 1) {
+  if (amount <= 0) return;
+  const week = weekStartIso();
+  for (const goal of weeklyGoals) {
+    if (goal.kind === kind) stmtAddGoalProgress.run(userId, week, goal.id, amount);
+  }
+}
+
+/**
+ * Finishes every week that has ended: a finished goal nobody claimed is paid
+ * out, and all rows of that week are dropped (the Diamond log keeps the
+ * payout). Runs lazily from state reads and from a timer, so a player who
+ * comes back days later still sees the payout.
+ */
+function settleWeeklyGoals() {
+  const week = weekStartIso();
+  const stale = db.prepare("SELECT * FROM weekly_goal_progress WHERE week_start < ?").all(week);
+  if (stale.length === 0) return;
+  db.transaction(() => {
+    for (const row of stale) {
+      const goal = weeklyGoalById.get(row.goal_id);
+      if (goal && !row.claimed && row.progress >= goal.target) {
+        ensurePlayerState(row.user_id);
+        db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(goal.reward, row.user_id);
+        logGameEvent(row.user_id, "weekly_goal", { diamonds: goal.reward });
+      }
+    }
+    db.prepare("DELETE FROM weekly_goal_progress WHERE week_start < ?").run(week);
+  })();
+}
+
+function buildWeeklyGoalsResponse(userId) {
+  const rows = new Map(
+    db.prepare("SELECT goal_id, progress, claimed FROM weekly_goal_progress WHERE user_id = ? AND week_start = ?")
+      .all(userId, weekStartIso()).map((r) => [r.goal_id, r]),
+  );
+  return {
+    weekStart: weekStartIso(),
+    goals: weeklyGoals.map((g) => {
+      const row = rows.get(g.id);
+      const progress = Math.min(row?.progress ?? 0, g.target);
+      return {
+        id: g.id, title: g.title, reward: g.reward, progress, target: g.target,
+        complete: progress >= g.target, claimed: Boolean(row?.claimed),
+      };
+    }),
+  };
+}
+
+// Every Copy a player receives goes through here so the "ever held" record
+// stays complete. Returns true when the Card is new to the player's Collection.
+const stmtMarkEverOwned = db.prepare("INSERT OR IGNORE INTO ever_owned_cards (user_id, card_id) VALUES (?, ?)");
+const stmtInsertOwned = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
+function grantCard(userId, cardId) {
+  const isNew = stmtMarkEverOwned.run(userId, cardId).changes > 0;
+  stmtInsertOwned.run(userId, cardId);
+  return isNew;
+}
+
 // ── Time-limited events (game-content.json "events") ─────────────────────────
 // Each event has startsAt/endsAt (ISO, inclusive start, exclusive end) and may
 // override the daily diamond amount and/or chest wait times while it runs.
@@ -502,6 +581,7 @@ function ensurePlayerState(userId) {
 }
 
 function buildStateResponse(userId) {
+  settleWeeklyGoals();
   ensurePlayerState(userId);
   const state = db.prepare("SELECT * FROM player_state WHERE user_id = ?").get(userId);
   const ownedCardIds = db
@@ -736,6 +816,34 @@ app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
   });
 });
 
+app.get("/api/game/weekly-goals", authed, (request, response) => {
+  settleWeeklyGoals();
+  response.json(buildWeeklyGoalsResponse(request.auth.userId));
+});
+
+app.post("/api/game/weekly-goals/:id/claim", authed, (request, response) => {
+  const userId = request.auth.userId;
+  const goal = weeklyGoalById.get(request.params.id);
+  if (!goal) { response.status(404).json({ message: "Okänt veckomål." }); return; }
+
+  settleWeeklyGoals();
+  ensurePlayerState(userId);
+  const claimed = db.transaction(() => {
+    // The UPDATE only matches a finished, unclaimed goal, so a double tap pays once.
+    const info = db.prepare(
+      `UPDATE weekly_goal_progress SET claimed = 1
+       WHERE user_id = ? AND week_start = ? AND goal_id = ? AND claimed = 0 AND progress >= ?`,
+    ).run(userId, weekStartIso(), goal.id, goal.target);
+    if (info.changes === 0) return false;
+    db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(goal.reward, userId);
+    logGameEvent(userId, "weekly_goal", { diamonds: goal.reward });
+    return true;
+  })();
+  if (!claimed) { response.status(400).json({ message: "Veckomålet är inte klart eller redan inlöst." }); return; }
+
+  response.json({ diamondsAwarded: goal.reward, ...buildWeeklyGoalsResponse(userId), state: buildStateResponse(userId) });
+});
+
 // ── Announcements ────────────────────────────────────────────────────────────
 // News shown from the megaphone dropdown in the header. Published/removed by
 // admins (see admin routes below); every player just reads the list and has
@@ -836,8 +944,10 @@ app.post("/api/game/buy-pack", authed, (request, response) => {
     db.prepare(
       "UPDATE player_state SET diamonds = diamonds - ?, last_opened_cards = ? WHERE user_id = ?",
     ).run(totalPrice, JSON.stringify(pulledCards), request.auth.userId);
-    const stmtInsertCard = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
-    for (const card of pulledCards) stmtInsertCard.run(request.auth.userId, card.id);
+    let newCards = 0;
+    for (const card of pulledCards) if (grantCard(request.auth.userId, card.id)) newCards += 1;
+    addWeeklyGoalProgress(request.auth.userId, "packsOpened", quantity);
+    addWeeklyGoalProgress(request.auth.userId, "newCards", newCards);
     db.prepare(
       `INSERT INTO packs_opened (user_id, collection_id, count) VALUES (?, ?, ?)
        ON CONFLICT (user_id, collection_id) DO UPDATE SET count = count + excluded.count`,
@@ -926,7 +1036,7 @@ app.post("/api/game/upgrade", authed, (request, response) => {
     }
 
     db.prepare("UPDATE card_pool SET copies_remaining = copies_remaining - 1 WHERE card_id = ?").run(targetCardId);
-    db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)").run(userId, targetCardId);
+    if (grantCard(userId, targetCardId)) addWeeklyGoalProgress(userId, "newCards", 1);
     db.prepare(
       `INSERT INTO upgrades (user_id, collection_id, from_rarity, to_rarity, consumed_card_ids, result_card_id, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -1517,15 +1627,15 @@ app.post("/api/trade/:id/accept", authed, (request, response) => {
       }
 
       const stmtDel = db.prepare("DELETE FROM owned_cards WHERE id = (SELECT id FROM owned_cards WHERE user_id = ? AND card_id = ? LIMIT 1)");
-      const stmtAdd = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
+      const newFor = { [userId]: 0, [senderId]: 0 };
 
       const stmtDelForTrade = db.prepare("DELETE FROM cards_for_trade WHERE user_id = ? AND card_id = ?");
       for (const cardId of offeredCardIds) {
-        stmtDel.run(senderId, cardId); stmtAdd.run(userId, cardId);
+        stmtDel.run(senderId, cardId); if (grantCard(userId, cardId)) newFor[userId] += 1;
         stmtDelForTrade.run(senderId, cardId);
       }
       for (const cardId of requestedCardIds) {
-        stmtDel.run(userId, cardId); stmtAdd.run(senderId, cardId);
+        stmtDel.run(userId, cardId); if (grantCard(senderId, cardId)) newFor[senderId] += 1;
         stmtDelForTrade.run(userId, cardId);
       }
 
@@ -1539,6 +1649,12 @@ app.post("/api/trade/:id/accept", authed, (request, response) => {
       }
 
       db.prepare("UPDATE trades SET status = 'accepted' WHERE id = ?").run(row.id);
+
+      // A Trade only counts for a player who received at least one new Card.
+      for (const [who, newCards] of Object.entries(newFor)) {
+        addWeeklyGoalProgress(who, "newCards", newCards);
+        if (newCards > 0) addWeeklyGoalProgress(who, "tradeCompleted", 1);
+      }
     })();
 
     response.json({ state: buildStateResponse(userId) });
@@ -1898,8 +2014,9 @@ app.post("/api/game/chests/:id/collect", authed, (request, response) => {
       }
 
       db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?").run(diamondsAwarded, userId);
-      const stmtInsertCard = db.prepare("INSERT INTO owned_cards (user_id, card_id) VALUES (?, ?)");
-      for (const cardId of wonCardIds) stmtInsertCard.run(userId, cardId);
+      let newCards = 0;
+      for (const cardId of wonCardIds) if (grantCard(userId, cardId)) newCards += 1;
+      addWeeklyGoalProgress(userId, "newCards", newCards);
       logGameEvent(userId, "chest_open", { collectionId: chest.type, quantity: wonCardIds.length, diamonds: diamondsAwarded });
     })();
   } catch (err) {
@@ -1945,6 +2062,10 @@ app.get("/api/game/waiting", authed, (request, response) => {
     if (achievement.complete && !achievement.claimed) {
       items.push({ type: "achievement", id: achievement.id, achievement });
     }
+  }
+
+  for (const goal of buildWeeklyGoalsResponse(userId).goals) {
+    if (goal.complete && !goal.claimed) items.push({ type: "weekly_goal", id: goal.id, goal });
   }
 
   if (buildStateResponse(userId).canClaimDailyDiamonds) {
@@ -2347,10 +2468,11 @@ app.get("/api/admin/stats", requireAdmin, (request, response) => {
   };
 
   // ── Diamond flow in the window ──
-  const flow = { daily: 0, streakBonus: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
+  const flow = { daily: 0, streakBonus: 0, weeklyGoals: 0, chestRewards: 0, packs: 0, chests: 0, slots: 0 };
   for (const e of events) {
     if (e.type === "daily") flow.daily += e.diamonds;
     else if (e.type === "streak_bonus") flow.streakBonus += e.diamonds;
+    else if (e.type === "weekly_goal") flow.weeklyGoals += e.diamonds;
     else if (e.type === "chest_open") flow.chestRewards += e.diamonds;
     else if (e.type === "pack") flow.packs += e.diamonds;
     else if (e.type === "chest_buy") flow.chests += e.diamonds;
@@ -2740,6 +2862,7 @@ app.get(/^(?!\/api\/).*/, (_request, response) => {
 function startBackgroundJobs() {
   const timers = [
     setInterval(() => applyEventChestCaps(), 60 * 1000).unref(),
+    setInterval(settleWeeklyGoals, 60 * 1000).unref(),
     setInterval(clearOldTradeHistory, TRADE_CLEANUP_INTERVAL_MS).unref(),
   ];
   return () => timers.forEach(clearInterval);
