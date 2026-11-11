@@ -79,7 +79,7 @@ export async function startTestApp({ clock = fakeClock(), random = seededRandom(
     });
     if (res.status !== 201) throw new Error(`register failed: ${res.status} ${JSON.stringify(res.body)}`);
     const cookie = res.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
-    return { cookie, userId: res.body.user.id };
+    return { cookie, userId: res.body.user.id, username: `p${n}` };
   }
 
   return {

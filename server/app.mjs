@@ -669,16 +669,13 @@ app.get("/api/game/collections", (_request, response) => {
   response.json(collections);
 });
 
-// Leaderboard — players ranked strictly by rarity tier: most legendaries wins,
-// and only on a tie do we look one tier down (epic, then rare, then common).
-// Total card count is never used for ranking, only shown for context: a player
-// with 2 legendaries beats a player with 1 legendary and 200 other cards.
-// Special cards are not counted.
-const LEADERBOARD_RARITIES = ["common", "rare", "epic", "legendary"];
-
+// Topplista — players ranked by unique Cards owned across all Collections,
+// Special left out (the same count as Collection progress). Ties break on unique
+// Legendary, then Epic, then Rare. Copies never count. Players still tied share
+// the rank (1, 2, 2, 4) and are listed alphabetically.
 app.get("/api/leaderboard", authed, (_request, response) => {
   const users = db.prepare("SELECT id, username FROM users").all();
-  const ownedStmt = db.prepare("SELECT card_id FROM owned_cards WHERE user_id = ?");
+  const ownedStmt = db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?");
 
   const entries = users.map((u) => {
     const counts = { common: 0, rare: 0, epic: 0, legendary: 0 };
@@ -686,19 +683,27 @@ app.get("/api/leaderboard", authed, (_request, response) => {
       const card = cardById.get(row.card_id);
       if (card && counts[card.rarity] !== undefined) counts[card.rarity] += 1;
     }
-    const total = LEADERBOARD_RARITIES.reduce((sum, r) => sum + counts[r], 0);
+    const total = counts.common + counts.rare + counts.epic + counts.legendary;
     return { userId: u.id, username: u.username, total, ...counts };
   });
 
   entries.sort((a, b) =>
+    b.total - a.total ||
     b.legendary - a.legendary ||
     b.epic - a.epic ||
     b.rare - a.rare ||
-    b.common - a.common ||
     a.username.localeCompare(b.username, "sv"),
   );
 
-  response.json(entries.slice(0, 100).map((e, i) => ({ rank: i + 1, ...e })));
+  const sameScore = (a, b) =>
+    a.total === b.total && a.legendary === b.legendary && a.epic === b.epic && a.rare === b.rare;
+  const ranked = entries.slice(0, 100).map((e, i, all) => ({
+    rank: i > 0 && sameScore(all[i - 1], e) ? null : i + 1,
+    ...e,
+  }));
+  for (let i = 1; i < ranked.length; i++) if (ranked[i].rank === null) ranked[i].rank = ranked[i - 1].rank;
+
+  response.json(ranked);
 });
 
 app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {

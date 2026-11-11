@@ -76,7 +76,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const tiles = waiting.filter((i) => i.type !== "daily");
   const event = gameState?.event ?? null;
   const eventLive = event != null && Date.parse(event.endsAt) > now;
-  const myRank = leaderboard.find((e) => e.username === username)?.rank;
+  const me = leaderboard.find((e) => e.username === username);
   const top = leaderboard.slice(0, 3).map((e) => e.username).join(", ");
 
   return (
@@ -143,7 +143,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       </section>
 
       <Link to="/topplista" className="mx-4 rounded-xl border bg-surface px-3 py-2 text-sm">
-        {myRank ? <>Du är <span className="font-semibold">#{myRank}</span></> : "Topplista"}
+        {me ? <>Du är <span className="font-semibold">#{me.rank}</span> · {me.total} unika kort</> : "Topplista"}
         {top && <span className="text-secondary"> · topp: {top}</span>}
       </Link>
     </main>
