@@ -1303,7 +1303,7 @@ function availableForTrade(userId) {
   );
   const result = [];
   for (const [cardId, owned] of ownedCountMap(userId)) {
-    if (kept.has(cardId) || owned < 2) continue;
+    if (kept.has(cardId) || owned < 2 || cardById.get(cardId)?.rarity === "special") continue;
     result.push({ cardId, quantity: owned - 1 });
   }
   return result;
@@ -1315,6 +1315,10 @@ app.put("/api/game/keep/:cardId", authed, (request, response) => {
   const cardId = String(request.params.cardId);
   if (!cardById.has(cardId)) {
     response.status(404).json({ message: "Okänt kort." });
+    return;
+  }
+  if (request.body?.keep === true && !ownedCountMap(userId).has(cardId)) {
+    response.status(400).json({ message: "Du äger inte det här kortet." });
     return;
   }
   if (typeof request.body?.keep !== "boolean") {

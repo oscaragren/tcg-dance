@@ -1,12 +1,12 @@
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { startTestApp } from "./harness.mjs";
+import { startTestApp, TEST_CATALOG } from "./harness.mjs";
 
 let t;
 afterEach(() => t.close());
 
-async function setup() {
-  t = await startTestApp();
+async function setup(catalog = TEST_CATALOG) {
+  t = await startTestApp({ catalog });
   return { owner: await t.registerPlayer(), viewer: await t.registerPlayer() };
 }
 function give(player, cardId, copies) {
@@ -39,8 +39,9 @@ test("Behåll on a Card with three Copies makes none Available for Trade", async
 });
 
 test("a Special card is never Available for Trade", async () => {
-  const { owner, viewer } = await setup();
-  give(owner, "l1", 1);
+  const withSpecial = { ...TEST_CATALOG, cards: [...TEST_CATALOG.cards, { id: "s1", collectionId: "test", rarity: "special", name: "S1" }] };
+  const { owner, viewer } = await setup(withSpecial);
+  give(owner, "s1", 2); // even a (data-fix) second Copy stays unlisted
   assert.deepEqual(await theirCards(owner, viewer), []);
 });
 
@@ -75,4 +76,9 @@ test("my own state reports which Cards are set to Behåll; manual marks can no l
     body: JSON.stringify({ items: [{ cardId: "c1", quantity: 1 }] }),
   });
   assert.equal(save.status, 404);
+});
+
+test("Behåll can only be set on a Card the player owns", async () => {
+  const { owner } = await setup();
+  assert.equal((await keep(owner, "c1", true)).status, 400);
 });
