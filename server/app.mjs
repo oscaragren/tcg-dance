@@ -1739,7 +1739,7 @@ app.post("/api/trade/:id/cancel", authed, (request, response) => {
   const userId = request.auth.userId;
   const row = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
   if (!row || row.sender_user_id !== userId) { response.status(403).json({ message: "Inte behörig." }); return; }
-  if (row.status !== "pending") { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
+  if (row.status !== "pending" || isTradeExpired(row)) { response.status(400).json({ message: "Handeln är inte längre aktiv." }); return; }
   db.prepare("UPDATE trades SET status = 'cancelled' WHERE id = ?").run(row.id);
   response.status(204).send();
 });
@@ -2117,9 +2117,9 @@ app.get("/api/game/waiting", authed, (request, response) => {
     FROM trades t
     JOIN users su ON su.id = t.sender_user_id
     JOIN users ru ON ru.id = t.receiver_user_id
-    WHERE t.receiver_user_id = ? AND t.status = 'pending'
+    WHERE t.receiver_user_id = ? AND t.status = 'pending' AND t.created_at >= ?
     ORDER BY t.created_at DESC
-  `).all(userId);
+  `).all(userId, tradeCutoffIso());
   for (const row of incoming) items.push({ type: "trade", id: row.id, trade: buildTrade(row) });
 
   for (const chest of buildChestsResponse(userId).chests) {
