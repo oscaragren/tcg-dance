@@ -5,7 +5,11 @@ const content = gameContent as GameContentJson;
 
 export type { CollectionConfig };
 
-export const collections: CollectionConfig[] = content.collections ?? [];
+// Mirrors server/gameCatalog.mjs: a Collection with no Cards yet is invisible
+// (the primary, first Collection is always kept).
+export const collections: CollectionConfig[] = (content.collections ?? []).filter(
+  (c, i) => i === 0 || (c.cards?.length ?? 0) > 0,
+);
 
 /**
  * Can this collection's pack be bought at `now`? Mirrors isPackOnSale() in

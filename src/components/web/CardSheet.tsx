@@ -1,4 +1,4 @@
-import { useEffect, useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { ImageWithFallback } from "../shared/figma/ImageWithFallback";
@@ -16,11 +16,16 @@ type CardSheetProps = {
   kept?: boolean;
   /** Called with the new Behåll value. The toggle only shows when the viewer owns Duplicates. */
   onToggleKept?: (keep: boolean) => void;
+  /** Move to the previous / next Card. Leave undefined at the ends of the list. Swipe and the arrow keys call them. */
+  onPrev?: () => void;
+  onNext?: () => void;
   onClose: () => void;
 };
 
+const SWIPE_MIN_PX = 50;
+
 /** Bottom sheet on a phone, right side panel at ≥1024px, with a large image, the Rarity and Copies owned. Pure presentation. */
-export function CardSheet({ card, copies, kept = false, onToggleKept, onClose }: CardSheetProps) {
+export function CardSheet({ card, copies, kept = false, onToggleKept, onPrev, onNext, onClose }: CardSheetProps) {
   const titleId = useId();
   const color = rarityColor(card.rarity);
   const owned = copies > 0;
@@ -28,19 +33,39 @@ export function CardSheet({ card, copies, kept = false, onToggleKept, onClose }:
   const desktop = useIsDesktop();
   const subtitle = [card.event, card.danceStyle, card.club].filter(Boolean).join(" · ");
 
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = t ? { x: t.clientX, y: t.clientY } : null;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStart.current;
+    const t = e.changedTouches[0];
+    touchStart.current = null;
+    if (!start || !t) return;
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return; // a scroll, not a swipe
+    if (dx < 0) onNext?.(); else onPrev?.();
+  };
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") onPrev?.();
+      else if (e.key === "ArrowRight") onNext?.();
+    };
     window.addEventListener("keydown", onKey);
     // As a right side panel (desktop) the page behind stays scrollable.
     const prev = document.body.style.overflow;
     if (!desktop) document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
-  }, [onClose, desktop]);
+  }, [onClose, onPrev, onNext, desktop]);
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center lg:pointer-events-none lg:items-stretch lg:justify-end" role="dialog" aria-modal={!desktop} aria-labelledby={titleId}>
       <button type="button" className="absolute inset-0 bg-black/70 lg:hidden" onClick={onClose} aria-label="Stäng" />
-      <div className="relative z-10 w-full max-w-md rounded-t-2xl border bg-surface p-5 pb-8 sm:rounded-2xl lg:pointer-events-auto lg:w-[26rem] lg:max-w-none lg:overflow-y-auto lg:rounded-none lg:border-y-0 lg:border-r-0 lg:pt-16 lg:shadow-2xl">
+      <div className="relative z-10 w-full max-w-md rounded-t-2xl border bg-surface p-5 pb-8 sm:rounded-2xl lg:pointer-events-auto lg:w-[26rem] lg:max-w-none lg:overflow-y-auto lg:rounded-none lg:border-y-0 lg:border-r-0 lg:pt-16 lg:shadow-2xl" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <button type="button" onClick={onClose} aria-label="Stäng" className="absolute right-2 top-2 rounded-lg px-3 text-2xl leading-none text-secondary hover:text-text">×</button>
         <div
           className={`relative mx-auto aspect-[4/5] w-full max-w-[260px] overflow-hidden bg-raised ${owned && card.rarity === "special" ? "card-holo" : ""}`}
@@ -57,6 +82,13 @@ export function CardSheet({ card, copies, kept = false, onToggleKept, onClose }:
             </div>
           )}
         </div>
+        {(onPrev || onNext) && (
+          <div className="mt-3 flex items-center justify-between text-secondary">
+            <button type="button" onClick={onPrev} disabled={!onPrev} aria-label="Föregående kort" className="rounded-lg px-4 py-1 text-2xl leading-none enabled:hover:text-text disabled:opacity-30">‹</button>
+            <span className="text-xs">Svep för att byta kort</span>
+            <button type="button" onClick={onNext} disabled={!onNext} aria-label="Nästa kort" className="rounded-lg px-4 py-1 text-2xl leading-none enabled:hover:text-text disabled:opacity-30">›</button>
+          </div>
+        )}
         <h2 id={titleId} className="mt-4 text-center text-xl font-semibold">{card.name}</h2>
         {subtitle && <p className="mt-0.5 text-center text-sm text-secondary">{subtitle}</p>}
         <div className="mt-3 flex items-center justify-center gap-4 text-sm">

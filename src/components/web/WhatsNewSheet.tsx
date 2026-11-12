@@ -23,7 +23,7 @@ export function whatsNewCards(sheet: WhatsNewSheetData): Card[] {
     {
       title: "Streak och Veckomål",
       lines: [
-        "Din Streak pausar nu om du missar en dag, i stället för att nollställas.",
+        "Din Streak nollställs om du missar en dag.",
         "Nya Veckomål varje vecka med Diamanter att hämta.",
       ],
     },

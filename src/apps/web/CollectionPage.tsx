@@ -108,6 +108,15 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
     }).filter((s) => s.total > 0);
   }, [collectionCards, copies, view, query]);
 
+  // The Cards as laid out on screen (open sections only, search and view respected): what swiping in the sheet walks through.
+  const navigable = useMemo(
+    () => sections.filter((s) => !closed.has(s.rarity)).flatMap((s) => s.items.map((i) => i.card)),
+    [sections, closed],
+  );
+  const selectedIndex = selected ? navigable.findIndex((c) => c.id === selected.id) : -1;
+  const goPrev = useCallback(() => { if (selectedIndex > 0) setSelected(navigable[selectedIndex - 1]); }, [selectedIndex, navigable]);
+  const goNext = useCallback(() => { if (selectedIndex >= 0 && selectedIndex < navigable.length - 1) setSelected(navigable[selectedIndex + 1]); }, [selectedIndex, navigable]);
+
   // Duplicates of Cards not set to Behåll, per Rarity: what an Upgrade can spend.
   const spareByRarity = useMemo(() => {
     const out: Partial<Record<CardRarity, number>> = {};
@@ -397,6 +406,8 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
             apply(keep);
             setCardKept(cardId, keep).catch(() => apply(!keep));
           }}
+          onPrev={selectedIndex > 0 ? goPrev : undefined}
+          onNext={selectedIndex >= 0 && selectedIndex < navigable.length - 1 ? goNext : undefined}
           onClose={() => setSelected(null)}
         />
       )}

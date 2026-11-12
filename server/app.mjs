@@ -649,11 +649,25 @@ function dailyDiamondsNow(now = clock.now()) {
 const STARTING_DIAMONDS = 500;
 
 // The Streak is a 7-step track: every Daily claim advances it one step. A
-// missed day pauses it (position unchanged), never resets it. The claim that
+// missed day (a whole Stockholm day with no claim) resets it to 0. The claim that
 // reaches step 7 pays a bonus on top of that day's normal claim and the track
 // goes back to step 0.
 const DIAMOND_STREAK_TARGET = 7;
 const DIAMOND_STREAK_BONUS = 500;
+
+/** The Stockholm date (YYYY-MM-DD) of the day before `iso`. */
+function previousDayIso(iso) {
+  const d = new Date(`${iso}T12:00:00Z`); // noon UTC sidesteps DST
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** The Streak position as it stands now: a player who skipped a whole day is back at 0, even before claiming. */
+function liveStreak(state) {
+  const last = state.last_daily_claim_date;
+  const today = todayIso();
+  return last === today || last === previousDayIso(today) ? state.diamond_streak : 0;
+}
 
 function ensurePlayerState(userId) {
   if (!db.prepare("SELECT user_id FROM player_state WHERE user_id = ?").get(userId)) {
@@ -684,7 +698,7 @@ function buildStateResponse(userId) {
     canClaimDailyDiamonds: state.last_daily_claim_date !== todayIso(),
     dailyDiamondsToday: dailyDiamondsNow(),
     lastOpenedCards: JSON.parse(state.last_opened_cards),
-    diamondStreak: state.diamond_streak,
+    diamondStreak: liveStreak(state),
     diamondStreakTarget: DIAMOND_STREAK_TARGET,
     event: publicEvent(activeEvent()),
   };
@@ -736,7 +750,7 @@ function openPackCards(packConfig, collectionId) {
 }
 
 // Cards required to upgrade, keyed by the source rarity being combined.
-const UPGRADE_CARDS_REQUIRED = { common: 500, rare: 15, epic: 10 };
+const UPGRADE_CARDS_REQUIRED = { common: 100, rare: 15, epic: 10 };
 const TIER_UPGRADE_TARGET = { common: "rare", rare: "epic", epic: "legendary" };
 
 // Uniform pick among the Cards of a rarity that still have Copies, using the
@@ -878,7 +892,7 @@ app.post("/api/game/claim-daily-diamonds", authed, (request, response) => {
   // The claim ends the absence, so note the return before the date moves on.
   syncComeback(request.auth.userId);
 
-  let streak = state.diamond_streak + 1;
+  let streak = liveStreak(state) + 1;
   let streakBonusAwarded = 0;
   if (streak >= DIAMOND_STREAK_TARGET) {
     streakBonusAwarded = DIAMOND_STREAK_BONUS;
@@ -1477,13 +1491,13 @@ app.post("/api/achievements/:id/claim", authed, (request, response) => {
 // ── Trade helpers ─────────────────────────────────────────────────────────────
 
 // Relative card values come straight from the game's own upgrade ladder
-// (UPGRADE_CARDS_REQUIRED above): 500 commons make a rare, 15 rares an epic,
+// (UPGRADE_CARDS_REQUIRED above): 100 commons make a rare, 15 rares an epic,
 // 10 epics a legendary. That is the exchange rate the economy already declares,
 // so it is also the rate someone funnelling cards between their own accounts is
 // arbitraging. "special" sits outside the ladder (one copy each, extremely
 // rare pack pulls) — 2x legendary is a judgement call; tune it here if it
 // misjudges real trades. Used only for admin fraud heuristics, never for gameplay.
-const RARITY_VALUE = { common: 1, rare: 20, epic: 300, legendary: 3000, special: 6000 };
+const RARITY_VALUE = { common: 1, rare: 100, epic: 1500, legendary: 15000, special: 30000 };
 
 // Diamonds expressed in the same unit, derived from what a pack actually costs:
 // `price` diamonds buys `cardCount` cards, so one diamond is worth a pack's

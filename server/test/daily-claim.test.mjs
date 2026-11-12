@@ -74,21 +74,22 @@ test("each claim advances the Streak one step; the 7th pays 500 and the track re
   assert.equal((await claim()).body.diamondStreak, 1);
 });
 
-test("a missed day pauses the Streak instead of resetting it", async () => {
+test("a missed day resets the Streak, and the state shows the reset before the next claim", async () => {
   for (let i = 1; i <= 3; i++) {
     assert.equal((await claim()).body.diamondStreak, i);
     clock.advance(DAY);
   }
-  clock.advance(5 * DAY); // miss five days
-  assert.equal((await state()).diamondStreak, 3);
-  assert.equal((await claim()).body.diamondStreak, 4);
+  assert.equal((await state()).diamondStreak, 3); // today not claimed yet, still alive
+  clock.advance(DAY); // miss one whole day
+  assert.equal((await state()).diamondStreak, 0);
+  assert.equal((await claim()).body.diamondStreak, 1);
 });
 
-test("skipping a whole Stockholm day still only moves the Streak one step", async () => {
+test("skipping a whole Stockholm day restarts the Streak at step 1", async () => {
   clock.set("2026-03-10T23:59:00+01:00");
   assert.equal((await claim()).body.diamondStreak, 1);
   clock.set("2026-03-12T00:01:00+01:00"); // skipped the 11th entirely
-  assert.equal((await claim()).body.diamondStreak, 2);
+  assert.equal((await claim()).body.diamondStreak, 1);
 });
 
 test("the Streak bonus is logged as its own Diamond source", async () => {

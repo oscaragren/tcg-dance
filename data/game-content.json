@@ -4933,6 +4933,27 @@
           "event": "SM 2025"
         }
       ]
+    },
+    {
+      "id": "sm2016",
+      "label": "SM 2016",
+      "shortLabel": "SM16",
+      "description": "Svenska Mästerskapen 2016 i Helsingborg.",
+      "danceStyle": "Bugg",
+      "pack": {
+        "label": "SM2016-pack",
+        "cardCount": 5,
+        "price": 100,
+        "purchasable": false,
+        "rarityChances": {
+          "special": 0,
+          "legendary": 0.05,
+          "epic": 0.15,
+          "rare": 0.3,
+          "common": 0.5
+        }
+      },
+      "cards": []
     }
   ],
   "commonBenchCards": []

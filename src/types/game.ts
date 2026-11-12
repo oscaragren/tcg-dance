@@ -105,7 +105,7 @@ export const upgradeTierTarget: Record<CardRarity, CardRarity | null> = {
 
 /** Cards required to upgrade, keyed by the source rarity being combined. */
 export const upgradeCardsRequired: Record<CardRarity, number | null> = {
-  common: 500,
+  common: 100,
   rare: 15,
   epic: 10,
   legendary: null,

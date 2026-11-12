@@ -39,6 +39,9 @@ A Card of Rarity Special, of which only a single Copy exists in the whole game.
 A themed, released set of Cards (e.g. SM 2026) with its own Pack.
 _Avoid_: Set, series, expansion
 
+**BRR**:
+Bugg & Rock'n'Roll, the Swedish Dancesport Federation's collective name for Bugg, Boogie Woogie, Lindy Hop, Dubbelbugg and Rock'n'Roll. Every Collection so far is BRR.
+
 **Collection progress**:
 How many of a Collection's Cards a player owns at least one Copy of, counted out of all its Cards except Special cards; a Collection is completed when every non-Special Card is owned.
 _Avoid_: Completion rate, percentage
@@ -94,7 +97,7 @@ A Collection milestone that a player can claim for a Diamond reward. Every Colle
 The once-per-day tap that collects a player's daily Diamonds; the day resets at midnight Swedish time.
 
 **Streak**:
-A 7-step track advanced by each Daily claim; a missed day pauses it rather than resetting it, and the 7th step pays a bonus.
+A 7-step track advanced by each Daily claim; missing a whole day resets it to the start, and the 7th step pays a bonus.
 _Avoid_: Login streak, consecutive days
 
 **Weekly goal**:

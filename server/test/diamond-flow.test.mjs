@@ -27,8 +27,8 @@ test("lists every source and sink per day for a seeded set of actions", async ()
   await post("/api/game/buy-pack", alice, { collectionId: "test", quantity: 1 }); // -100 packs
   await post("/api/game/chests/buy", alice, { type: "bronze" });    // -10 chests
   await post("/api/game/chests/buy-slot", alice, { type: "bronze" }); // slots
-  // Streak: 7th claim pays the bonus
-  t.db.prepare("UPDATE player_state SET diamond_streak = 6 WHERE user_id = ?").run(bob.userId);
+  // Streak: 7th claim pays the bonus (the 6th step was claimed yesterday, so it is still alive)
+  t.db.prepare("UPDATE player_state SET diamond_streak = 6, last_daily_claim_date = '2026-03-09' WHERE user_id = ?").run(bob.userId);
   await post("/api/game/claim-daily-diamonds", bob);                // +150 daily, +streak bonus
   const f = await flow();
   const d = today(f);

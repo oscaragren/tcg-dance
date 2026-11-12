@@ -35,7 +35,8 @@ db.exec(`
     last_daily_claim_date TEXT,
     last_opened_cards    TEXT NOT NULL DEFAULT '[]',
     -- Streak position on the 7-step track: +1 per Daily claim, back to 0 when
-    -- the 7th step pays out. A missed day leaves it unchanged.
+    -- the 7th step pays out. Missing a whole day resets it (read through
+    -- liveStreak in app.mjs, so a lapsed one shows 0 before the next claim).
     diamond_streak       INTEGER NOT NULL DEFAULT 0,
     -- created_at of the newest announcement this player has opened the
     -- dropdown after. NULL means never opened it (or never any yet).
