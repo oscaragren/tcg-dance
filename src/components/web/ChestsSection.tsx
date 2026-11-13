@@ -1,21 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Clock } from "lucide-react";
 import { Button } from "../shared/ui/button";
 import type { DanceCard } from "../../types/danceCard";
-import type { Chest, ChestSlotOption, ChestsResponse, ChestType } from "../../types/game";
-import { buyChestSlot, collectChest, fetchChests, fetchGameState } from "../../utils/gameApi";
+import type { Chest, ChestSlotOption, ChestsResponse, ChestType, GameState } from "../../types/game";
+import { buyChest, buyChestSlot, collectChest, fetchChests } from "../../utils/gameApi";
 import { ChestRewardModal } from "./ChestRewardModal";
+import { DiamondIcon } from "./DiamondIcon";
 
 const CHEST_EMOJI: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇" };
 
-const CHEST_ACCENT: Record<string, string> = {
-  bronze: "from-amber-700 to-amber-500",
-  silver: "from-gray-400 to-gray-200",
-  gold: "from-yellow-500 to-amber-300",
-};
-
-/** "3 tim 12 min" / "48 sek" — how long until a chest unlocks. */
-function formatRemaining(ms: number): string {
+/** "3 tim 12 min" / "48 sek": how long until a Chest unlocks. */
+export function formatRemaining(ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 1000));
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor((total % 3600) / 60);
@@ -25,34 +20,55 @@ function formatRemaining(ms: number): string {
   return `${seconds} sek`;
 }
 
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+type SlotTile =
+  | { kind: "chest"; chest: Chest }
+  | { kind: "empty"; key: string; label: string };
+
+/** One tile per slot the player owns: a Chest in it, or empty. */
+function slotTiles(data: ChestsResponse): SlotTile[] {
+  const tiles: SlotTile[] = data.chests.map((chest) => ({ kind: "chest", chest }));
+  const freeInUse = data.chests.filter((c) => c.slot === "free").length;
+  for (let i = freeInUse; i < data.freeSlots; i += 1) {
+    tiles.push({ kind: "empty", key: `free-${i}`, label: "Fri plats" });
+  }
+  const occupied = new Set(data.chests.map((c) => c.slot));
+  for (const slot of data.slotTypes) {
+    if (slot.owned && !occupied.has(slot.type)) {
+      tiles.push({ kind: "empty", key: slot.type, label: capitalize(slot.slotLabel) });
+    }
+  }
+  return tiles;
+}
+
 type ChestsSectionProps = {
-  /** Called after a chest is collected so the parent can refresh owned cards. */
-  onCollected?: () => void;
+  diamonds: number;
+  /** Every mutation returns a fresh GameState; the parent keeps its own in sync. */
+  onState: (state: GameState) => void;
 };
 
-export function ChestsSection({ onCollected }: ChestsSectionProps) {
+/**
+ * Kistor, in Butik: slot tiles (ready, counting down, empty) with Hämta, then
+ * the Chests and slots you can buy.
+ */
+export function ChestsSection({ diamonds, onState }: ChestsSectionProps) {
   const [data, setData] = useState<ChestsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [diamonds, setDiamonds] = useState<number | null>(null);
   const [reward, setReward] = useState<{ label: string; diamonds: number; cards: DanceCard[] } | null>(null);
 
   useEffect(() => {
     fetchChests()
       .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda kistor."))
-      .finally(() => setIsLoading(false));
+      .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda kistor."));
   }, []);
 
-  // Only so the slot buttons can say "för få diamanter" before the server does.
-  // Every mutation below returns a fresh state, so this is fetched once.
-  useEffect(() => {
-    fetchGameState().then((state) => setDiamonds(state.diamonds)).catch(() => {});
-  }, []);
-
-  // Drive the countdowns. One shared ticker rather than one per chest.
+  // One shared ticker drives every countdown.
   useEffect(() => {
     const hasPending = (data?.chests ?? []).some((c) => Date.parse(c.readyAt) > Date.now());
     if (!hasPending) return;
@@ -60,60 +76,43 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
     return () => clearInterval(timer);
   }, [data]);
 
-  async function handleCollect(chest: Chest) {
-    setBusyId(chest.id);
+  async function run<T extends ChestsResponse & { state: GameState }>(id: string, fallback: string, action: () => Promise<T>) {
+    if (busyId) return;
+    setBusyId(id);
     setError(null);
+    setNotice(null);
     try {
-      const result = await collectChest(chest.id);
+      const result = await action();
       setData(result);
-      setDiamonds(result.state.diamonds);
-      setReward({ label: result.chestLabel, diamonds: result.diamondsAwarded, cards: result.cards });
-      onCollected?.();
+      onState(result.state);
+      return result;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Kunde inte öppna kistan.");
+      setError(e instanceof Error ? e.message : fallback);
     } finally {
       setBusyId(null);
     }
+  }
+
+  async function handleCollect(chest: Chest) {
+    const result = await run(chest.id, "Kunde inte hämta kistan.", () => collectChest(chest.id));
+    if (result) setReward({ label: result.chestLabel, diamonds: result.diamondsAwarded, cards: result.cards });
+  }
+
+  async function handleBuyChest(type: ChestType, label: string) {
+    const result = await run(`chest:${type}`, "Kunde inte köpa kistan.", () => buyChest(type));
+    if (result) setNotice(`${label} köpt! Den är klar när tiden gått ut.`);
   }
 
   async function handleBuySlot(type: ChestType) {
-    setBusyId(`slot:${type}`);
-    setError(null);
-    try {
-      const result = await buyChestSlot(type);
-      setData(result);
-      setDiamonds(result.state.diamonds);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Kunde inte köpa kistplats.");
-    } finally {
-      setBusyId(null);
-    }
+    await run(`slot:${type}`, "Kunde inte köpa kistplats.", () => buyChestSlot(type));
   }
 
-  if (isLoading || !data) return null;
+  if (!data) return error ? <p className="text-sm text-danger">{error}</p> : null;
 
-  const readyCount = data.chests.filter((c) => Date.parse(c.readyAt) <= now).length;
-
-  // One entry per slot the player owns that has nothing in it. The free slot
-  // takes anything; a dedicated one only its own type.
-  const occupied = new Set(data.chests.map((c) => c.slot));
-  const emptySlots: { key: string; label: string; hint: string }[] = [];
-  const freeInUse = data.chests.filter((c) => c.slot === "free").length;
-  for (let i = freeInUse; i < data.freeSlots; i += 1) {
-    emptySlots.push({ key: `free-${i}`, label: "Fri plats", hint: "Tar alla sorters kistor" });
-  }
-  for (const slot of data.slotTypes) {
-    if (slot.owned && !occupied.has(slot.type)) {
-      emptySlots.push({
-        key: slot.type,
-        label: capitalize(slot.slotLabel),
-        hint: `Tar bara ${slot.label.toLowerCase()}`,
-      });
-    }
-  }
+  const tiles = slotTiles(data);
 
   return (
-    <>
+    <section className="space-y-4">
       {reward && (
         <ChestRewardModal
           chestLabel={reward.label}
@@ -123,149 +122,143 @@ export function ChestsSection({ onCollected }: ChestsSectionProps) {
         />
       )}
 
-      <section className="md:h-full rounded-2xl border bg-white overflow-hidden">
-        <div className="flex items-center gap-2 p-6 pb-0">
-          <h2 className="text-lg font-semibold">Kistor</h2>
-          <span className="text-xs text-gray-400">
-            {data.chests.length} / {data.slots} platser
-          </span>
-          {readyCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold">
-              {readyCount}
-            </span>
-          )}
-        </div>
+      <div>
+        <h2 className="font-display text-2xl font-bold">Kistor</h2>
+        <p className="text-sm text-secondary">
+          Köp en kista, vänta ut klockan och hämta den. {data.chests.length} / {data.slots} platser upptagna.
+        </p>
+      </div>
 
-        {(
-          <div className="px-6 pb-6 pt-4 space-y-4">
-            <p className="text-sm text-gray-500">
-              Kistor köps i <Link to="/handel" className="text-purple-600 hover:underline">Handel</Link> och låses upp
-              efter en väntetid. Innehållet samlas in här.
-            </p>
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {notice && <p className="text-sm text-success">{notice}</p>}
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {data.chests.map((chest) => {
-                const remaining = Date.parse(chest.readyAt) - now;
-                const isReady = remaining <= 0;
-                return (
-                  <div
-                    key={chest.id}
-                    className={`rounded-xl border p-4 flex items-center gap-4 ${isReady ? "border-purple-300 bg-purple-50/50" : ""}`}
-                  >
-                    <div
-                      className={`h-12 w-12 shrink-0 rounded-lg bg-gradient-to-br ${CHEST_ACCENT[chest.type] ?? "from-gray-400 to-gray-200"} flex items-center justify-center text-2xl`}
-                      aria-hidden
-                    >
-                      {CHEST_EMOJI[chest.type] ?? "🎁"}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm">{chest.label}</div>
-                      <div className="text-xs text-gray-500">
-                        {isReady ? "Redo att öppnas!" : `Klar om ${formatRemaining(remaining)}`}
-                      </div>
-                      <div className="text-[11px] text-gray-400">
-                        {chest.slot === "free"
-                          ? "Fri plats"
-                          : capitalize(data.slotTypes.find((s) => s.type === chest.slot)?.slotLabel ?? "plats")}
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      disabled={!isReady || busyId === chest.id}
-                      onClick={() => void handleCollect(chest)}
-                      className={isReady ? "bg-purple-600 hover:bg-purple-700 text-white shrink-0" : "shrink-0"}
-                      variant={isReady ? "default" : "outline"}
-                    >
-                      {busyId === chest.id ? "Öppnar..." : "Öppna"}
-                    </Button>
-                  </div>
-                );
-              })}
-
-              {emptySlots.map((slot) => (
-                <div
-                  key={`empty-${slot.key}`}
-                  className="rounded-xl border border-dashed border-gray-300 p-4 flex items-center gap-4 text-gray-400"
+      <div className="grid grid-cols-3 gap-2">
+        {tiles.map((tile) => {
+          if (tile.kind === "empty") {
+            return (
+              <div
+                key={tile.key}
+                className="flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed border-hairline-strong p-2 text-center text-xs text-tertiary"
+              >
+                {tile.label}
+                <span>Tom plats</span>
+              </div>
+            );
+          }
+          const { chest } = tile;
+          const remaining = Date.parse(chest.readyAt) - now;
+          const ready = remaining <= 0;
+          return (
+            <div
+              key={chest.id}
+              className={`flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 p-2 text-center ${ready ? "border-success bg-raised" : "border-hairline-strong"}`}
+            >
+              <span className="text-3xl" aria-hidden>{CHEST_EMOJI[chest.type] ?? "🎁"}</span>
+              <span className="text-[11px] font-medium">{chest.label}</span>
+              {ready ? (
+                <Button
+                  size="sm"
+                  disabled={busyId !== null}
+                  onClick={() => void handleCollect(chest)}
+                  className="h-8 bg-accent px-3 text-xs text-accent-on hover:bg-accent/90"
                 >
-                  <div className="h-12 w-12 shrink-0 rounded-lg bg-gray-50 flex items-center justify-center text-xl" aria-hidden>
-                    +
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm">{slot.label}</div>
-                    <div className="text-[11px]">{slot.hint}</div>
-                  </div>
-                  <Button asChild size="sm" variant="outline" className="shrink-0">
-                    <Link to="/handel">Köp kista</Link>
-                  </Button>
-                </div>
-              ))}
+                  {busyId === chest.id ? "Hämtar..." : "Hämta"}
+                </Button>
+              ) : (
+                <span className="flex items-center gap-1 text-[11px] text-secondary">
+                  <Clock className="h-3 w-3" aria-hidden />
+                  {formatRemaining(remaining)}
+                </span>
+              )}
             </div>
+          );
+        })}
+      </div>
 
-            <div className="rounded-xl border bg-gray-50 p-4 space-y-3">
-              <div className="text-sm">
-                <div className="font-medium">Kistplatser: {data.slots} av {data.maxSlots}</div>
-                <div className="text-xs text-gray-500">
-                  Din fria plats tar vilken kista som helst. Utöver den kan du köpa en fast plats
-                  per sort — en fast plats rymmer bara sin egen sorts kista.
+      <div className="space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-secondary">Köp kista</h3>
+        {data.types.map((chest) => {
+          const canAfford = diamonds >= chest.price;
+          // The server decides whether this type fits: its own slot, or the free one.
+          const hasRoom = data.canStore[chest.id];
+          const enabled = canAfford && hasRoom;
+          return (
+            <div key={chest.id} className="flex items-center gap-3 rounded-xl border bg-surface p-3">
+              <span className="text-2xl" aria-hidden>{CHEST_EMOJI[chest.id]}</span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium">{chest.label}</div>
+                <div className="text-xs text-secondary">
+                  {chest.waitHours} tim · {chest.diamondMin}–{chest.diamondMax} <DiamondIcon /> och chans på kort
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {data.slotTypes.map((slot) => (
-                  <SlotPurchase
-                    key={slot.type}
-                    slot={slot}
-                    diamonds={diamonds}
-                    isBusy={busyId === `slot:${slot.type}`}
-                    disabled={busyId !== null}
-                    onBuy={() => void handleBuySlot(slot.type)}
-                  />
-                ))}
-              </div>
+              <Button
+                disabled={!enabled || busyId !== null}
+                onClick={() => void handleBuyChest(chest.id, chest.label)}
+                variant={enabled ? "default" : "outline"}
+                className={`h-10 shrink-0 ${enabled ? "bg-accent text-accent-on hover:bg-accent/90" : ""}`}
+              >
+                {busyId === `chest:${chest.id}`
+                  ? "Köper..."
+                  : !hasRoom
+                    ? "Ingen plats"
+                    : <>{chest.price} <DiamondIcon /></>}
+              </Button>
             </div>
-          </div>
-        )}
-      </section>
-    </>
+          );
+        })}
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-secondary">Köp kistplats</h3>
+        <p className="text-xs text-secondary">
+          Din fria plats tar vilken kista som helst. En fast plats rymmer bara sin egen sorts kista.
+          Platser: {data.slots} av {data.maxSlots}.
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {data.slotTypes.map((slot) => (
+            <SlotPurchase
+              key={slot.type}
+              slot={slot}
+              canAfford={diamonds >= slot.price}
+              isBusy={busyId === `slot:${slot.type}`}
+              disabled={busyId !== null}
+              onBuy={() => void handleBuySlot(slot.type)}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
-function capitalize(word: string): string {
-  return word.charAt(0).toUpperCase() + word.slice(1);
-}
-
-/** One dedicated-slot offer: bought once, permanent, its own chest type only. */
-function SlotPurchase({ slot, diamonds, isBusy, disabled, onBuy }: {
+/** One dedicated-slot offer: bought once, permanent, its own Chest type only. */
+function SlotPurchase({ slot, canAfford, isBusy, disabled, onBuy }: {
   slot: ChestSlotOption;
-  diamonds: number | null;
+  canAfford: boolean;
   isBusy: boolean;
   disabled: boolean;
   onBuy: () => void;
 }) {
-  const canAfford = diamonds === null || diamonds >= slot.price;
-
   return (
-    <div className="rounded-lg border bg-white p-3 flex flex-col gap-2">
+    <div className="flex flex-col gap-2 rounded-lg border bg-surface p-3">
       <div className="flex items-center gap-2">
         <span className="text-xl" aria-hidden>{CHEST_EMOJI[slot.type] ?? "🎁"}</span>
         <div className="min-w-0">
-          <div className="text-sm font-medium truncate">{capitalize(slot.slotLabel)}</div>
-          <div className="text-[11px] text-gray-500">{slot.price.toLocaleString("sv-SE")} ◆</div>
+          <div className="truncate text-sm font-medium">{capitalize(slot.slotLabel)}</div>
+          <div className="text-[11px] text-secondary">{slot.price.toLocaleString("sv-SE")} <DiamondIcon /></div>
         </div>
       </div>
       {slot.owned ? (
-        <div className="text-xs font-medium text-green-600 mt-auto">✓ Köpt</div>
+        <div className="mt-auto text-xs font-medium text-success">✓ Köpt</div>
       ) : (
         <Button
           size="sm"
           disabled={disabled || !canAfford}
           onClick={onBuy}
           variant={canAfford ? "default" : "outline"}
-          className={canAfford ? "bg-blue-600 hover:bg-blue-700 text-white mt-auto" : "mt-auto"}
+          className={`mt-auto ${canAfford ? "bg-diamonds text-accent-on hover:bg-diamonds" : ""}`}
         >
-          {isBusy ? "Köper..." : canAfford ? "Köp plats" : "För få ◆"}
+          {isBusy ? "Köper..." : canAfford ? "Köp plats" : "För få"}
         </Button>
       )}
     </div>

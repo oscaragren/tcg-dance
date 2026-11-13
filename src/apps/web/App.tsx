@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
-import { Header } from "../../components/web/Header";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BottomTabBar, Header } from "../../components/web/Header";
 import { BanBanner } from "../../components/web/BanBanner";
 import { Hero } from "../../components/web/Hero";
 import { FeaturedCollection } from "../../components/web/FeaturedCollection";
@@ -8,22 +8,20 @@ import { HowItWorks } from "../../components/web/HowItWorks";
 import { Faq } from "../../components/web/Faq";
 import { Footer } from "../../components/web/Footer";
 import { fetchCurrentUser, logoutUser } from "../../utils/authApi";
-import { DIAMONDS_EVENT, fetchChests, fetchGameState, fetchIncomingTradeCount } from "../../utils/gameApi";
+import { DIAMONDS_EVENT, MAINTENANCE_EVENT, fetchChests, fetchGameState, fetchIncomingTradeCount, fetchMaintenance, type MaintenanceStatus } from "../../utils/gameApi";
+import MaintenancePage from "./MaintenancePage";
 import type { AuthUser } from "../../types/auth";
 import { AuthPage } from "./AuthPage";
 import { CompleteProfilePage } from "./CompleteProfilePage";
 import { CollectionPage } from "./CollectionPage";
 import { LoggedInHomePage } from "./LoggedInHomePage";
-import { HandelPage } from "./HandelPage";
+import { ButikPage } from "./ButikPage";
 import { TradePage } from "./TradePage";
 import { NewTradePage } from "./NewTradePage";
-import { MarkForTradePage } from "./MarkForTradePage";
 import { ResetPasswordPage } from "./ResetPasswordPage";
 import { PrivacyPage } from "./PrivacyPage";
-import { UpgradePage } from "./UpgradePage";
 import { TopplistaPage } from "./TopplistaPage";
 import { PlayerCollectionPage } from "./PlayerCollectionPage";
-import { TradeMarketPage } from "./TradeMarketPage";
 import { AdminPage } from "./AdminPage";
 import { featuredCollection } from "../../data/packs";
 
@@ -51,13 +49,30 @@ const TRADE_BADGE_POLL_MS = 60_000;
 /** Poll interval for the ready-chest badge on "Samling". */
 const CHEST_BADGE_POLL_MS = 60_000;
 
+/** Poll interval for the maintenance switch. */
+const MAINTENANCE_POLL_MS = 60_000;
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [pendingTradeCount, setPendingTradeCount] = useState(0);
   const [diamonds, setDiamonds] = useState<number | null>(null);
   const [hasReadyChest, setHasReadyChest] = useState(false);
+  const [maintenance, setMaintenance] = useState<MaintenanceStatus | null>(null);
   const location = useLocation();
+
+  // Maintenance mode: check on load, on a slow timer, and whenever any API
+  // call comes back 503. The admin panel stays reachable while it is on.
+  useEffect(() => {
+    let cancelled = false;
+    function refresh() {
+      fetchMaintenance().then((m) => { if (!cancelled) setMaintenance(m); }).catch(() => {});
+    }
+    refresh();
+    const timer = setInterval(refresh, MAINTENANCE_POLL_MS);
+    window.addEventListener(MAINTENANCE_EVENT, refresh);
+    return () => { cancelled = true; clearInterval(timer); window.removeEventListener(MAINTENANCE_EVENT, refresh); };
+  }, []);
 
   // Header diamond balance. Seeded on login and on each navigation; kept live
   // in between by the DIAMONDS_EVENT any diamond-moving request emits.
@@ -148,8 +163,12 @@ export default function App() {
     setHasReadyChest(false);
   }
 
+  if (maintenance?.on && !/^\/admin(\/|$)/.test(location.pathname)) {
+    return <MaintenancePage status={maintenance} />;
+  }
+
   if (isAuthLoading) {
-    return <div className="min-h-screen bg-white" />;
+    return <div className="min-h-screen bg-surface" />;
   }
 
   // Hard gate for accounts that predate mandatory first/last names: nothing but
@@ -162,7 +181,7 @@ export default function App() {
 
   if (currentUser && !currentUser.profileComplete && !isGateExempt) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <CompleteProfilePage
           currentUser={currentUser}
           onComplete={setCurrentUser}
@@ -173,7 +192,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-screen bg-background text-text ${currentUser ? "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}>
       <Header
         username={currentUser?.username ?? null}
         onLogout={handleLogout}
@@ -191,13 +210,14 @@ export default function App() {
       <Routes>
         <Route path="/"         element={<HomePage currentUser={currentUser} />} />
         <Route path="/samling"      element={<CollectionPage userEmail={currentUser?.email ?? null} />} />
-        <Route path="/samling/byte" element={<MarkForTradePage currentUser={currentUser} />} />
-        <Route path="/handel"   element={<HandelPage currentUser={currentUser} />} />
-        <Route path="/uppgradering" element={<UpgradePage currentUser={currentUser} />} />
+        <Route path="/samling/byte" element={<Navigate to="/samling" replace />} />
+        <Route path="/butik"    element={<ButikPage currentUser={currentUser} />} />
+        <Route path="/handel"   element={<Navigate to="/butik" replace />} />
+        <Route path="/uppgradering" element={<Navigate to="/samling" replace />} />
         <Route path="/topplista" element={<TopplistaPage currentUser={currentUser} />} />
         <Route path="/byte"     element={<TradePage currentUser={currentUser} />} />
         <Route path="/byte/ny"  element={<NewTradePage currentUser={currentUser} />} />
-        <Route path="/byte/marknad" element={<TradeMarketPage currentUser={currentUser} />} />
+        <Route path="/byte/marknad" element={<Navigate to="/byte" replace />} />
         <Route path="/spelare/:userId" element={<PlayerCollectionPage currentUser={currentUser} />} />
         <Route path="/auth"                  element={<AuthPage onLogin={handleLogin} />} />
         <Route path="/aterstall-losenord"   element={<ResetPasswordPage />} />
@@ -205,6 +225,7 @@ export default function App() {
         <Route path="/admin"                 element={<AdminPage />} />
       </Routes>
       <Footer />
+      {currentUser && <BottomTabBar pendingTradeCount={pendingTradeCount} hasReadyChest={hasReadyChest} />}
     </div>
   );
 }

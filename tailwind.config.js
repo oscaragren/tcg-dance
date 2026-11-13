@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+// Baren tema A "Neon": colours are named by role. Components use these tokens
+// directly (bg-surface, text-secondary, ...). Values live in src/styles/theme.css.
 export default {
   content: [
     "./index.html",
@@ -7,50 +9,44 @@ export default {
   theme: {
     extend: {
       colors: {
-        border: "var(--color-border)",
         background: "var(--color-background)",
-        foreground: "var(--color-foreground)",
-        card: {
-          DEFAULT: "var(--color-card)",
-          foreground: "var(--color-card-foreground)",
+        surface: "var(--color-surface)",
+        raised: "var(--color-raised)",
+        hairline: {
+          DEFAULT: "var(--color-hairline)",
+          strong: "var(--color-hairline-strong)",
         },
-        popover: {
-          DEFAULT: "var(--color-popover)",
-          foreground: "var(--color-popover-foreground)",
-        },
-        primary: {
-          DEFAULT: "var(--color-primary)",
-          foreground: "var(--color-primary-foreground)",
-        },
-        secondary: {
-          DEFAULT: "var(--color-secondary)",
-          foreground: "var(--color-secondary-foreground)",
-        },
-        muted: {
-          DEFAULT: "var(--color-muted)",
-          foreground: "var(--color-muted-foreground)",
-        },
+        text: "var(--color-text)",
+        secondary: "var(--color-secondary)",
+        tertiary: "var(--color-tertiary)",
         accent: {
           DEFAULT: "var(--color-accent)",
-          foreground: "var(--color-accent-foreground)",
+          on: "var(--color-on-accent)",
         },
-        destructive: {
-          DEFAULT: "var(--color-destructive)",
-          foreground: "var(--color-destructive-foreground)",
+        diamonds: "var(--color-diamonds)",
+        success: "var(--color-success)",
+        danger: "var(--color-danger)",
+        rarity: {
+          common: "var(--color-rarity-common)",
+          rare: "var(--color-rarity-rare)",
+          epic: "var(--color-rarity-epic)",
+          legendary: "var(--color-rarity-legendary)",
+          special: "var(--color-rarity-special)",
         },
-        ring: "var(--color-ring)",
-        input: "var(--color-input)",
-        "input-background": "var(--color-input-background)",
-        "switch-background": "var(--color-switch-background)",
+      },
+      fontFamily: {
+        sign: ["Pacifico", "cursive"],
+        display: ["Fraunces", "Georgia", "serif"],
+        sans: ['"DM Sans"', "system-ui", "sans-serif"],
       },
       borderRadius: {
-        sm: "var(--radius-sm)",
-        md: "var(--radius-md)",
-        lg: "var(--radius-lg)",
-        xl: "var(--radius-xl)",
+        sm: "8px",
+        md: "12px",
+        lg: "16px",
+        xl: "16px",
+        "2xl": "20px",
       },
     },
   },
   plugins: [],
 }
-

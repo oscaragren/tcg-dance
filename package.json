@@ -8,6 +8,7 @@
     "start": "NODE_ENV=production node server/index.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "node --test \"server/test/*.test.mjs\"",
     "scrape:vote4dance": "node scripts/scrape-vote4dance-ranking.mjs",
     "publish-card-art": "node --env-file=.env scripts/publish-card-art.mjs"
   },

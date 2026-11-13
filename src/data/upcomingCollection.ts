@@ -1,7 +1,7 @@
 /**
  * Placeholder for the next card collection — name, cards, and price are not
  * announced yet. Referenced from the landing page teaser, the Samling tabs,
- * the Handel pack grid, and the Uppgradering section so the copy stays in
+ * the Butik pack grid, and the Uppgradering section so the copy stays in
  * sync in one place while things are still TBA.
  *
  * Once the real collection is ready, add it to `collections` in
