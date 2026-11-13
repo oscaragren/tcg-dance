@@ -4944,7 +4944,7 @@
         "label": "SM2016-pack",
         "cardCount": 5,
         "price": 100,
-        "purchasable": false,
+        "releaseAt": "2026-11-14T00:00:00+01:00",
         "rarityChances": {
           "special": 0,
           "legendary": 0.05,
@@ -4952,6 +4952,13 @@
           "rare": 0.3,
           "common": 0.5
         }
+      },
+      "copiesPerRarity": {
+        "legendary": 10,
+        "epic": 30,
+        "rare": 80,
+        "common": 100,
+        "special": 1
       },
       "cards": [
         {"id":"sm16-622","name":"Sara & Robin","rarity":"legendary","collectionId":"sm2016","designKey":"ID-622","danceStyle":"Rock'n'roll Vuxen","club":"HDK"},
