@@ -46,20 +46,20 @@ export function BanBanner({
   const endLabel = new Date(endsAt).toLocaleString("sv-SE", { dateStyle: "long", timeStyle: "short" });
 
   return (
-    <div className="border-b border-red-200 bg-red-50">
-      <div className="container mx-auto px-6 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-red-800">
+    <div className="border-b border-danger/40 bg-danger/15">
+      <div className="container mx-auto px-6 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-danger">
         <div className="flex items-center gap-2 font-semibold">
           <Ban className="w-4 h-4 shrink-0" />
           Ditt konto är avstängt
         </div>
-        <div className="flex-1 text-red-700">
+        <div className="flex-1 text-danger">
           Du kan titta på din samling och marknaden, men inte öppna paket, kistor eller göra byten.
-          {reason && <span className="block text-red-600">Anledning: {reason}</span>}
+          {reason && <span className="block text-danger">Anledning: {reason}</span>}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-xs text-red-600">Tillbaka om</div>
+          <div className="text-xs text-danger">Tillbaka om</div>
           <div className="font-mono font-semibold tabular-nums text-base">{formatRemaining(remaining)}</div>
-          <div className="text-xs text-red-500">{endLabel}</div>
+          <div className="text-xs text-danger">{endLabel}</div>
         </div>
       </div>
     </div>

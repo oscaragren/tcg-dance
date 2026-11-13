@@ -13,11 +13,11 @@ interface PackOpeningModalProps {
 const STAGGER_MS = 280;
 
 const rarityLabel: Record<string, string> = {
-  common: "text-gray-400",
-  rare: "text-blue-400",
-  epic: "text-purple-400",
-  legendary: "text-amber-400",
-  special: "text-fuchsia-400",
+  common: "text-tertiary",
+  rare: "text-diamonds",
+  epic: "text-text",
+  legendary: "text-rarity-legendary",
+  special: "text-rarity-epic",
 };
 
 const rarityGlow: Record<string, string> = {
@@ -101,8 +101,8 @@ export function PackOpeningModal({ packLabel, cards, onClose }: PackOpeningModal
     >
       <div className="flex flex-col items-center gap-8 max-w-3xl w-full max-h-full overflow-y-auto py-2">
         <div className="text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">{packLabel} öppnat!</h2>
-          <p className="text-white/40 mt-1 text-sm">
+          <h2 className="text-3xl sm:text-4xl font-bold text-text">{packLabel} öppnat!</h2>
+          <p className="text-text/40 mt-1 text-sm">
             {allRevealed
               ? `${cards.length} kort`
               : revealedCount === 0
@@ -127,7 +127,7 @@ export function PackOpeningModal({ packLabel, cards, onClose }: PackOpeningModal
             <Button
               size="lg"
               onClick={onClose}
-              className="h-12 w-full max-w-xs rounded-full bg-white px-8 text-base font-bold text-gray-900 shadow-lg shadow-black/40 hover:bg-gray-100 sm:w-auto sm:min-w-[14rem]"
+              className="h-12 w-full max-w-xs rounded-full bg-surface px-8 text-base font-bold text-text shadow-lg shadow-black/40 hover:bg-raised sm:w-auto sm:min-w-[14rem]"
             >
               Stäng
             </Button>
@@ -139,7 +139,7 @@ export function PackOpeningModal({ packLabel, cards, onClose }: PackOpeningModal
               size="lg"
               onClick={handleRevealAll}
               disabled={isAutoRevealing}
-              className="h-12 w-full max-w-xs rounded-full bg-white px-8 text-base font-bold tracking-wide text-gray-900 shadow-lg shadow-black/40 ring-2 ring-white/70 hover:bg-gray-100 disabled:opacity-70 sm:w-auto sm:min-w-[16rem]"
+              className="h-12 w-full max-w-xs rounded-full bg-surface px-8 text-base font-bold tracking-wide text-text shadow-lg shadow-black/40 ring-2 ring-background/70 hover:bg-raised disabled:opacity-70 sm:w-auto sm:min-w-[16rem]"
             >
               {isAutoRevealing ? "Vänder..." : "Vänd alla kort"}
             </Button>
@@ -177,9 +177,9 @@ function FlipCard({
           <div
             onClick={onFlip}
             style={{ backfaceVisibility: "hidden", position: "absolute", inset: 0 }}
-            className="rounded-xl bg-gradient-to-br from-gray-700 via-gray-800 to-gray-950 border-2 border-gray-600 flex items-center justify-center cursor-pointer group hover:border-gray-400 transition-colors"
+            className="rounded-xl bg-raised border-2 border-hairline-strong flex items-center justify-center cursor-pointer group hover:border-hairline-strong transition-colors"
           >
-            <span className="text-4xl text-gray-500 select-none group-hover:scale-110 group-hover:text-gray-300 transition-transform duration-200">
+            <span className="text-4xl text-secondary select-none group-hover:scale-110 group-hover:text-tertiary transition-transform duration-200">
               ✦
             </span>
           </div>
@@ -213,7 +213,7 @@ function FlipCard({
         <div className={`text-[10px] uppercase tracking-wider font-medium ${rarityLabel[card.rarity]}`}>
           {card.rarity}
         </div>
-        <div className="text-xs text-white/75 line-clamp-2 leading-snug max-w-[7rem]">
+        <div className="text-xs text-text/75 line-clamp-2 leading-snug max-w-[7rem]">
           {card.name}
         </div>
       </div>

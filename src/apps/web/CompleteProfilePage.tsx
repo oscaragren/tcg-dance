@@ -51,7 +51,7 @@ export function CompleteProfilePage({ currentUser, onComplete, onLogout }: Compl
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 py-16">
+    <main className="min-h-screen bg-raised py-16">
       <div className="container mx-auto px-6">
         <div className="mx-auto max-w-md">
           <Card>
@@ -88,7 +88,7 @@ export function CompleteProfilePage({ currentUser, onComplete, onLogout }: Compl
                   />
                 </div>
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="text-sm text-danger">{error}</p>}
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? "Sparar..." : "Spara och fortsätt"}
@@ -98,7 +98,7 @@ export function CompleteProfilePage({ currentUser, onComplete, onLogout }: Compl
                   <button
                     type="button"
                     onClick={onLogout}
-                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                    className="text-sm text-secondary hover:text-text transition-colors"
                   >
                     Logga ut
                   </button>
@@ -107,7 +107,7 @@ export function CompleteProfilePage({ currentUser, onComplete, onLogout }: Compl
             </CardContent>
           </Card>
 
-          <p className="mt-4 text-center text-xs text-gray-500">
+          <p className="mt-4 text-center text-xs text-secondary">
             Vi frågar efter namn för att motverka att samma person spelar med flera konton.
           </p>
         </div>

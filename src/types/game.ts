@@ -2,22 +2,44 @@ import type { CardRarity, DanceCard } from "./danceCard";
 
 export type GameState = {
   ownedCardIds: string[];
+  /** Cards the player has set to Behåll (kept out of Trades). */
+  keptCardIds: string[];
   diamonds: number;
   lastDailyClaimDate: string | null;
   canClaimDailyDiamonds: boolean;
   /** Today's daily claim before any streak bonus — higher during events. */
   dailyDiamondsToday?: number;
   lastOpenedCards: DanceCard[];
-  /** Consecutive days the daily diamonds have been claimed with no gap. */
+  /** Streak position on the 7-step track (a missed day leaves it unchanged). */
   diamondStreak: number;
   /** Streak length that pays out the bonus (see ClaimDailyDiamondsResponse). */
   diamondStreakTarget: number;
+  /** The Event running right now, if any. */
+  event?: GameEvent | null;
 };
+
+/** A time-limited Event and the rewards active while it runs. */
+export type GameEvent = {
+  id: string;
+  label: string;
+  startsAt: string;
+  endsAt: string;
+  /** Daily claim amount during the Event; null when it doesn't change. */
+  dailyDiamonds: number | null;
+  /** Shortened Chest wait in hours per Chest type; null when unchanged. */
+  chestWaitHours: Partial<Record<string, number>> | null;
+  /** Chest payout multiplier while the Event runs; null when unchanged. */
+  chestMultiplier?: number | null;
+  /** Login gift, claimed once per player from "Väntar på dig". */
+  gift?: EventGift | null;
+};
+
+export type EventGift = { type: "diamonds"; amount: number } | { type: "chest"; chestType: string };
 
 export type ClaimDailyDiamondsResponse = {
   /** Total diamonds credited by this claim, including any streak bonus. */
   diamondsAwarded: number;
-  /** 500 when this claim completed a 7-day streak, 0 otherwise. */
+  /** 500 when this claim reached the 7th step, 0 otherwise. */
   streakBonusAwarded: number;
   diamondStreak: number;
   state: GameState;
@@ -29,6 +51,12 @@ export type Announcement = {
   title: string;
   body: string;
   createdAt: string;
+};
+
+/** The dismissible Hem banner pointing at an Announcement. */
+export type AnnouncementBanner = {
+  announcementId: string;
+  text: string;
 };
 
 export type AnnouncementsResponse = {
@@ -43,11 +71,28 @@ export type BuyPackResponse = {
   state: GameState;
 };
 
-export type CardPoolInfo = Record<string, { totalCopies: number; copiesRemaining: number }>;
+/**
+ * What players may know about a Collection's Card pool: sold out or not, and
+ * which Rarities still have Copies. Never how many.
+ */
+export type CollectionAvailability = Record<
+  string,
+  { soldOut: boolean; rarityInStock: Partial<Record<CardRarity, boolean>> }
+>;
 
 export type UpgradeResponse = {
   upgradedCard: DanceCard;
   state: GameState;
+};
+
+/** The game's automatic pick for an Upgrade (Duplicates only, skipping Behåll). */
+export type UpgradePick = {
+  cost: number;
+  needed: number;
+  have: number;
+  cardIds: string[];
+  targetRarity: CardRarity;
+  canUpgrade: boolean;
 };
 
 export const upgradeTierTarget: Record<CardRarity, CardRarity | null> = {
@@ -60,7 +105,7 @@ export const upgradeTierTarget: Record<CardRarity, CardRarity | null> = {
 
 /** Cards required to upgrade, keyed by the source rarity being combined. */
 export const upgradeCardsRequired: Record<CardRarity, number | null> = {
-  common: 20,
+  common: 100,
   rare: 15,
   epic: 10,
   legendary: null,
@@ -75,6 +120,7 @@ export type LeaderboardEntry = {
   rank: number;
   userId: string;
   username: string;
+  points: number;
   total: number;
   legendary: number;
   epic: number;
@@ -97,11 +143,16 @@ export type PlayerProfile = {
 
 export type MarketTraderForCard = { userId: string; username: string; quantity: number };
 
-export type MarketTrader = {
+/** A player with Copies Available for Trade of Cards the viewer is missing. */
+export type TradeMatch = {
   userId: string;
   username: string;
-  cards: CardForTrade[];
-  totalCards: number;
+  /** Available Copies of the viewer's Missing Cards. */
+  theyCanGive: CardForTrade[];
+  /** The viewer's Available Copies of Cards this player is missing. */
+  youCanGive: CardForTrade[];
+  /** Both sides have something to give: "Ni kan byta med varandra". */
+  twoWay: boolean;
 };
 
 export type ChestType = "bronze" | "silver" | "gold";
@@ -163,19 +214,55 @@ export type Achievement = {
   id: string;
   title: string;
   description: string;
+  /** Short milestone label for the chip in Samling, e.g. "Första Rare". */
+  chip: string;
   reward: number;
   progress: number;
   target: number;
   complete: boolean;
   claimed: boolean;
-  /** Set for achievements scoped to one collection; absent for global ones. */
-  collectionId?: string;
+  collectionId: string;
+};
+
+/** One of the three Weekly goals; progress is capped at the target. */
+export type WeeklyGoal = {
+  id: string;
+  title: string;
+  reward: number;
+  progress: number;
+  target: number;
+  complete: boolean;
+  claimed: boolean;
+};
+
+export type WeeklyGoalsResponse = {
+  /** Stockholm date of the Monday this week started. */
+  weekStart: string;
+  goals: WeeklyGoal[];
+};
+
+export type ClaimWeeklyGoalResponse = WeeklyGoalsResponse & {
+  diamondsAwarded: number;
+  state: GameState;
 };
 
 export type ClaimAchievementResponse = {
   diamondsAwarded: number;
   achievements: Achievement[];
   state: GameState;
+};
+
+/** How many Copies of each Rarity one side of a Trade holds. */
+export type RarityTotals = Partial<Record<CardRarity, number>>;
+
+/** One Copy in a Trade, described for whoever receives it. */
+export type TradeCopy = {
+  cardId: string;
+  /** Copies the recipient already holds: 0 is "Ny!", more is "Har redan (×N)". */
+  recipientOwned: number;
+  isNew: boolean;
+  /** Requested side only: the receiver has not made this Copy Available for Trade ("Inte till byte"). */
+  notForTrade?: boolean;
 };
 
 export type Trade = {
@@ -187,7 +274,61 @@ export type Trade = {
   offeredDiamonds: number;
   requestedCardIds: string[];
   requestedDiamonds: number;
+  offeredCopies: TradeCopy[];
+  requestedCopies: TradeCopy[];
+  offeredRarity: RarityTotals;
+  requestedRarity: RarityTotals;
   createdAt: string;
   /** Set when this offer was made in reply to another; null for a first offer. */
   counterOfTradeId: string | null;
 };
+
+/** Unique Cards owned out of all Cards. Special cards never count. */
+export type ProgressCount = { owned: number; total: number };
+
+export type CollectionProgress = {
+  collectionId: string | null;
+  total: ProgressCount;
+  byRarity: Record<"common" | "rare" | "epic" | "legendary", ProgressCount>;
+};
+
+/** A Special card and who holds its single Copy. */
+export type Trophy = {
+  cardId: string;
+  collectionId?: string;
+  owner: { username: string; isYou: boolean } | null;
+};
+
+/** One thing the player can claim or act on right now ("Väntar på dig"). */
+export type WaitingItem =
+  | { type: "trade"; id: string; trade: Trade }
+  | { type: "chest"; id: string; chest: Chest }
+  | { type: "achievement"; id: string; achievement: Achievement }
+  | { type: "weekly_goal"; id: string; goal: WeeklyGoal }
+  | { type: "event_gift"; id: string; label: string; gift: EventGift }
+  | { type: "daily"; id: "daily"; diamonds: number }
+  | { type: "starter_pack"; id: "starter-pack"; collectionId: string; label: string }
+  | { type: "starter_step"; id: string; title: string; reward: number }
+  | { type: "comeback_gift"; id: "comeback-gift"; diamonds: number };
+
+/** The one-time "Välkommen tillbaka" summary for a returning player. */
+export type ComebackSummary = {
+  awayDays: number;
+  collections: { id: string; label: string; owned: number; total: number }[];
+  events: { id: string; label: string; startsAt: string; endsAt: string }[];
+};
+
+/** The one-time "Det här är nytt" sheet for players who existed at the relaunch. Lines show only when > 0. */
+export type WhatsNewSheet = { achievementPayout: number; cancelledTrades: number };
+
+export type StarterStep = { id: string; title: string; reward: number; done: boolean; claimed: boolean };
+
+/** The "Kom igång" checklist and the free Pack of a new player. */
+export type StarterResponse = {
+  /** False once every step is claimed (or for players who never get the checklist). */
+  visible: boolean;
+  steps: StarterStep[];
+  freePack: { collectionId: string; label: string } | null;
+};
+
+export type WaitingResponse = { items: WaitingItem[] };
