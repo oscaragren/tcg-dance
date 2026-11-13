@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import type { DanceCard } from "../../types/danceCard";
 import { Button } from "../shared/ui/button";
 import { CardPlaceholder } from "./CardPlaceholder";
-import { DiamondIcon } from "./DiamondIcon";
 
 interface ChestRewardModalProps {
   chestLabel: string;
@@ -42,19 +41,19 @@ export function ChestRewardModal({ chestLabel, diamondsAwarded, cards, onClose }
       <div className="flex max-h-full w-full max-w-2xl flex-col items-center gap-8 overflow-y-auto py-2">
         <div className="text-center">
           <div className="text-6xl mb-3" aria-hidden>🎁</div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-text">{chestLabel} öppnad!</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">{chestLabel} öppnad!</h2>
         </div>
 
-        <div className="flex items-center gap-2 rounded-full bg-text/10 px-6 py-3">
-          <span className="text-3xl font-bold text-diamonds">+{diamondsAwarded}</span>
-          <span className="text-2xl text-diamonds"><DiamondIcon /></span>
+        <div className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-3">
+          <span className="text-3xl font-bold text-blue-300">+{diamondsAwarded}</span>
+          <span className="text-2xl text-blue-300">◆</span>
         </div>
 
         {cards.length === 0 ? (
-          <p className="text-sm text-text/50">Inga kort den här gången — bara diamanter.</p>
+          <p className="text-sm text-white/50">Inga kort den här gången — bara diamanter.</p>
         ) : (
           <div className="flex flex-col items-center gap-4">
-            <p className="text-sm text-text/60">
+            <p className="text-sm text-white/60">
               {cards.length === 1 ? "Du fick också ett kort!" : `Du fick också ${cards.length} kort!`}
             </p>
             <div className="flex flex-wrap justify-center gap-4">
@@ -70,7 +69,7 @@ export function ChestRewardModal({ chestLabel, diamondsAwarded, cards, onClose }
                       disableLightbox
                     />
                   </div>
-                  <div className="max-w-[8rem] text-center text-xs leading-snug text-text/75">{card.name}</div>
+                  <div className="max-w-[8rem] text-center text-xs leading-snug text-white/75">{card.name}</div>
                 </div>
               ))}
             </div>
@@ -80,7 +79,7 @@ export function ChestRewardModal({ chestLabel, diamondsAwarded, cards, onClose }
         <Button
           size="lg"
           onClick={onClose}
-          className="h-12 w-full max-w-xs rounded-full bg-surface px-8 text-base font-bold text-text shadow-lg shadow-black/40 hover:bg-raised sm:w-auto sm:min-w-[14rem]"
+          className="h-12 w-full max-w-xs rounded-full bg-white px-8 text-base font-bold text-gray-900 shadow-lg shadow-black/40 hover:bg-gray-100 sm:w-auto sm:min-w-[14rem]"
         >
           Stäng
         </Button>

@@ -26,9 +26,7 @@ A trading card game built around competitive bugg (swing dance) couples from the
 │   └── scrape-vote4dance-ranking.mjs   # Fetches the latest ranking from Vote4Dance
 │
 ├── server/
-│   ├── app.mjs                     # createApp({db, clock, random, mailer, config}) — auth + game API routes
-│   ├── index.mjs                   # Production entry: wires real dependencies and listens
-│   ├── test/                       # API tests (npm test), in-memory DB + fake clock/random/mailer
+│   ├── index.mjs                   # Express server — auth + game API routes
 │   ├── db.mjs                      # SQLite init, schema, one-time JSON migration
 │   └── gameCatalog.mjs             # Builds the card catalog from ranking + game-content
 │

@@ -1,13 +1,9 @@
-import { AlertTriangle, BarChart3, CalendarDays, Gem, Layers, Megaphone, Repeat, Search, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, Layers, Megaphone, Repeat, Search, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
 import { AdminStatsPanel, UpgradeRow } from "../../components/web/AdminStats";
-import { AdminDiamondFlowPanel, DiamondGrantControl, DiamondHistory } from "../../components/web/AdminDiamondFlow";
-import { AdminMaintenance } from "../../components/web/AdminMaintenance";
-import { AdminEvents } from "../../components/web/AdminEvents";
-import { AdminBanners, PoolSkewView } from "../../components/web/AdminTopUps";
 import { cardById, rarityOrder } from "../../data/cards";
 import {
   adminLogin,
@@ -16,14 +12,11 @@ import {
   banAdminUser,
   unbanAdminUser,
   createAdminAnnouncement,
-  setAdminAnnouncementBanner,
   deleteAdminAnnouncement,
   deleteAdminUser,
   fetchAdminAnnouncements,
   fetchAdminOverview,
   fetchAdminPool,
-  fetchAdminPoolSkew,
-  type AdminPoolSkew,
   fetchAdminSpecialCards,
   fetchAdminTradePairs,
   fetchAdminTrades,
@@ -54,10 +47,10 @@ const FLAG_LABELS: Record<AdminTradeFlag, string> = {
 };
 
 const FLAG_STYLES: Record<AdminTradeFlag, string> = {
-  gift: "bg-danger/15 text-danger",
-  lopsided: "bg-rarity-legendary/15 text-rarity-legendary",
-  very_lopsided: "bg-danger/15 text-danger",
-  exclusive_pair: "bg-raised text-text",
+  gift: "bg-red-100 text-red-700",
+  lopsided: "bg-amber-100 text-amber-700",
+  very_lopsided: "bg-red-100 text-red-700",
+  exclusive_pair: "bg-purple-100 text-purple-700",
 };
 
 function formatDate(iso: string): string {
@@ -84,7 +77,7 @@ function formatSignupGap(minutes: number | null): string {
 }
 
 function FlagBadges({ flags }: { flags: AdminTradeFlag[] }) {
-  if (flags.length === 0) return <span className="text-tertiary">{"—"}</span>;
+  if (flags.length === 0) return <span className="text-gray-300">{"—"}</span>;
   return (
     <span className="flex flex-wrap gap-1 justify-end">
       {flags.map((f) => (
@@ -100,13 +93,13 @@ function FlagBadges({ flags }: { flags: AdminTradeFlag[] }) {
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
     <div className="relative w-full sm:max-w-sm">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tertiary" />
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-10 w-full rounded-md border border-hairline bg-surface pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+        className="h-10 w-full rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
       />
     </div>
   );
@@ -124,7 +117,7 @@ export function AdminPage() {
   }, []);
 
   if (checking) {
-    return <main className="min-h-[calc(100vh-72px)] bg-raised" />;
+    return <main className="min-h-[calc(100vh-72px)] bg-gray-50" />;
   }
 
   if (!authed) {
@@ -154,21 +147,21 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
+    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
-        <form onSubmit={handleSubmit} className="max-w-sm mx-auto bg-surface border rounded-xl p-8 space-y-4">
+        <form onSubmit={handleSubmit} className="max-w-sm mx-auto bg-white border rounded-xl p-8 space-y-4">
           <h1 className="text-2xl font-bold">Admin</h1>
-          <p className="text-sm text-secondary">Ange admin-lösenordet för att fortsätta.</p>
+          <p className="text-sm text-gray-500">Ange admin-lösenordet för att fortsätta.</p>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Lösenord"
             autoFocus
-            className="w-full h-10 rounded-md border border-hairline px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+            className="w-full h-10 rounded-md border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
           />
-          {error && <p className="text-sm text-danger">{error}</p>}
-          <Button type="submit" disabled={submitting || !password} className="w-full bg-accent hover:bg-accent text-accent-on">
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <Button type="submit" disabled={submitting || !password} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
             {submitting ? "Loggar in..." : "Logga in"}
           </Button>
         </form>
@@ -181,7 +174,6 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pool, setPool] = useState<AdminPoolEntry[]>([]);
-  const [poolSkew, setPoolSkew] = useState<AdminPoolSkew | null>(null);
   const [specialCards, setSpecialCards] = useState<AdminSpecialCard[]>([]);
   const [trades, setTrades] = useState<AdminTrade[]>([]);
   const [tradePairs, setTradePairs] = useState<AdminTradePair[]>([]);
@@ -202,15 +194,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [pairQuery, setPairQuery] = useState("");
   const [poolQuery, setPoolQuery] = useState("");
 
-  // A Top-up changes the pool, banners and skew view, so re-read all three.
-  function reloadPool() {
-    Promise.all([fetchAdminOverview(), fetchAdminPool(), fetchAdminPoolSkew()])
-      .then(([o, p, sk]) => { setOverview(o); setPool(p); setPoolSkew(sk); })
-      .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda admin-data."));
-  }
-
   useEffect(() => {
-    fetchAdminPoolSkew().then(setPoolSkew).catch(() => { /* shown via the main load's error */ });
     Promise.all([
       fetchAdminOverview(), fetchAdminUsers(), fetchAdminPool(),
       fetchAdminTrades(), fetchAdminTradePairs(), fetchAdminAnnouncements(), fetchAdminSpecialCards(),
@@ -330,7 +314,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   }, [poolSorted, poolQuery]);
 
   return (
-    <main className="py-8 bg-raised min-h-[calc(100vh-72px)]">
+    <main className="py-8 bg-gray-50 min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
         <div className="max-w-6xl mx-auto space-y-6">
 
@@ -339,16 +323,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <Button variant="outline" onClick={handleLogout}>Logga ut</Button>
           </div>
 
-          {error && <p className="text-sm text-danger">{error}</p>}
-
-          {overview && poolSkew && (
-            <AdminBanners
-              banners={overview.banners}
-              labels={Object.fromEntries(poolSkew.collections.map((c) => [c.collectionId, c.label]))}
-            />
-          )}
-
-          <AdminMaintenance />
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
           {/* Overview — always visible, one glance at the state of things */}
           {overview && (
@@ -365,36 +340,30 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <TabsList className="h-auto w-max flex-nowrap gap-1 sm:w-fit">
                 <TabsTrigger value="players" className="gap-1.5">
                   <Users className="w-3.5 h-3.5" /> Spelare
-                  <span className="text-tertiary">({users.length})</span>
+                  <span className="text-gray-400">({users.length})</span>
                 </TabsTrigger>
                 <TabsTrigger value="trades" className="gap-1.5">
                   <Repeat className="w-3.5 h-3.5" /> Byten
-                  <span className="text-tertiary">({trades.length})</span>
+                  <span className="text-gray-400">({trades.length})</span>
                   {flaggedTradeCount > 0 && (
-                    <span className="rounded-full bg-rarity-legendary/15 px-1.5 py-0.5 text-[10px] font-semibold text-rarity-legendary">
+                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
                       {flaggedTradeCount}
                     </span>
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="pairs" className="gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5" /> Byteskonton
-                  <span className="text-tertiary">({tradePairs.length})</span>
+                  <span className="text-gray-400">({tradePairs.length})</span>
                 </TabsTrigger>
                 <TabsTrigger value="announcements" className="gap-1.5">
                   <Megaphone className="w-3.5 h-3.5" /> Meddelanden
-                  <span className="text-tertiary">({announcements.length})</span>
+                  <span className="text-gray-400">({announcements.length})</span>
                 </TabsTrigger>
                 <TabsTrigger value="pool" className="gap-1.5">
                   <Layers className="w-3.5 h-3.5" /> Kortpool
                 </TabsTrigger>
-                <TabsTrigger value="events" className="gap-1.5">
-                  <CalendarDays className="w-3.5 h-3.5" /> Event
-                </TabsTrigger>
                 <TabsTrigger value="stats" className="gap-1.5">
                   <BarChart3 className="w-3.5 h-3.5" /> Statistik
-                </TabsTrigger>
-                <TabsTrigger value="diamonds" className="gap-1.5">
-                  <Gem className="w-3.5 h-3.5" /> Diamanter
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -404,12 +373,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <SearchBox value={playerQuery} onChange={setPlayerQuery} placeholder="Sök på användarnamn, namn eller e-post..." />
                 {playerQuery && (
-                  <p className="text-xs text-secondary">Visar {filteredUsers.length} av {users.length}</p>
+                  <p className="text-xs text-gray-500">Visar {filteredUsers.length} av {users.length}</p>
                 )}
               </div>
-              <div className="rounded-xl border bg-surface overflow-x-auto max-h-[600px] overflow-y-auto">
+              <div className="rounded-xl border bg-white overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-raised text-secondary sticky top-0">
+                  <thead className="bg-gray-50 text-gray-500 sticky top-0">
                     <tr>
                       <th className="text-left px-4 py-2">Användarnamn</th>
                       <th className="text-left px-4 py-2">Namn</th>
@@ -424,7 +393,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <tbody className="divide-y">
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center text-secondary">
+                        <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                           Inga spelare matchar sökningen.
                         </td>
                       </tr>
@@ -433,13 +402,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         <tr
                           key={u.id}
                           onClick={() => void openUser(u.id)}
-                          className="cursor-pointer hover:bg-raised transition-colors"
+                          className="cursor-pointer hover:bg-gray-50 transition-colors"
                         >
                           <td className="px-4 py-2 font-medium">
                             {u.username}
                             {u.bannedUntil && (
                               <span
-                                className="ml-2 rounded-full bg-danger/15 px-1.5 py-0.5 text-[10px] font-semibold text-danger"
+                                className="ml-2 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700"
                                 title={`Avstängd till ${formatDate(u.bannedUntil)}`}
                               >
                                 Avstängd
@@ -449,16 +418,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           <td className="px-4 py-2">
                             {u.firstName && u.lastName
                               ? u.firstName + " " + u.lastName
-                              : <span className="text-rarity-legendary text-xs">Saknas</span>}
+                              : <span className="text-amber-600 text-xs">Saknas</span>}
                           </td>
-                          <td className="px-4 py-2 text-secondary">{u.email}</td>
+                          <td className="px-4 py-2 text-gray-500">{u.email}</td>
                           <td className="px-4 py-2 text-right">{u.diamonds}</td>
                           <td className="px-4 py-2 text-right">{u.uniqueCards}</td>
-                          <td className="px-4 py-2 text-right text-secondary">{u.totalCards}</td>
+                          <td className="px-4 py-2 text-right text-gray-500">{u.totalCards}</td>
                           <td className="px-4 py-2 text-right">
                             <button
                               onClick={(e) => { e.stopPropagation(); void openUser(u.id); }}
-                              className="text-accent hover:text-accent text-xs font-medium underline"
+                              className="text-purple-600 hover:text-purple-800 text-xs font-medium underline"
                             >
                               Visa
                             </button>
@@ -466,7 +435,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           <td className="px-4 py-2 text-right">
                             <button
                               onClick={(e) => { e.stopPropagation(); setUserToDelete(u); }}
-                              className="text-danger hover:text-danger text-xs font-medium underline"
+                              className="text-red-600 hover:text-red-800 text-xs font-medium underline"
                             >
                               Radera
                             </button>
@@ -481,9 +450,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
             {/* Trades */}
             <TabsContent value="trades" className="space-y-3 pt-2">
-              <p className="text-sm text-secondary">
+              <p className="text-sm text-gray-500">
                 Varje sida värderas efter spelets egen uppgraderingsstege
-                (100 common = 1 rare, 15 rare = 1 epic, 10 epic = 1 legendary).
+                (20 common = 1 rare, 15 rare = 1 epic, 10 epic = 1 legendary).
                 Ett byte flaggas när ena sidan är minst 3 gånger mer värd än den andra.
               </p>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -491,18 +460,18 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <Button variant="outline" onClick={() => setOnlyFlaggedTrades((v) => !v)} className="shrink-0">
                   {onlyFlaggedTrades ? "Visa alla" : "Visa bara flaggade"}
                 </Button>
-                <p className="text-xs text-secondary">
+                <p className="text-xs text-gray-500">
                   Visar {visibleTrades.length} av {trades.length} ({flaggedTradeCount} flaggade totalt)
                 </p>
               </div>
               {visibleTrades.length === 0 ? (
-                <p className="text-sm text-secondary rounded-xl border bg-surface p-4">
+                <p className="text-sm text-gray-500 rounded-xl border bg-white p-4">
                   Inga byten matchar filtren.
                 </p>
               ) : (
-                <div className="rounded-xl border bg-surface overflow-x-auto max-h-[560px] overflow-y-auto">
+                <div className="rounded-xl border bg-white overflow-x-auto max-h-[560px] overflow-y-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-raised text-secondary sticky top-0">
+                    <thead className="bg-gray-50 text-gray-500 sticky top-0">
                       <tr>
                         <th className="text-left px-4 py-2">Datum</th>
                         <th className="text-left px-4 py-2">Från {"→"} Till</th>
@@ -516,8 +485,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     </thead>
                     <tbody className="divide-y">
                       {visibleTrades.map((t) => (
-                        <tr key={t.id} className={t.flags.length > 0 ? "bg-rarity-legendary/40" : undefined}>
-                          <td className="px-4 py-2 text-secondary whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                        <tr key={t.id} className={t.flags.length > 0 ? "bg-amber-50/40" : undefined}>
+                          <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
                           <td className="px-4 py-2 whitespace-nowrap">
                             <span className={t.favours === "sender" ? "font-semibold" : undefined}>
                               {t.sender.username}
@@ -529,13 +498,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           </td>
                           <td className="px-4 py-2">{formatSide(t.offeredCardIds, t.offeredDiamonds)}</td>
                           <td className="px-4 py-2">{formatSide(t.requestedCardIds, t.requestedDiamonds)}</td>
-                          <td className="px-4 py-2 text-right whitespace-nowrap text-secondary">
+                          <td className="px-4 py-2 text-right whitespace-nowrap text-gray-500">
                             {t.senderValue} / {t.receiverValue}
                           </td>
                           <td className="px-4 py-2 text-right font-medium">
                             {t.ratio === null ? "∞" : t.ratio + "x"}
                           </td>
-                          <td className="px-4 py-2 capitalize text-secondary">{t.status}</td>
+                          <td className="px-4 py-2 capitalize text-gray-500">{t.status}</td>
                           <td className="px-4 py-2 text-right"><FlagBadges flags={t.flags} /></td>
                         </tr>
                       ))}
@@ -547,7 +516,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
             {/* Suspicious trading pairs */}
             <TabsContent value="pairs" className="space-y-3 pt-2">
-              <p className="text-sm text-secondary">
+              <p className="text-sm text-gray-500">
                 Par som har genomfört minst ett byte, sorterade efter hur mycket de
                 liknar en person som handlar med sig själv. Inget här är ett bevis —
                 <span className="font-medium"> Endast varandra</span> betyder att inget av
@@ -555,13 +524,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </p>
               <SearchBox value={pairQuery} onChange={setPairQuery} placeholder="Sök på spelare..." />
               {visibleTradePairs.length === 0 ? (
-                <p className="text-sm text-secondary rounded-xl border bg-surface p-4">
+                <p className="text-sm text-gray-500 rounded-xl border bg-white p-4">
                   {tradePairs.length === 0 ? "Inga genomförda byten än." : "Inga par matchar sökningen."}
                 </p>
               ) : (
-                <div className="rounded-xl border bg-surface overflow-x-auto">
+                <div className="rounded-xl border bg-white overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-raised text-secondary">
+                    <thead className="bg-gray-50 text-gray-500">
                       <tr>
                         <th className="text-left px-4 py-2">Spelare</th>
                         <th className="text-right px-4 py-2">Byten</th>
@@ -586,49 +555,49 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         const winner = pair.netValueToA >= 0 ? pair.userA : pair.userB;
                         const netAbs = Math.abs(pair.netValueToA);
                         return (
-                          <tr key={pair.key} className={pair.exclusive ? "bg-raised/50" : undefined}>
+                          <tr key={pair.key} className={pair.exclusive ? "bg-purple-50/50" : undefined}>
                             <td className="px-4 py-2">
                               <div className="font-medium">
                                 {pair.userA.username} {"↔"} {pair.userB.username}
                               </div>
-                              <div className="text-xs text-secondary">
+                              <div className="text-xs text-gray-500">
                                 {pair.userA.email} {"·"} {pair.userB.email}
                               </div>
                             </td>
                             <td className="px-4 py-2 text-right">{pair.tradeCount}</td>
                             <td className="px-4 py-2 text-right">
                               {pair.lopsidedCount > 0
-                                ? <span className="text-rarity-legendary font-medium">{pair.lopsidedCount}</span>
-                                : <span className="text-tertiary">0</span>}
+                                ? <span className="text-amber-700 font-medium">{pair.lopsidedCount}</span>
+                                : <span className="text-gray-400">0</span>}
                             </td>
                             <td className="px-4 py-2 text-right">{pair.concentration}%</td>
-                            <td className="px-4 py-2 text-right text-secondary">
+                            <td className="px-4 py-2 text-right text-gray-500">
                               {pair.partnersA} / {pair.partnersB}
                             </td>
                             <td className="px-4 py-2 text-right">
                               {netAbs === 0
-                                ? <span className="text-tertiary">jämnt</span>
+                                ? <span className="text-gray-400">jämnt</span>
                                 : <span title={"Netto till " + winner.username}>
                                     {"→"} {winner.username} +{netAbs}
                                   </span>}
                             </td>
-                            <td className="px-4 py-2 text-right text-secondary">
+                            <td className="px-4 py-2 text-right text-gray-500">
                               {formatSignupGap(pair.signupGapMinutes)}
                             </td>
                             <td className="px-4 py-2 text-right">
                               <span className="flex flex-wrap gap-1 justify-end">
                                 {pair.exclusive && (
-                                  <span className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-raised text-text">
+                                  <span className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-purple-100 text-purple-700">
                                     Endast varandra
                                   </span>
                                 )}
                                 {pair.registeredTogether && (
-                                  <span className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-rarity-legendary/15 text-rarity-legendary">
+                                  <span className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-amber-100 text-amber-700">
                                     Samtidig reg.
                                   </span>
                                 )}
                                 {!pair.exclusive && !pair.registeredTogether && (
-                                  <span className="text-tertiary">{"—"}</span>
+                                  <span className="text-gray-300">{"—"}</span>
                                 )}
                               </span>
                             </td>
@@ -645,10 +614,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <TabsContent value="announcements" className="space-y-3 pt-2">
               <form
                 onSubmit={(e) => void handlePublishAnnouncement(e)}
-                className="rounded-xl border bg-surface p-4 space-y-3"
+                className="rounded-xl border bg-white p-4 space-y-3"
               >
                 <div>
-                  <label htmlFor="announcement-title" className="block text-sm text-text mb-1">
+                  <label htmlFor="announcement-title" className="block text-sm text-gray-600 mb-1">
                     Rubrik
                   </label>
                   <input
@@ -658,11 +627,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     onChange={(e) => setNewAnnouncementTitle(e.target.value)}
                     maxLength={80}
                     placeholder="Kort rubrik, t.ex. Ny funktion"
-                    className="w-full h-10 rounded-md border border-hairline px-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+                    className="w-full h-10 rounded-md border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                   />
                 </div>
                 <div>
-                  <label htmlFor="announcement-body" className="block text-sm text-text mb-1">
+                  <label htmlFor="announcement-body" className="block text-sm text-gray-600 mb-1">
                     Text
                   </label>
                   <textarea
@@ -672,57 +641,36 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     maxLength={1000}
                     rows={3}
                     placeholder="Meddelandetext"
-                    className="w-full rounded-md border border-hairline px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                   />
                 </div>
-                {announcementError && <p className="text-sm text-danger">{announcementError}</p>}
+                {announcementError && <p className="text-sm text-red-600">{announcementError}</p>}
                 <Button
                   type="submit"
                   disabled={publishingAnnouncement || !newAnnouncementTitle.trim() || !newAnnouncementBody.trim()}
-                  className="bg-accent hover:bg-accent text-accent-on"
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   {publishingAnnouncement ? "Publicerar..." : "Publicera"}
                 </Button>
               </form>
 
               {announcements.length === 0 ? (
-                <p className="text-sm text-secondary rounded-xl border bg-surface p-4">Inga meddelanden publicerade.</p>
+                <p className="text-sm text-gray-500 rounded-xl border bg-white p-4">Inga meddelanden publicerade.</p>
               ) : (
-                <ul className="rounded-xl border bg-surface divide-y">
+                <ul className="rounded-xl border bg-white divide-y">
                   {announcements.map((a) => (
                     <li key={a.id} className="px-4 py-3 flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
                           <span className="font-medium text-sm">{a.title}</span>
-                          <span className="text-xs text-tertiary">{formatDate(a.createdAt)}</span>
+                          <span className="text-xs text-gray-400">{formatDate(a.createdAt)}</span>
                         </div>
-                        <p className="text-sm text-text mt-0.5">{a.body}</p>
-                        <form
-                          className="mt-2 flex gap-2"
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            const text = String(new FormData(e.currentTarget).get("banner") ?? "").trim();
-                            setAdminAnnouncementBanner(a.id, text)
-                              .then(() => setAnnouncements((prev) => prev.map((x) => (x.id === a.id ? { ...x, bannerText: text } : x))))
-                              .catch((err) => setAnnouncementError(err instanceof Error ? err.message : "Kunde inte spara bannern."));
-                          }}
-                        >
-                          <input
-                            name="banner"
-                            key={a.bannerText}
-                            defaultValue={a.bannerText}
-                            maxLength={100}
-                            placeholder="Hem-banner (tom = ingen)"
-                            aria-label="Bannertext på Hem"
-                            className="flex-1 h-8 rounded-md border border-hairline px-2 text-xs"
-                          />
-                          <button type="submit" className="text-xs font-medium underline">Spara</button>
-                        </form>
+                        <p className="text-sm text-gray-600 mt-0.5">{a.body}</p>
                       </div>
                       <button
                         onClick={() => void handleDeleteAnnouncement(a.id)}
                         disabled={deletingAnnouncementId === a.id}
-                        className="text-danger hover:text-danger text-xs font-medium underline shrink-0"
+                        className="text-red-600 hover:text-red-800 text-xs font-medium underline shrink-0"
                       >
                         {deletingAnnouncementId === a.id ? "Raderar..." : "Radera"}
                       </button>
@@ -733,31 +681,21 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </TabsContent>
 
             {/* Card pool */}
-            <TabsContent value="events">
-              <AdminEvents onChanged={reloadPool} />
-            </TabsContent>
-
             <TabsContent value="stats">
               <AdminStatsPanel onOpenUser={(id) => void openUser(id)} />
             </TabsContent>
 
-            <TabsContent value="diamonds">
-              <AdminDiamondFlowPanel />
-            </TabsContent>
-
             <TabsContent value="pool" className="space-y-6 pt-2">
-              <PoolSkewView skew={poolSkew} onChanged={reloadPool} />
-
               <div className="space-y-3">
-                <h2 className="text-sm font-semibold text-text">
+                <h2 className="text-sm font-semibold text-gray-700">
                   Specialkort — ägare
-                  <span className="ml-2 font-normal text-tertiary">
+                  <span className="ml-2 font-normal text-gray-400">
                     ({specialCards.filter((c) => c.owners.length > 0).length} av {specialCards.length} har en ägare)
                   </span>
                 </h2>
-                <div className="rounded-xl border bg-surface overflow-x-auto">
+                <div className="rounded-xl border bg-white overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-raised text-secondary">
+                    <thead className="bg-gray-50 text-gray-500">
                       <tr>
                         <th className="text-left px-4 py-2">Kort</th>
                         <th className="text-left px-4 py-2">Ägare</th>
@@ -767,7 +705,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <tbody className="divide-y">
                       {specialCards.length === 0 ? (
                         <tr>
-                          <td colSpan={3} className="px-4 py-8 text-center text-secondary">
+                          <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                             Det finns inga specialkort i katalogen.
                           </td>
                         </tr>
@@ -777,26 +715,26 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                             <td className="px-4 py-2 font-medium">{cardName(c.cardId)}</td>
                             <td className="px-4 py-2">
                               {c.owners.length === 0 ? (
-                                <span className="text-tertiary">Ingen ännu</span>
+                                <span className="text-gray-400">Ingen ännu</span>
                               ) : (
                                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                                   {c.owners.map((o) => (
                                     <button
                                       key={o.id}
                                       onClick={() => void openUser(o.id)}
-                                      className="text-accent hover:text-accent underline"
+                                      className="text-purple-600 hover:text-purple-800 underline"
                                     >
                                       {o.username}
                                       {o.firstName && o.lastName && (
-                                        <span className="text-secondary"> ({o.firstName} {o.lastName})</span>
+                                        <span className="text-gray-500"> ({o.firstName} {o.lastName})</span>
                                       )}
-                                      {o.count > 1 && <span className="text-secondary"> ×{o.count}</span>}
+                                      {o.count > 1 && <span className="text-gray-500"> ×{o.count}</span>}
                                     </button>
                                   ))}
                                 </div>
                               )}
                             </td>
-                            <td className="px-4 py-2 text-right text-secondary">{c.remaining} / {c.total}</td>
+                            <td className="px-4 py-2 text-right text-gray-500">{c.remaining} / {c.total}</td>
                           </tr>
                         ))
                       )}
@@ -806,10 +744,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </div>
 
               <div className="space-y-3">
-                <h2 className="text-sm font-semibold text-text">Per raritet</h2>
-                <div className="rounded-xl border bg-surface overflow-hidden">
+                <h2 className="text-sm font-semibold text-gray-700">Per raritet</h2>
+                <div className="rounded-xl border bg-white overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-raised text-secondary">
+                    <thead className="bg-gray-50 text-gray-500">
                       <tr>
                         <th className="text-left px-4 py-2">Raritet</th>
                         <th className="text-right px-4 py-2">Sålda</th>
@@ -825,7 +763,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                             <td className="px-4 py-2 capitalize">{r}</td>
                             <td className="px-4 py-2 text-right">{s.bought}</td>
                             <td className="px-4 py-2 text-right">{s.remaining}</td>
-                            <td className="px-4 py-2 text-right text-secondary">{s.total}</td>
+                            <td className="px-4 py-2 text-right text-gray-500">{s.total}</td>
                           </tr>
                         );
                       })}
@@ -836,12 +774,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <h2 className="text-sm font-semibold text-text">Per kort — sålda vs. kvar (detaljvy)</h2>
+                  <h2 className="text-sm font-semibold text-gray-700">Per kort — sålda vs. kvar</h2>
                   <SearchBox value={poolQuery} onChange={setPoolQuery} placeholder="Sök på kortnamn..." />
                 </div>
-                <div className="rounded-xl border bg-surface overflow-x-auto max-h-[480px] overflow-y-auto">
+                <div className="rounded-xl border bg-white overflow-x-auto max-h-[480px] overflow-y-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-raised text-secondary sticky top-0">
+                    <thead className="bg-gray-50 text-gray-500 sticky top-0">
                       <tr>
                         <th className="text-left px-4 py-2">Kort</th>
                         <th className="text-left px-4 py-2">Raritet</th>
@@ -853,7 +791,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <tbody className="divide-y">
                       {visiblePool.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-4 py-8 text-center text-secondary">
+                          <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                             Inga kort matchar sökningen.
                           </td>
                         </tr>
@@ -861,10 +799,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         visiblePool.map((p) => (
                           <tr key={p.cardId}>
                             <td className="px-4 py-2">{cardName(p.cardId)}</td>
-                            <td className="px-4 py-2 capitalize text-secondary">{p.rarity}</td>
+                            <td className="px-4 py-2 capitalize text-gray-500">{p.rarity}</td>
                             <td className="px-4 py-2 text-right">{p.bought}</td>
                             <td className="px-4 py-2 text-right">{p.remaining}</td>
-                            <td className="px-4 py-2 text-right text-secondary">{p.total}</td>
+                            <td className="px-4 py-2 text-right text-gray-500">{p.total}</td>
                           </tr>
                         ))
                       )}
@@ -884,7 +822,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           onClick={() => setSelectedUser(null)}
         >
           <div
-            className="bg-surface rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+            className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5 border-b flex items-start justify-between gap-4">
@@ -893,18 +831,18 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   {loadingUser ? "Laddar..." : selectedUser?.user.username}
                 </h3>
                 {selectedUser && (
-                  <div className="text-sm text-secondary mt-0.5">
+                  <div className="text-sm text-gray-500 mt-0.5">
                     {selectedUser.user.firstName && selectedUser.user.lastName
                       ? `${selectedUser.user.firstName} ${selectedUser.user.lastName} · `
                       : ""}
                     {selectedUser.user.email}
-                    <span className="text-tertiary"> · med sedan {formatDate(selectedUser.user.createdAt)}</span>
+                    <span className="text-gray-400"> · med sedan {formatDate(selectedUser.user.createdAt)}</span>
                   </div>
                 )}
               </div>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="text-tertiary hover:text-text text-xl leading-none shrink-0"
+                className="text-gray-400 hover:text-gray-700 text-xl leading-none shrink-0"
                 aria-label="Stäng"
               >
                 ×
@@ -925,10 +863,6 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   }}
                 />
               )}
-              {selectedUser && (
-                <DiamondGrantControl key={`grant-${selectedUser.user.id}`} userId={selectedUser.user.id}
-                  onGranted={() => void openUser(selectedUser.user.id)} />
-              )}
               {selectedUser && <UserDetail detail={selectedUser} />}
             </div>
           </div>
@@ -942,11 +876,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           onClick={() => (deleting ? null : setUserToDelete(null))}
         >
           <div
-            className="bg-surface rounded-2xl w-full max-w-sm p-6 space-y-4"
+            className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="font-semibold text-lg">Radera {userToDelete.username}?</h3>
-            <p className="text-sm text-secondary">
+            <p className="text-sm text-gray-500">
               Kontot, alla kort, kistor och pågående byten raderas permanent. Detta kan inte ångras.
             </p>
             <div className="flex justify-end gap-3 pt-2">
@@ -956,7 +890,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <Button
                 onClick={() => void confirmDeleteUser()}
                 disabled={deleting}
-                className="bg-accent hover:bg-accent text-accent-on"
+                className="bg-red-600 hover:bg-red-700 text-white"
               >
                 {deleting ? "Raderar..." : "Radera"}
               </Button>
@@ -1035,12 +969,12 @@ function BanControl({
 
   if (bannedUntil) {
     return (
-      <section className="rounded-xl border border-danger/40 bg-danger/15 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex-1 text-sm text-danger">
+      <section className="rounded-xl border border-red-200 bg-red-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1 text-sm text-red-800">
           <div className="font-semibold">Avstängd till {formatDate(bannedUntil)}</div>
-          {banReason && <div className="text-danger">Anledning: {banReason}</div>}
-          {notice && <div className="text-danger text-xs mt-1">{notice}</div>}
-          {error && <div className="text-danger text-xs mt-1">{error}</div>}
+          {banReason && <div className="text-red-700">Anledning: {banReason}</div>}
+          {notice && <div className="text-red-600 text-xs mt-1">{notice}</div>}
+          {error && <div className="text-red-600 text-xs mt-1">{error}</div>}
         </div>
         <Button variant="outline" onClick={() => void handleUnban()} disabled={busy}>
           {busy ? "Häver..." : "Häv avstängning"}
@@ -1052,8 +986,8 @@ function BanControl({
   return (
     <section className="rounded-xl border p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-sm font-semibold text-text">Stäng av spelare</h4>
-        {notice && <span className="text-xs text-secondary">{notice}</span>}
+        <h4 className="text-sm font-semibold text-gray-700">Stäng av spelare</h4>
+        {notice && <span className="text-xs text-gray-500">{notice}</span>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {BAN_PRESETS.map((p) => (
@@ -1061,13 +995,13 @@ function BanControl({
             key={p.days}
             onClick={() => setDays(p.days)}
             className={`rounded-full border px-3 py-1 text-sm ${
-              days === p.days ? "border-danger bg-danger/15 text-danger font-medium" : "text-text hover:bg-raised"
+              days === p.days ? "border-red-600 bg-red-50 text-red-700 font-medium" : "text-gray-600 hover:bg-gray-50"
             }`}
           >
             {p.label}
           </button>
         ))}
-        <label className="flex items-center gap-1.5 text-sm text-text">
+        <label className="flex items-center gap-1.5 text-sm text-gray-600">
           <input
             type="number"
             min={1}
@@ -1087,9 +1021,9 @@ function BanControl({
         placeholder="Anledning (visas för spelaren, valfritt)"
         className="w-full rounded-md border px-3 py-2 text-sm"
       />
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
       {confirming ? (
-        <div className="rounded-lg bg-danger/15 p-3 text-sm text-danger space-y-2">
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 space-y-2">
           <p>
             Stäng av <strong>{username}</strong> i {days} {days === 1 ? "dag" : "dagar"}? Kontot blir skrivskyddat,
             alla pågående byten avbryts och kort märkta "vill byta" döljs från marknaden tills avstängningen är slut.
@@ -1099,7 +1033,7 @@ function BanControl({
             <Button
               onClick={() => void handleBan()}
               disabled={busy}
-              className="bg-accent hover:bg-accent text-accent-on"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {busy ? "Stänger av..." : "Stäng av"}
             </Button>
@@ -1107,7 +1041,7 @@ function BanControl({
         </div>
       ) : (
         <div className="flex justify-end">
-          <Button onClick={() => setConfirming(true)} className="bg-accent hover:bg-accent text-accent-on">
+          <Button onClick={() => setConfirming(true)} className="bg-red-600 hover:bg-red-700 text-white">
             Stäng av i {days} {days === 1 ? "dag" : "dagar"}
           </Button>
         </div>
@@ -1162,7 +1096,7 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
         <StatCard label="Uppgraderingar" value={upgrades.length} hint="loggade sedan statistiken infördes" />
       </section>
 
-      <p className="text-xs text-secondary -mt-4">
+      <p className="text-xs text-gray-500 -mt-4">
         Dagliga diamanter:{" "}
         {state.lastDailyClaimDate
           ? `senast hämtade ${state.lastDailyClaimDate}`
@@ -1177,8 +1111,8 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
         <h4 className="text-sm font-semibold">Samlingen per raritet</h4>
         <div className="flex flex-wrap gap-2">
           {RARITY_ORDER.map((r) => (
-            <span key={r} className="rounded-lg border bg-raised px-3 py-1.5 text-sm">
-              <span className="capitalize text-secondary">{r}</span>{" "}
+            <span key={r} className="rounded-lg border bg-gray-50 px-3 py-1.5 text-sm">
+              <span className="capitalize text-gray-500">{r}</span>{" "}
               <span className="font-semibold">{rarityCounts[r] ?? 0}</span>
             </span>
           ))}
@@ -1189,13 +1123,13 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
       <section className="space-y-2">
         <h4 className="text-sm font-semibold">Kistor ({chests.length})</h4>
         {chests.length === 0 ? (
-          <p className="text-sm text-secondary">Inga olåsta kistor.</p>
+          <p className="text-sm text-gray-500">Inga olåsta kistor.</p>
         ) : (
           <ul className="text-sm divide-y rounded-xl border">
             {chests.map((chest) => (
               <li key={chest.id} className="flex items-center justify-between px-4 py-2">
                 <span>{chest.label}</span>
-                <span className={chest.ready ? "text-success font-medium" : "text-secondary"}>
+                <span className={chest.ready ? "text-green-700 font-medium" : "text-gray-500"}>
                   {chest.ready ? "Klar att öppnas" : `Klar ${new Date(chest.readyAt).toLocaleString("sv-SE")}`}
                 </span>
               </li>
@@ -1204,17 +1138,15 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
         )}
       </section>
 
-      <DiamondHistory history={detail.diamondHistory} />
-
       {/* Upgrade history */}
       <section className="space-y-2">
         <h4 className="text-sm font-semibold">Uppgraderingar ({upgrades.length})</h4>
         {upgrades.length === 0 ? (
-          <p className="text-sm text-secondary">Inga loggade uppgraderingar.</p>
+          <p className="text-sm text-gray-500">Inga loggade uppgraderingar.</p>
         ) : (
           <div className="rounded-xl border overflow-x-auto max-h-80 overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="bg-raised text-secondary sticky top-0">
+              <thead className="bg-gray-50 text-gray-500 sticky top-0">
                 <tr>
                   <th className="text-left px-4 py-2">Tid</th>
                   <th className="text-left px-4 py-2">Nivå</th>
@@ -1234,11 +1166,11 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
       <section className="space-y-2">
         <h4 className="text-sm font-semibold">Handelspartners ({partners.length})</h4>
         {partners.length === 0 ? (
-          <p className="text-sm text-secondary">Har inte genomfört några byten.</p>
+          <p className="text-sm text-gray-500">Har inte genomfört några byten.</p>
         ) : (
           <div className="rounded-xl border overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-raised text-secondary">
+              <thead className="bg-gray-50 text-gray-500">
                 <tr>
                   <th className="text-left px-4 py-2">Spelare</th>
                   <th className="text-right px-4 py-2">Byten</th>
@@ -1253,10 +1185,10 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
                     <td className="px-4 py-2 text-right">{p.acceptedTrades}</td>
                     <td className="px-4 py-2 text-right">
                       {p.flaggedTrades > 0
-                        ? <span className="text-rarity-legendary font-medium">{p.flaggedTrades}</span>
-                        : <span className="text-tertiary">0</span>}
+                        ? <span className="text-amber-700 font-medium">{p.flaggedTrades}</span>
+                        : <span className="text-gray-400">0</span>}
                     </td>
-                    <td className={"px-4 py-2 text-right " + (p.netValue > 0 ? "text-success" : p.netValue < 0 ? "text-danger" : "text-tertiary")}>
+                    <td className={"px-4 py-2 text-right " + (p.netValue > 0 ? "text-green-700" : p.netValue < 0 ? "text-red-700" : "text-gray-400")}>
                       {p.netValue > 0 ? "+" : ""}{Math.round(p.netValue)}
                     </td>
                   </tr>
@@ -1271,11 +1203,11 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
       <section className="space-y-2">
         <h4 className="text-sm font-semibold">Byteshistorik ({trades.length})</h4>
         {trades.length === 0 ? (
-          <p className="text-sm text-secondary">Inga byten.</p>
+          <p className="text-sm text-gray-500">Inga byten.</p>
         ) : (
           <div className="rounded-xl border overflow-x-auto max-h-80 overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="bg-raised text-secondary sticky top-0">
+              <thead className="bg-gray-50 text-gray-500 sticky top-0">
                 <tr>
                   <th className="text-left px-4 py-2">Datum</th>
                   <th className="text-left px-4 py-2">Motpart</th>
@@ -1288,19 +1220,19 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
               </thead>
               <tbody className="divide-y">
                 {trades.map((t) => (
-                  <tr key={t.id} className={t.flags.length > 0 ? "bg-rarity-legendary/40" : undefined}>
-                    <td className="px-4 py-2 text-secondary whitespace-nowrap">{formatDate(t.createdAt)}</td>
+                  <tr key={t.id} className={t.flags.length > 0 ? "bg-amber-50/40" : undefined}>
+                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">{formatDate(t.createdAt)}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="text-tertiary">{t.direction === "sent" ? "→ " : "← "}</span>
+                      <span className="text-gray-400">{t.direction === "sent" ? "→ " : "← "}</span>
                       {t.counterparty.username}
-                      {t.isCounter && <span className="ml-1 text-[11px] text-text">(motbud)</span>}
+                      {t.isCounter && <span className="ml-1 text-[11px] text-purple-600">(motbud)</span>}
                     </td>
                     <td className="px-4 py-2">{formatSide(t.givesCardIds, t.givesDiamonds)}</td>
                     <td className="px-4 py-2">{formatSide(t.getsCardIds, t.getsDiamonds)}</td>
-                    <td className={"px-4 py-2 text-right whitespace-nowrap " + (t.netValue > 0 ? "text-success" : t.netValue < 0 ? "text-danger" : "text-tertiary")}>
+                    <td className={"px-4 py-2 text-right whitespace-nowrap " + (t.netValue > 0 ? "text-green-700" : t.netValue < 0 ? "text-red-700" : "text-gray-400")}>
                       {t.netValue > 0 ? "+" : ""}{Math.round(t.netValue)}
                     </td>
-                    <td className="px-4 py-2 text-secondary whitespace-nowrap">
+                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
                       {TRADE_STATUS_LABEL[t.status] ?? t.status}
                     </td>
                     <td className="px-4 py-2 text-right"><FlagBadges flags={t.flags} /></td>
@@ -1318,11 +1250,11 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
           Prestationer ({totals.achievementsClaimed} av {totals.achievementsTotal})
         </h4>
         {achievements.length === 0 ? (
-          <p className="text-sm text-secondary">Inga uthämtade prestationer.</p>
+          <p className="text-sm text-gray-500">Inga uthämtade prestationer.</p>
         ) : (
           <div className="rounded-xl border overflow-x-auto max-h-56 overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="bg-raised text-secondary sticky top-0">
+              <thead className="bg-gray-50 text-gray-500 sticky top-0">
                 <tr>
                   <th className="text-left px-4 py-2">Prestation</th>
                   <th className="text-right px-4 py-2">Belöning</th>
@@ -1333,10 +1265,10 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
                 {achievements.map((a) => (
                   <tr key={a.id}>
                     <td className="px-4 py-2">{a.title}</td>
-                    <td className="px-4 py-2 text-right text-secondary">
+                    <td className="px-4 py-2 text-right text-gray-500">
                       {a.reward === null ? "–" : `${a.reward} ◆`}
                     </td>
-                    <td className="px-4 py-2 text-right text-secondary whitespace-nowrap">
+                    <td className="px-4 py-2 text-right text-gray-500 whitespace-nowrap">
                       {formatDate(a.claimedAt)}
                     </td>
                   </tr>
@@ -1353,7 +1285,7 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
           Samling ({totals.uniqueCards} unika, {totals.totalCards} kort)
         </h4>
         {sortedCards.length === 0 ? (
-          <p className="text-sm text-secondary">Inga kort.</p>
+          <p className="text-sm text-gray-500">Inga kort.</p>
         ) : (
           <div className="flex flex-wrap gap-4">
             {sortedCards.map(({ cardId, count, markedForTrade }) => {
@@ -1370,12 +1302,12 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
                     showCaption
                   />
                   {count > 1 && (
-                    <div className="absolute top-1.5 right-1.5 z-10 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold leading-none text-text pointer-events-none">
+                    <div className="absolute top-1.5 right-1.5 z-10 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white pointer-events-none">
                       ×{count}
                     </div>
                   )}
                   {markedForTrade > 0 && (
-                    <div className="absolute top-1.5 left-1.5 z-10 rounded bg-accent/90 px-1.5 py-0.5 text-[10px] font-bold leading-none text-accent-on pointer-events-none">
+                    <div className="absolute top-1.5 left-1.5 z-10 rounded bg-purple-600/90 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white pointer-events-none">
                       Byte {markedForTrade}
                     </div>
                   )}
@@ -1391,10 +1323,10 @@ function UserDetail({ detail }: { detail: AdminUserDetail }) {
 
 function StatCard({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
-    <div className="rounded-xl border bg-surface p-4">
+    <div className="rounded-xl border bg-white p-4">
       <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs text-secondary mt-1">{label}</div>
-      {hint && <div className="text-[11px] text-tertiary mt-0.5">{hint}</div>}
+      <div className="text-xs text-gray-500 mt-1">{label}</div>
+      {hint && <div className="text-[11px] text-gray-400 mt-0.5">{hint}</div>}
     </div>
   );
 }

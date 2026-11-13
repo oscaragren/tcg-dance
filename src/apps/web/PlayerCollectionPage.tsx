@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
 import { CardPlaceholder } from "../../components/web/CardPlaceholder";
-import { ProgressRing } from "../../components/web/ProgressRing";
 import { cards, rarityOrder, type CardRarity } from "../../data/cards";
 import { collections } from "../../data/packs";
 import type { AuthUser } from "../../types/auth";
@@ -87,23 +86,13 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
     return result;
   }, [ownedCounts]);
 
-  // Collection progress (GLOSSARY): Cards owned at least once out of all non-Special Cards.
-  const progressByCollection = useMemo(
-    () =>
-      collections.map((c) => {
-        const inCollection = cards.filter((card) => card.collectionId === c.id && card.rarity !== "special");
-        return { id: c.id, label: c.label, owned: inCollection.filter((card) => (ownedCounts[card.id] ?? 0) > 0).length, total: inCollection.length };
-      }),
-    [ownedCounts],
-  );
-
   if (!currentUser) {
     return (
-      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
+          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Spelarens samling</h1>
-            <p className="text-text mb-6">Logga in för att se andra spelares samlingar.</p>
+            <p className="text-gray-600 mb-6">Logga in för att se andra spelares samlingar.</p>
             <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
           </div>
         </div>
@@ -114,18 +103,18 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
   const forTradeTotal = Object.values(forTradeCounts).reduce((s, n) => s + n, 0);
 
   return (
-    <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
+    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
       <div className="container mx-auto px-6">
         <div className="max-w-6xl mx-auto">
 
-          <Link to="/topplista" className="text-sm text-secondary hover:text-text transition-colors">
+          <Link to="/topplista" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
             ← Tillbaka till topplistan
           </Link>
 
           {isLoading ? (
-            <p className="mt-8 text-secondary">Laddar samling...</p>
+            <p className="mt-8 text-gray-500">Laddar samling...</p>
           ) : error ? (
-            <p className="mt-8 text-sm text-danger">{error}</p>
+            <p className="mt-8 text-sm text-red-600">{error}</p>
           ) : !profile ? null : (
             <>
               <div className="mt-4 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
@@ -134,49 +123,43 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                     {profile.user.username}
                   </h1>
                   {fullName && (
-                    <p className="text-lg text-secondary mb-3">{fullName}</p>
+                    <p className="text-lg text-gray-500 mb-3">{fullName}</p>
                   )}
-                  <p className="text-text">
+                  <p className="text-gray-600">
                     {profile.ownedCardIds.length} kort ·{" "}
-                    <span className="text-rarity-legendary">{rarityTally.legendary} legendary</span> ·{" "}
-                    <span className="text-text">{rarityTally.epic} epic</span> ·{" "}
-                    <span className="text-diamonds">{rarityTally.rare} rare</span> ·{" "}
-                    <span className="text-secondary">{rarityTally.common} common</span>
+                    <span className="text-amber-700">{rarityTally.legendary} legendary</span> ·{" "}
+                    <span className="text-purple-600">{rarityTally.epic} epic</span> ·{" "}
+                    <span className="text-blue-600">{rarityTally.rare} rare</span> ·{" "}
+                    <span className="text-gray-500">{rarityTally.common} common</span>
                   </p>
                   {!profile.isSelf && (
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <Button
                         asChild
                         size="sm"
-                        className="bg-accent text-accent-on hover:bg-accent/90 hover: text-accent-on"
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                       >
                         <Link to={`/byte/ny?anvandare=${profile.user.id}&namn=${encodeURIComponent(profile.user.username)}`}>
-                          Föreslå byte
+                          Föreslå ett byte
                         </Link>
                       </Button>
-                      <span className="text-xs text-secondary">
+                      <span className="text-xs text-gray-500">
                         {forTradeTotal > 0
-                          ? `${forTradeTotal} kort tillgängliga för byte`
-                          : `Inga kort tillgängliga för byte`}
+                          ? `${forTradeTotal} kort märkta "vill byta"`
+                          : `Inga kort märkta "vill byta"`}
                       </span>
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-3" aria-label="Samlingsframsteg">
-                  {progressByCollection.map((p) => (
-                    <ProgressRing key={p.id} owned={p.owned} total={p.total} label={p.label} size={56} />
-                  ))}
-                </div>
-
                 <div className="w-full md:w-72 space-y-3">
                   <div>
-                    <label htmlFor="player-rarity-filter" className="block text-sm text-text mb-2">Visa rarity</label>
+                    <label htmlFor="player-rarity-filter" className="block text-sm text-gray-600 mb-2">Visa rarity</label>
                     <select
                       id="player-rarity-filter"
                       value={rarityFilter}
                       onChange={(e) => setRarityFilter(e.target.value as RarityFilter)}
-                      className="w-full h-10 rounded-md border border-hairline bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
+                      className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                     >
                       <option value="all">Alla</option>
                       <option value="special">Special</option>
@@ -186,14 +169,14 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                       <option value="common">Common</option>
                     </select>
                   </div>
-                  <label className="flex items-center gap-2 text-sm text-text">
+                  <label className="flex items-center gap-2 text-sm text-gray-600">
                     <input
                       type="checkbox"
                       checked={onlyForTrade}
                       onChange={(e) => setOnlyForTrade(e.target.checked)}
-                      className="h-4 w-4 rounded border-hairline-strong text-text focus:ring-accent"
+                      className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                     />
-                    Visa bara kort tillgängliga för byte
+                    Visa bara kort märkta "vill byta"
                   </label>
                 </div>
               </div>
@@ -203,7 +186,7 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                   {collections.map((c) => (
                     <TabsTrigger key={c.id} value={c.id} className="gap-1.5">
                       {c.label}
-                      <span className="text-xs text-tertiary">{uniqueOwnedByCollection[c.id] ?? 0}</span>
+                      <span className="text-xs text-gray-400">{uniqueOwnedByCollection[c.id] ?? 0}</span>
                     </TabsTrigger>
                   ))}
                   <TabsTrigger value="all">Alla</TabsTrigger>
@@ -211,7 +194,7 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
               </Tabs>
 
               {visibleCards.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-8 text-center text-text">
+                <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
                   Inga kort i den här kategorin.
                 </div>
               ) : (
@@ -232,13 +215,13 @@ export function PlayerCollectionPage({ currentUser }: PlayerCollectionPageProps)
                             showCaption
                           />
                           {count > 1 && (
-                            <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-text text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
+                            <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
                               ×{count}
                             </div>
                           )}
                           {tradeQty > 0 && (
-                            <div className="absolute top-1.5 left-1.5 z-10 bg-accent text-accent-on text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
-                              Tillgängligt för byte{tradeQty > 1 ? ` ×${tradeQty}` : ""}
+                            <div className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
+                              ⇄ {tradeQty}
                             </div>
                           )}
                         </div>

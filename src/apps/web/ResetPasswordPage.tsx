@@ -35,10 +35,10 @@ export function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <main className="min-h-[calc(100vh-72px)] bg-raised py-16">
+      <main className="min-h-[calc(100vh-72px)] bg-gray-50 py-16">
         <div className="container mx-auto px-6">
-          <div className="mx-auto max-w-md text-center bg-surface border rounded-xl p-10">
-            <p className="text-text mb-4">Ogiltig återställningslänk.</p>
+          <div className="mx-auto max-w-md text-center bg-white border rounded-xl p-10">
+            <p className="text-gray-600 mb-4">Ogiltig återställningslänk.</p>
             <Button asChild><Link to="/auth?tab=login">Gå till inloggning</Link></Button>
           </div>
         </div>
@@ -47,7 +47,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-72px)] bg-raised py-16">
+    <main className="min-h-[calc(100vh-72px)] bg-gray-50 py-16">
       <div className="container mx-auto px-6">
         <div className="mx-auto max-w-md">
           <Card>
@@ -58,7 +58,7 @@ export function ResetPasswordPage() {
             <CardContent>
               {done ? (
                 <div className="space-y-4">
-                  <p className="text-sm text-text bg-success/15 border border-success/40 rounded-lg p-4">
+                  <p className="text-sm text-gray-700 bg-green-50 border border-green-200 rounded-lg p-4">
                     Ditt lösenord har uppdaterats. Du kan nu logga in med ditt nya lösenord.
                   </p>
                   <Button asChild className="w-full">
@@ -87,7 +87,7 @@ export function ResetPasswordPage() {
                       placeholder="Upprepa lösenordet"
                     />
                   </div>
-                  {error && <p className="text-sm text-danger">{error}</p>}
+                  {error && <p className="text-sm text-red-600">{error}</p>}
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? "Sparar..." : "Spara nytt lösenord"}
                   </Button>

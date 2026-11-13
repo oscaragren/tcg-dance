@@ -2,30 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  *, ::before, ::after { border-color: var(--color-hairline); }
-  html { font-size: 16px; }
-  body {
-    background-color: var(--color-background);
-    color: var(--color-text);
-    font-family: var(--font-body);
-    -webkit-font-smoothing: antialiased;
-  }
-  h1, h2, h3 { font-family: var(--font-display); }
-  ::placeholder { color: var(--color-tertiary); }
-  select, input:not([type="checkbox"]):not([type="radio"]), textarea {
-    background-color: var(--color-raised);
-    color: var(--color-text);
-  }
-  /* Tap targets: every interactive control is at least 44x44px. */
-  button, a[role="button"], select, input:not([type="checkbox"]):not([type="radio"]) {
-    min-height: 44px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-  }
-}
-
 @keyframes scroll-left {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }

@@ -93,7 +93,7 @@ export function AuthPage({ onLogin }: AuthPageProps) {
   // ── Forgot password view ──────────────────────────────────────────────────────
   if (showForgot) {
     return (
-      <main className="min-h-[calc(100vh-72px)] bg-raised py-16">
+      <main className="min-h-[calc(100vh-72px)] bg-gray-50 py-16">
         <div className="container mx-auto px-6">
           <div className="mx-auto max-w-md">
             <Card>
@@ -106,7 +106,7 @@ export function AuthPage({ onLogin }: AuthPageProps) {
               <CardContent>
                 {forgotSent ? (
                   <div className="space-y-4">
-                    <p className="text-sm text-text bg-success/15 border border-success/40 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 bg-green-50 border border-green-200 rounded-lg p-4">
                       Om kontot finns skickas en återställningslänk inom kort. Kolla din inkorg (och skräppost).
                     </p>
                     <Button className="w-full" onClick={() => { setShowForgot(false); setForgotSent(false); setForgotEmail(""); }}>
@@ -125,14 +125,14 @@ export function AuthPage({ onLogin }: AuthPageProps) {
                         placeholder="du@example.com"
                       />
                     </div>
-                    {error && <p className="text-sm text-danger">{error}</p>}
+                    {error && <p className="text-sm text-red-600">{error}</p>}
                     <Button type="submit" className="w-full" disabled={isSubmitting}>
                       {isSubmitting ? "Skickar..." : "Skicka återställningslänk"}
                     </Button>
                     <button
                       type="button"
                       onClick={() => { setShowForgot(false); setError(null); }}
-                      className="w-full text-sm text-secondary hover:text-text"
+                      className="w-full text-sm text-gray-500 hover:text-gray-700"
                     >
                       Tillbaka
                     </button>
@@ -148,7 +148,7 @@ export function AuthPage({ onLogin }: AuthPageProps) {
 
   // ── Login / Register view ─────────────────────────────────────────────────────
   return (
-    <main className="min-h-[calc(100vh-72px)] bg-raised py-16">
+    <main className="min-h-[calc(100vh-72px)] bg-gray-50 py-16">
       <div className="container mx-auto px-6">
         <div className="mx-auto max-w-md">
           <Card>
@@ -226,7 +226,7 @@ export function AuthPage({ onLogin }: AuthPageProps) {
                       <button
                         type="button"
                         onClick={() => { setShowForgot(true); setError(null); }}
-                        className="text-sm text-secondary hover:text-accent transition-colors"
+                        className="text-sm text-gray-500 hover:text-purple-600 transition-colors"
                       >
                         Glömt lösenord?
                       </button>
@@ -235,7 +235,7 @@ export function AuthPage({ onLogin }: AuthPageProps) {
                 </TabsContent>
               </Tabs>
 
-              {error && <p className="mt-4 text-sm text-danger">{error}</p>}
+              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
             </CardContent>
           </Card>
         </div>

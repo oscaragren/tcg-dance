@@ -1,164 +1,174 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
 import { AchievementsSection } from "../../components/web/AchievementsSection";
-import { CardGrid } from "../../components/web/CardGrid";
-import { CardSheet } from "../../components/web/CardSheet";
-import { CardThumb } from "../../components/web/CardThumb";
-import { UpgradeRevealModal } from "../../components/web/UpgradeRevealModal";
-import { UpgradeScreen } from "../../components/web/UpgradeScreen";
+import { ChestsSection } from "../../components/web/ChestsSection";
+import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
+import { Badge } from "../../components/shared/ui/badge";
 import { Button } from "../../components/shared/ui/button";
-import { cards, type CardRarity, type DanceCard } from "../../data/cards";
-import { collections } from "../../data/packs";
-import { rarityColor, rarityLabel } from "../../data/rarity";
-import { fetchCollectionProgress, fetchGameState, fetchTrophies, markCollectionViewed, setCardKept, upgradeCards } from "../../utils/gameApi";
-import { useIsDesktop } from "../../utils/useMediaQuery";
-import { upgradeCardsRequired, upgradeTierTarget, type CollectionProgress, type Trophy } from "../../types/game";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/shared/ui/tabs";
+import { CardPlaceholder } from "../../components/web/CardPlaceholder";
+import { cards, rarityOrder, type CardRarity, type DanceCard } from "../../data/cards";
+import { collections, isPackPurchasable } from "../../data/packs";
+import { fetchGameState, fetchMyCardsForTrade } from "../../utils/gameApi";
 
-type View = "alla" | "saknas" | "dubbletter";
-type GridRarity = Exclude<CardRarity, "special">;
+type RarityFilter = "all" | CardRarity;
 
-const VIEWS: { id: View; label: string }[] = [
-  { id: "alla", label: "Alla" },
-  { id: "saknas", label: "Saknas" },
-  { id: "dubbletter", label: "Dubbletter" },
-];
-// Special has no grid section: those Cards live on the Troféer shelf.
-const SECTION_RARITIES: GridRarity[] = ["legendary", "epic", "rare", "common"];
+// A couple may represent more than one club, written "UBSS / MÄLAR". Split on
+// "/" so the card shows up when filtering by either club individually.
+function splitClubs(club?: string): string[] {
+  return (club ?? "").split("/").map((s) => s.trim()).filter(Boolean);
+}
 
-const pct = (owned: number, total: number) => (total === 0 ? 0 : Math.round((owned / total) * 100));
+type CollectionPageProps = {
+  userEmail: string | null;
+};
 
-export function CollectionPage({ userEmail }: { userEmail: string | null }) {
-  const [collectionId, setCollectionId] = useState<string>(collections[collections.length - 1]?.id ?? "");
-  const [view, setView] = useState<View>("alla");
-  const [query, setQuery] = useState("");
-  const [closed, setClosed] = useState<Set<string>>(new Set());
-  const [selected, setSelected] = useState<DanceCard | null>(null);
+export function CollectionPage({ userEmail }: CollectionPageProps) {
+  const [rarityFilter, setRarityFilter] = useState<RarityFilter>("all");
+  // Drives both the card grid and Prestationer below — "all" shows every
+  // collection, a collection id scopes both to it.
+  const [activeCollectionId, setActiveCollectionId] = useState<string>("all");
+  const [danceStyleFilter, setDanceStyleFilter] = useState<string>("all");
+  const [clubFilter, setClubFilter] = useState<string>("all");
+  const [eventFilter, setEventFilter] = useState<string>("all");
+  const [showAll, setShowAll] = useState(false);
   const [ownedCardIds, setOwnedCardIds] = useState<string[]>([]);
-  const [keptCardIds, setKeptCardIds] = useState<Set<string>>(new Set());
-  const [progress, setProgress] = useState<CollectionProgress | null>(null);
-  const [trophies, setTrophies] = useState<Trophy[]>([]);
+  const [forTradeIds, setForTradeIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [upgradeRarity, setUpgradeRarity] = useState<CardRarity | null>(null);
-  const [upgradeError, setUpgradeError] = useState<string | null>(null);
-  const [isUpgrading, setIsUpgrading] = useState(false);
-  const [revealCard, setRevealCard] = useState<DanceCard | null>(null);
-  const desktop = useIsDesktop();
 
-  useEffect(() => {
-    if (!userEmail) { setOwnedCardIds([]); setKeptCardIds(new Set()); return; }
-    markCollectionViewed().catch(() => undefined); // Starter step "Kolla din Samling"
-    let cancelled = false;
+  const loadCollection = useCallback(() => {
+    if (!userEmail) { setOwnedCardIds([]); setForTradeIds(new Set()); return; }
+
     setIsLoading(true);
     setError(null);
-    Promise.all([fetchGameState(), fetchTrophies()])
-      .then(([state, t]) => { if (!cancelled) { setOwnedCardIds(state.ownedCardIds); setKeptCardIds(new Set(state.keptCardIds)); setTrophies(t); } })
-      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "Kunde inte ladda samlingen."); })
-      .finally(() => { if (!cancelled) setIsLoading(false); });
-    return () => { cancelled = true; };
+
+    Promise.all([fetchGameState(), fetchMyCardsForTrade()])
+      .then(([state, forTrade]) => {
+        setOwnedCardIds(state.ownedCardIds);
+        setForTradeIds(new Set(forTrade.map((c) => c.cardId)));
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda samlingen."))
+      .finally(() => setIsLoading(false));
   }, [userEmail]);
 
-  useEffect(() => {
-    if (!userEmail || !collectionId) return;
-    let cancelled = false;
-    fetchCollectionProgress(collectionId)
-      .then((p) => { if (!cancelled) setProgress(p); })
-      .catch(() => { if (!cancelled) setProgress(null); });
-    return () => { cancelled = true; };
-  }, [userEmail, collectionId, ownedCardIds]);
+  useEffect(() => { loadCollection(); }, [loadCollection]);
 
-  const copies = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const id of ownedCardIds) m.set(id, (m.get(id) ?? 0) + 1);
-    return m;
-  }, [ownedCardIds]);
-
-  // Per-Collection progress for the sidebar list (Special Cards are not counted).
-  const collectionProgress = useMemo(
+  const ownedCounts = useMemo(
     () =>
-      collections.map((c) => {
-        const list = cards.filter((card) => card.collectionId === c.id && card.rarity !== "special");
-        return { id: c.id, label: c.label, owned: list.filter((card) => (copies.get(card.id) ?? 0) > 0).length, total: list.length };
-      }),
-    [copies],
+      ownedCardIds.reduce<Record<string, number>>((acc, id) => {
+        acc[id] = (acc[id] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [ownedCardIds],
   );
 
-  const collectionCards = useMemo(() => cards.filter((c) => c.collectionId === collectionId), [collectionId]);
-
-  const sections = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase("sv");
-    const matches = (c: DanceCard) =>
-      !q || [c.name, c.club, c.danceStyle, c.event].some((f) => f?.toLocaleLowerCase("sv").includes(q));
-    const passesView = (c: DanceCard) => {
-      const n = copies.get(c.id) ?? 0;
-      return view === "alla" || (view === "saknas" ? n === 0 : n > 1);
-    };
-    return SECTION_RARITIES.map((rarity) => {
-      const all = collectionCards.filter((c) => c.rarity === rarity);
-      const shown = all
-        .filter((c) => matches(c) && passesView(c))
-        .sort((a, b) => a.name.localeCompare(b.name, "sv") || (a.event ?? "").localeCompare(b.event ?? "", "sv"));
-      return {
-        rarity,
-        owned: all.filter((c) => (copies.get(c.id) ?? 0) > 0).length,
-        total: all.length,
-        items: shown.map((card) => ({ card, copies: copies.get(card.id) ?? 0 })),
-      };
-    }).filter((s) => s.total > 0);
-  }, [collectionCards, copies, view, query]);
-
-  // The Cards as laid out on screen (open sections only, search and view respected): what swiping in the sheet walks through.
-  const navigable = useMemo(
-    () => sections.filter((s) => !closed.has(s.rarity)).flatMap((s) => s.items.map((i) => i.card)),
-    [sections, closed],
+  // Distinct dance styles / clubs across owned cards — drives the filter dropdowns.
+  const ownedCards = useMemo(
+    () => cards.filter((card) => (ownedCounts[card.id] ?? 0) > 0),
+    [ownedCounts],
   );
-  const selectedIndex = selected ? navigable.findIndex((c) => c.id === selected.id) : -1;
-  const goPrev = useCallback(() => { if (selectedIndex > 0) setSelected(navigable[selectedIndex - 1]); }, [selectedIndex, navigable]);
-  const goNext = useCallback(() => { if (selectedIndex >= 0 && selectedIndex < navigable.length - 1) setSelected(navigable[selectedIndex + 1]); }, [selectedIndex, navigable]);
 
-  // Duplicates of Cards not set to Behåll, per Rarity: what an Upgrade can spend.
-  const spareByRarity = useMemo(() => {
-    const out: Partial<Record<CardRarity, number>> = {};
-    for (const c of collectionCards) {
-      const n = copies.get(c.id) ?? 0;
-      if (n > 1 && !keptCardIds.has(c.id)) out[c.rarity] = (out[c.rarity] ?? 0) + n - 1;
-    }
-    return out;
-  }, [collectionCards, copies, keptCardIds]);
+  // In "Se alla" mode the dropdowns need to cover the whole catalog, not just
+  // what the user happens to own.
+  const filterableCards = showAll ? cards : ownedCards;
 
-  async function confirmUpgrade(cardIds: string[]) {
-    if (isUpgrading) return;
-    setIsUpgrading(true);
-    setUpgradeError(null);
-    try {
-      const response = await upgradeCards(cardIds);
-      setOwnedCardIds(response.state.ownedCardIds);
-      setKeptCardIds(new Set(response.state.keptCardIds));
-      setUpgradeRarity(null);
-      setRevealCard(response.upgradedCard);
-    } catch (e) {
-      setUpgradeError(e instanceof Error ? e.message : "Kunde inte uppgradera korten.");
-    } finally {
-      setIsUpgrading(false);
-    }
+  const danceStyleOptions = useMemo(
+    () => Array.from(new Set(filterableCards.map((c) => c.danceStyle).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "sv")),
+    [filterableCards],
+  );
+
+  const clubOptions = useMemo(
+    () => Array.from(new Set(filterableCards.flatMap((c) => splitClubs(c.club)))).sort((a, b) => a.localeCompare(b, "sv")),
+    [filterableCards],
+  );
+
+  // Championship year ("SM 2024"), only set on multi-year collections.
+  const eventOptions = useMemo(
+    () => Array.from(new Set(filterableCards.map((c) => c.event).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "sv")),
+    [filterableCards],
+  );
+
+  // Not scoped by collection — cardsForCollection() below slices this
+  // further per active tab.
+  const visibleCards = useMemo(() => {
+    let candidateCards = showAll ? cards : ownedCards;
+    if (rarityFilter !== "all") candidateCards = candidateCards.filter((c) => c.rarity === rarityFilter);
+    if (danceStyleFilter !== "all") candidateCards = candidateCards.filter((c) => c.danceStyle === danceStyleFilter);
+    if (clubFilter !== "all") candidateCards = candidateCards.filter((c) => splitClubs(c.club).includes(clubFilter));
+    if (eventFilter !== "all") candidateCards = candidateCards.filter((c) => c.event === eventFilter);
+    return [...candidateCards].sort((a, b) => {
+      const d = rarityOrder[a.rarity] - rarityOrder[b.rarity];
+      if (d !== 0) return d;
+      const byName = a.name.localeCompare(b.name, "sv");
+      // The same couple can appear once per year — keep those in year order.
+      return byName !== 0 ? byName : (a.event ?? "").localeCompare(b.event ?? "", "sv");
+    });
+  }, [ownedCards, showAll, rarityFilter, danceStyleFilter, clubFilter, eventFilter]);
+
+  function cardsForCollection(collectionId: string) {
+    return collectionId === "all" ? visibleCards : visibleCards.filter((c) => c.collectionId === collectionId);
   }
 
-  const toggle = useCallback((rarity: string) => {
-    setClosed((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(rarity)) next.add(rarity);
-      return next;
-    });
-  }, []);
+  function renderCardGrid(list: DanceCard[]) {
+    if (list.length === 0) {
+      return (
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600">
+          {isLoading
+            ? "Laddar samling..."
+            : showAll
+              ? "Inga kort matchar filtren."
+              : "Du har inga kort i den här kategorin ännu."}
+        </div>
+      );
+    }
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        {list.map((card) => {
+          const count = ownedCounts[card.id] ?? 0;
+          const isForTrade = forTradeIds.has(card.id);
+          // The design is a reward for owning the card, so unowned cards
+          // in "Se alla" mode show only their text details.
+          const isOwned = count > 0;
+
+          return (
+            <div key={card.id} className="flex flex-col items-center gap-1">
+              <div className="relative">
+                <CardPlaceholder
+                  rarity={card.rarity}
+                  size="small"
+                  name={card.name}
+                  danceStyle={card.danceStyle}
+                  event={card.event}
+                  designKey={card.designKey}
+                  showCaption
+                  hideDesign={!isOwned}
+                />
+                {count > 1 && (
+                  <div className="absolute top-1.5 right-1.5 z-10 bg-black/70 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none pointer-events-none">
+                    ×{count}
+                  </div>
+                )}
+                {isForTrade && (
+                  <div className="absolute top-1.5 left-1.5 z-10 bg-purple-600 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none pointer-events-none">
+                    ⇄
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   if (!userEmail) {
     return (
-      <main className="py-16 bg-raised min-h-[calc(100vh-72px)]">
+      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-surface border rounded-xl p-10">
+          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Din samling</h1>
-            <p className="text-text mb-6">Logga in eller skapa ett konto för att se dina kort.</p>
+            <p className="text-gray-600 mb-6">Logga in eller skapa ett konto för att se dina kort.</p>
             <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
           </div>
         </div>
@@ -166,251 +176,149 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
     );
   }
 
-  const shelf = trophies.filter((t) => t.collectionId === collectionId);
-  const totalShown = sections.reduce((n, s) => n + s.items.length, 0);
-  const total = progress?.total;
-
-  function emptyState() {
-    if (isLoading) return "Laddar samling...";
-    if (query.trim()) return `Inga träffar på “${query.trim()}”.`;
-    if (view === "dubbletter") return "Du har inga dubbletter.";
-    if (view === "saknas") return "Inget saknas. Samlingen är komplett!";
-    return "Inga kort i den här samlingen ännu.";
-  }
+  const forTradeCount = useMemo(
+    () => cards.filter((c) => (ownedCounts[c.id] ?? 0) > 0 && forTradeIds.has(c.id)).length,
+    [ownedCounts, forTradeIds],
+  );
 
   return (
-    <main className="bg-raised min-h-[calc(100vh-72px)] pb-16">
-      {/* Sticky header: Collection, overall progress, view tabs, search. */}
-      <div className="sticky top-14 z-40 border-b lg:hidden bg-background/95 backdrop-blur-sm">
-        <div className="container mx-auto max-w-6xl space-y-2 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <label htmlFor="collection-select" className="sr-only">Samling</label>
-            <select
-              id="collection-select"
-              value={collectionId}
-              onChange={(e) => setCollectionId(e.target.value)}
-              className="h-11 min-w-0 flex-1 rounded-md border border-hairline px-3 text-sm font-semibold"
-            >
-              {collections.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-            <span className="shrink-0 text-sm font-semibold tabular-nums text-text">
-              {total ? `${total.owned} / ${total.total}` : "–"}
-            </span>
-          </div>
-          <div
-            className="h-1.5 overflow-hidden rounded-full bg-raised"
-            role="progressbar"
-            aria-label="Samlingens framsteg"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={total ? pct(total.owned, total.total) : 0}
-          >
-            <div className="h-full rounded-full bg-accent" style={{ width: `${total ? pct(total.owned, total.total) : 0}%` }} />
-          </div>
-          <div className="flex items-center gap-2">
-            <div role="tablist" aria-label="Visa" className="flex shrink-0 rounded-md bg-surface p-0.5">
-              {VIEWS.map((v) => (
-                <button
-                  key={v.id}
-                  role="tab"
-                  aria-selected={view === v.id}
-                  onClick={() => setView(v.id)}
-                  className={`rounded px-3 text-sm font-medium ${view === v.id ? "bg-accent text-accent-on" : "text-secondary"}`}
-                >
-                  {v.label}
-                </button>
-              ))}
+    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
+      <div className="container mx-auto px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-10">
+            <h1 className="text-4xl md:text-5xl font-bold mb-3">Samling</h1>
+            <p className="text-gray-600 mb-3">
+              Dina kort. Kort märkta med <span className="text-purple-600 font-medium">⇄</span> har du markerat att du vill byta bort.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
+                <Link to="/samling/byte">⇄ Välj kort du vill byta</Link>
+              </Button>
+              <Button
+                size="sm"
+                variant={showAll ? "default" : "outline"}
+                onClick={() => setShowAll((v) => !v)}
+                className={showAll ? "bg-gray-900 hover:bg-gray-800 text-white" : ""}
+              >
+                {showAll ? "Visa bara mina kort" : "Se alla kort"}
+              </Button>
             </div>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Sök kort"
-              aria-label="Sök kort"
-              className="h-11 min-w-0 flex-1 rounded-md border border-hairline px-3 text-sm"
-            />
+            {showAll && (
+              <p className="text-xs text-gray-500 mt-2">
+                Kort du inte äger visas utan design — bara namn och dansstil.
+              </p>
+            )}
+            {forTradeCount > 0 && (
+              <p className="text-xs text-purple-600 mt-2">
+                Du vill byta bort {forTradeCount} kort just nu
+              </p>
+            )}
           </div>
-        </div>
-      </div>
 
-      <div className="container mx-auto max-w-7xl px-4 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-8 lg:px-6">
-        {desktop && (
-          <aside aria-label="Samling" className="sticky top-[4.5rem] hidden max-h-[calc(100vh-5.5rem)] space-y-5 self-start overflow-y-auto py-5 lg:block">
-            <nav aria-label="Samlingar" className="space-y-1">
-              {collectionProgress.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setCollectionId(c.id)}
-                  aria-current={c.id === collectionId ? "true" : undefined}
-                  className={`block w-full rounded-md px-3 py-2 text-left ${c.id === collectionId ? "bg-surface ring-1 ring-hairline-strong" : "hover:bg-surface"}`}
-                >
-                  <span className="flex items-baseline justify-between gap-2 text-sm font-semibold">
-                    <span className="truncate">{c.label}</span>
-                    <span className="shrink-0 tabular-nums text-text">{c.owned}/{c.total}</span>
-                  </span>
-                  <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-raised">
-                    <span className="block h-full rounded-full bg-accent" style={{ width: `${pct(c.owned, c.total)}%` }} />
-                  </span>
-                </button>
-              ))}
-            </nav>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Sök kort"
-              aria-label="Sök kort"
-              className="h-11 w-full rounded-md border border-hairline px-3 text-sm"
-            />
-            <div role="tablist" aria-label="Visa" className="flex rounded-md bg-surface p-0.5">
-              {VIEWS.map((v) => (
-                <button
-                  key={v.id}
-                  role="tab"
-                  aria-selected={view === v.id}
-                  onClick={() => setView(v.id)}
-                  className={`h-9 flex-1 rounded px-2 text-sm font-medium ${view === v.id ? "bg-accent text-accent-on" : "text-secondary"}`}
-                >
-                  {v.label}
-                </button>
-              ))}
+          <SmCollectionDisclaimer className="mb-6" />
+
+          {/* Kistor takes 2/3 of the row, the filters take the remaining 1/3. */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              <ChestsSection onCollected={loadCollection} />
             </div>
-            <nav aria-label="Hoppa till Rarity">
-              <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-secondary">Rarity</h2>
-              <ul>
-                {SECTION_RARITIES.map((r) => {
-                  const c = progress?.byRarity[r];
-                  return (
-                    <li key={r}>
-                      <button
-                        type="button"
-                        onClick={() => document.getElementById(`rarity-${r}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                        className="flex h-10 w-full items-center justify-between gap-2 rounded-md px-3 text-sm hover:bg-surface"
-                        style={{ borderLeft: `3px solid ${rarityColor(r)}` }}
-                      >
-                        <span className="font-medium">{rarityLabel[r]}</span>
-                        <span className="tabular-nums text-text">{c ? `${c.owned}/${c.total}` : "–"}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
-            <AchievementsSection collectionId={collectionId} />
-          </aside>
-        )}
-        <div className={`min-w-0 space-y-6 pt-5 ${desktop && (selected || upgradeRarity) ? "lg:pr-[27rem]" : ""}`}>
-        {error && <p className="text-sm text-danger">{error}</p>}
 
-        {/* Scoreboard: cream Totalt cell, one cell per Rarity, no Special. */}
-        <div className="grid grid-cols-5 gap-2 lg:hidden" aria-label="Poängtavla">
-          <div className="rounded-lg bg-text p-2 text-center text-accent-on">
-            <div className="text-[10px] font-semibold uppercase tracking-wider">Totalt</div>
-            <div className="font-display text-lg font-bold tabular-nums">{total ? `${total.owned}/${total.total}` : "–"}</div>
-          </div>
-          {SECTION_RARITIES.map((r) => {
-            const c = progress?.byRarity[r];
-            return (
-              <div key={r} className="rounded-lg bg-surface p-2 text-center" style={{ borderTop: `2px solid ${rarityColor(r)}` }}>
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-secondary">{rarityLabel[r]}</div>
-                <div className="font-display text-lg font-bold tabular-nums">{c ? `${c.owned}/${c.total}` : "–"}</div>
+            {/* Hidden on mobile — too little room for three dropdowns there. */}
+            <div className="hidden md:block space-y-3">
+              <div>
+                <label htmlFor="rarity-filter" className="block text-sm text-gray-600 mb-2">Visa rarity</label>
+                <select
+                  id="rarity-filter"
+                  value={rarityFilter}
+                  onChange={(e) => setRarityFilter(e.target.value as RarityFilter)}
+                  className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                >
+                  <option value="all">Alla</option>
+                  <option value="special">Special</option>
+                  <option value="legendary">Legendary</option>
+                  <option value="epic">Epic</option>
+                  <option value="rare">Rare</option>
+                  <option value="common">Common</option>
+                </select>
               </div>
-            );
-          })}
-        </div>
-
-        {shelf.length > 0 && (
-          <section aria-labelledby="troféer">
-            <h2 id="troféer" className="mb-2 text-sm font-semibold uppercase tracking-wider text-secondary">Troféer</h2>
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {shelf.map((t) => {
-                const card = cards.find((c) => c.id === t.cardId);
-                if (!card) return null;
-                return (
-                  <div key={t.cardId} className="w-24 shrink-0">
-                    <CardThumb card={card} copies={t.owner?.isYou ? 1 : 0} onSelect={setSelected} />
-                    <p className="mt-0.5 text-center text-[10px] leading-tight text-secondary">
-                      {t.owner ? (t.owner.isYou ? "Din trofé" : `Ägs av ${t.owner.username}`) : "Ingen äger den än"}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {totalShown === 0 ? (
-          <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-8 text-center text-text">{emptyState()}</div>
-        ) : (
-          sections.filter((s) => s.items.length > 0).map((s) => {
-            const open = !closed.has(s.rarity);
-            const next = upgradeTierTarget[s.rarity];
-            const needed = upgradeCardsRequired[s.rarity];
-            const have = spareByRarity[s.rarity] ?? 0;
-            return (
-              <section key={s.rarity} id={`rarity-${s.rarity}`} className="scroll-mt-20">
-                <div className="mb-2 flex w-full items-center justify-between" style={{ borderBottom: `2px solid ${rarityColor(s.rarity)}` }}>
-                  <button
-                    type="button"
-                    onClick={() => toggle(s.rarity)}
-                    aria-expanded={open}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              {danceStyleOptions.length > 1 && (
+                <div>
+                  <label htmlFor="dancestyle-filter" className="block text-sm text-gray-600 mb-2">Visa dansstil</label>
+                  <select
+                    id="dancestyle-filter"
+                    value={danceStyleFilter}
+                    onChange={(e) => setDanceStyleFilter(e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                   >
-                    <h2 className="font-display text-lg font-semibold">{rarityLabel[s.rarity]} {s.owned}/{s.total}</h2>
-                    <ChevronDown className={`h-5 w-5 text-secondary transition-transform ${open ? "" : "-rotate-90"}`} aria-hidden />
-                  </button>
-                  {next && needed ? (
-                    <button
-                      type="button"
-                      onClick={() => { setUpgradeError(null); setUpgradeRarity(s.rarity); }}
-                      className={`shrink-0 rounded px-2 py-1 text-sm font-semibold tabular-nums ${have >= needed ? "text-accent" : "text-secondary"}`}
-                    >
-                      ↑ {rarityLabel[next]} · {have}/{needed}
-                    </button>
-                  ) : null}
+                    <option value="all">Alla dansstilar</option>
+                    {danceStyleOptions.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
-                {open && <CardGrid items={s.items} onSelect={setSelected} className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6" />}
-              </section>
-            );
-          })
-        )}
+              )}
+              {eventOptions.length > 1 && (
+                <div>
+                  <label htmlFor="event-filter" className="block text-sm text-gray-600 mb-2">Visa år</label>
+                  <select
+                    id="event-filter"
+                    value={eventFilter}
+                    onChange={(e) => setEventFilter(e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="all">Alla år</option>
+                    {eventOptions.map((ev) => (
+                      <option key={ev} value={ev}>{ev}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {clubOptions.length > 1 && (
+                <div>
+                  <label htmlFor="club-filter" className="block text-sm text-gray-600 mb-2">Visa förening</label>
+                  <select
+                    id="club-filter"
+                    value={clubFilter}
+                    onChange={(e) => setClubFilter(e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  >
+                    <option value="all">Alla föreningar</option>
+                    {clubOptions.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
 
-        {!desktop && <AchievementsSection collectionId={collectionId} />}
+          <Tabs value={activeCollectionId} onValueChange={setActiveCollectionId} className="mt-3">
+            <TabsList>
+              {collections.map((c) => (
+                <TabsTrigger key={c.id} value={c.id} className="gap-1.5">
+                  {c.label}
+                  {!isPackPurchasable(c) && <Badge variant="secondary">Nytt</Badge>}
+                </TabsTrigger>
+              ))}
+              <TabsTrigger value="all">Alla</TabsTrigger>
+            </TabsList>
 
+            <TabsContent value="all" className="mt-4">
+              <AchievementsSection />
+              {renderCardGrid(cardsForCollection("all"))}
+              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+            </TabsContent>
+
+            {collections.map((c) => (
+              <TabsContent key={c.id} value={c.id} className="mt-4">
+                <AchievementsSection collectionId={c.id} />
+                {renderCardGrid(cardsForCollection(c.id))}
+                {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+              </TabsContent>
+            ))}
+          </Tabs>
         </div>
       </div>
-
-      {upgradeRarity && (
-        <UpgradeScreen
-          collectionId={collectionId}
-          rarity={upgradeRarity}
-          ownedCardIds={ownedCardIds}
-          keptCardIds={keptCardIds}
-          isSubmitting={isUpgrading}
-          error={upgradeError}
-          onConfirm={confirmUpgrade}
-          onClose={() => setUpgradeRarity(null)}
-        />
-      )}
-      {revealCard && <UpgradeRevealModal card={revealCard} onClose={() => setRevealCard(null)} />}
-
-      {selected && (
-        <CardSheet
-          card={selected}
-          copies={copies.get(selected.id) ?? 0}
-          kept={keptCardIds.has(selected.id)}
-          onToggleKept={(keep) => {
-            const cardId = selected.id;
-            const apply = (k: boolean) => setKeptCardIds((prev) => { const next = new Set(prev); if (k) next.add(cardId); else next.delete(cardId); return next; });
-            apply(keep);
-            setCardKept(cardId, keep).catch(() => apply(!keep));
-          }}
-          onPrev={selectedIndex > 0 ? goPrev : undefined}
-          onNext={selectedIndex >= 0 && selectedIndex < navigable.length - 1 ? goNext : undefined}
-          onClose={() => setSelected(null)}
-        />
-      )}
     </main>
   );
 }

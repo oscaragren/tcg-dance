@@ -1,14 +1,4 @@
-import type { Achievement, AnnouncementBanner, AnnouncementsResponse, BuyPackResponse, CardForTrade, CollectionAvailability, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, ClaimWeeklyGoalResponse, CollectChestResponse, ComebackSummary, StarterResponse, CollectionProgress, GameState, LeaderboardEntry, MarketTraderForCard, PlayerProfile, Trade, TradeMatch, Trophy, UpgradePick, UpgradeResponse, UserSearchResult, WaitingResponse, WeeklyGoalsResponse, WhatsNewSheet } from "../types/game";
-
-export const MAINTENANCE_EVENT = "tcg:maintenance";
-
-export type MaintenanceStatus = { on: boolean; reopensAt: string | null; note: string | null };
-
-export async function fetchMaintenance(): Promise<MaintenanceStatus> {
-  const response = await fetch("/api/maintenance", { credentials: "include" });
-  if (!response.ok) throw new Error("Maintenance status unavailable.");
-  return (await response.json()) as MaintenanceStatus;
-}
+import type { Achievement, AnnouncementsResponse, BuyPackResponse, CardForTrade, CardPoolInfo, ChestsMutationResponse, ChestsResponse, ChestType, ClaimAchievementResponse, ClaimDailyDiamondsResponse, CollectChestResponse, GameState, LeaderboardEntry, MarketTrader, MarketTraderForCard, PlayerProfile, Trade, UpgradeResponse, UserSearchResult } from "../types/game";
 
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
@@ -33,8 +23,6 @@ async function requestJson<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    // Maintenance mode: tell the app shell, which swaps in the "Vi uppdaterar" page.
-    if (response.status === 503) window.dispatchEvent(new Event(MAINTENANCE_EVENT));
     throw new Error(await parseErrorMessage(response));
   }
 
@@ -74,8 +62,8 @@ export async function claimDailyDiamonds(): Promise<ClaimDailyDiamondsResponse> 
   return requestJson<ClaimDailyDiamondsResponse>("/api/game/claim-daily-diamonds", { method: "POST" });
 }
 
-export async function fetchAvailability(): Promise<CollectionAvailability> {
-  return requestJson<CollectionAvailability>("/api/game/availability", { method: "GET" });
+export async function fetchCardPool(): Promise<CardPoolInfo> {
+  return requestJson<CardPoolInfo>("/api/game/pool", { method: "GET" });
 }
 
 export async function buyPack(collectionId: string, quantity = 1): Promise<BuyPackResponse> {
@@ -85,15 +73,15 @@ export async function buyPack(collectionId: string, quantity = 1): Promise<BuyPa
   });
 }
 
-export async function setCardKept(cardId: string, keep: boolean): Promise<{ cardId: string; keep: boolean }> {
-  return requestJson<{ cardId: string; keep: boolean }>(`/api/game/keep/${encodeURIComponent(cardId)}`, {
-    method: "PUT",
-    body: JSON.stringify({ keep }),
-  });
+export async function fetchMyCardsForTrade(): Promise<CardForTrade[]> {
+  return requestJson<CardForTrade[]>("/api/game/cards-for-trade", { method: "GET" });
 }
 
-export async function claimEventGift(eventId: string): Promise<void> {
-  await requestJson<unknown>(`/api/game/events/${eventId}/gift`, { method: "POST" });
+export async function saveCardsForTrade(items: CardForTrade[]): Promise<CardForTrade[]> {
+  return requestJson<CardForTrade[]>("/api/game/cards-for-trade", {
+    method: "POST",
+    body: JSON.stringify({ items }),
+  });
 }
 
 export async function getUserCardsForTrade(userId: string): Promise<{ cards: CardForTrade[] }> {
@@ -102,10 +90,6 @@ export async function getUserCardsForTrade(userId: string): Promise<{ cards: Car
 
 export async function searchUsers(q: string): Promise<UserSearchResult[]> {
   return requestJson<UserSearchResult[]>(`/api/users/search?q=${encodeURIComponent(q)}`, { method: "GET" });
-}
-
-export async function fetchUpgradePick(collectionId: string, rarity: string): Promise<UpgradePick> {
-  return requestJson<UpgradePick>(`/api/game/upgrade/pick/${encodeURIComponent(collectionId)}/${encodeURIComponent(rarity)}`, { method: "GET" });
 }
 
 export async function upgradeCards(cardIds: string[]): Promise<UpgradeResponse> {
@@ -125,14 +109,6 @@ export async function fetchAchievements(): Promise<Achievement[]> {
 
 export async function claimAchievement(achievementId: string): Promise<ClaimAchievementResponse> {
   return requestJson<ClaimAchievementResponse>(`/api/achievements/${achievementId}/claim`, { method: "POST" });
-}
-
-export async function fetchWeeklyGoals(): Promise<WeeklyGoalsResponse> {
-  return requestJson<WeeklyGoalsResponse>("/api/game/weekly-goals", { method: "GET" });
-}
-
-export async function claimWeeklyGoal(goalId: string): Promise<ClaimWeeklyGoalResponse> {
-  return requestJson<ClaimWeeklyGoalResponse>(`/api/game/weekly-goals/${goalId}/claim`, { method: "POST" });
 }
 
 export async function getUserCards(userId: string): Promise<{ ownedCardIds: string[] }> {
@@ -195,8 +171,8 @@ export async function findTradersForCard(cardId: string): Promise<{ cardId: stri
   );
 }
 
-export async function fetchTradeMatches(): Promise<{ matches: TradeMatch[] }> {
-  return requestJson<{ matches: TradeMatch[] }>("/api/market/matches", { method: "GET" });
+export async function fetchMarketTraders(): Promise<{ traders: MarketTrader[] }> {
+  return requestJson<{ traders: MarketTrader[] }>("/api/market/traders", { method: "GET" });
 }
 
 export async function fetchIncomingTradeCount(): Promise<{ count: number }> {
@@ -231,64 +207,6 @@ export async function fetchAnnouncements(): Promise<AnnouncementsResponse> {
   return requestJson<AnnouncementsResponse>("/api/announcements", { method: "GET" });
 }
 
-export async function fetchAnnouncementBanner(): Promise<AnnouncementBanner | null> {
-  const res = await requestJson<{ banner: AnnouncementBanner | null }>("/api/announcements/banner", { method: "GET" });
-  return res.banner;
-}
-
-export async function dismissAnnouncementBanner(announcementId: string): Promise<void> {
-  await requestJson<unknown>(`/api/announcements/${announcementId}/banner/dismiss`, { method: "POST" });
-}
-
 export async function markAnnouncementsSeen(): Promise<void> {
   await requestJson<unknown>("/api/announcements/seen", { method: "POST" });
-}
-export async function fetchCollectionProgress(collectionId?: string): Promise<CollectionProgress> {
-  const q = collectionId ? `?collectionId=${encodeURIComponent(collectionId)}` : "";
-  return requestJson<CollectionProgress>(`/api/game/collection-progress${q}`, { method: "GET" });
-}
-
-export async function fetchTrophies(): Promise<Trophy[]> {
-  return requestJson<Trophy[]>("/api/game/trophies", { method: "GET" });
-}
-
-export async function fetchWaiting(): Promise<WaitingResponse> {
-  return requestJson<WaitingResponse>("/api/game/waiting", { method: "GET" });
-}
-
-export async function fetchStarter(): Promise<StarterResponse> {
-  return requestJson<StarterResponse>("/api/game/starter", { method: "GET" });
-}
-
-export async function claimStarterPack(): Promise<BuyPackResponse> {
-  return requestJson<BuyPackResponse>("/api/game/starter/free-pack/claim", { method: "POST" });
-}
-
-export async function fetchComeback(): Promise<{ summary: ComebackSummary | null }> {
-  return requestJson<{ summary: ComebackSummary | null }>("/api/game/comeback", { method: "GET" });
-}
-
-export async function markComebackSummarySeen(): Promise<void> {
-  await requestJson<unknown>("/api/game/comeback/summary-seen", { method: "POST" });
-}
-
-export async function fetchWhatsNew(): Promise<{ sheet: WhatsNewSheet | null }> {
-  return requestJson<{ sheet: WhatsNewSheet | null }>("/api/game/whats-new", { method: "GET" });
-}
-
-export async function markWhatsNewSeen(): Promise<void> {
-  await requestJson<unknown>("/api/game/whats-new/seen", { method: "POST" });
-}
-
-export async function claimComebackGift(): Promise<void> {
-  await requestJson<unknown>("/api/game/comeback/gift/claim", { method: "POST" });
-}
-
-export async function claimStarterStep(stepId: string): Promise<void> {
-  await requestJson<unknown>(`/api/game/starter/${stepId}/claim`, { method: "POST" });
-}
-
-/** Tells the server the player opened Samling (a Starter step). */
-export async function markCollectionViewed(): Promise<void> {
-  await requestJson<unknown>("/api/game/starter/collection-viewed", { method: "POST" });
 }

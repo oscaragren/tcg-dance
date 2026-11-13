@@ -11,7 +11,3 @@ Uses the five default triage labels: needs-triage, needs-info, ready-for-agent, 
 ### Domain docs
 
 Single-context: one root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/domain.md`.
-
-### Testing
-
-Slow suite, long timeout needed. See `docs/agents/testing.md` before running `npm test`.

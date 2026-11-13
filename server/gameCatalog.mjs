@@ -82,10 +82,7 @@ export async function loadGameCatalog() {
     ranking = null;
   }
 
-  // A Collection with no Cards yet (announced in game-content.json, art and
-  // card list still being made) does not exist for the game: no pool, no
-  // Pack, nothing listed. The primary Collection is always kept.
-  const collections = (gameContent.collections ?? []).filter((c, i) => i === 0 || (c.cards?.length ?? 0) > 0);
+  const collections = gameContent.collections ?? [];
   const primaryCollectionId = collections[0]?.id ?? "sm2026";
 
   // Every collection contributes its own cards. Bench cards (and the ranking
@@ -110,10 +107,7 @@ export async function loadGameCatalog() {
     cards,
     collections,
     dailyDiamonds: gameContent.dailyDiamonds ?? 150,
-    chestPayouts: gameContent.chestPayouts,
-    weeklyGoals: Array.isArray(gameContent.weeklyGoals) ? gameContent.weeklyGoals : [],
     events: Array.isArray(gameContent.events) ? gameContent.events : [],
-    topUp: gameContent.topUp,
     copiesPerRarity: gameContent.copiesPerRarity ?? { legendary: 3, epic: 7, rare: 15, common: 40 },
   };
 }

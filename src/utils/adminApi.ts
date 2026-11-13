@@ -1,44 +1,6 @@
-import type { GameEvent } from "../types/game";
-import type { MaintenanceStatus } from "./gameApi";
-
 export type AdminRarityStat = { total: number; remaining: number; bought: number };
 
-export type AdminBanner =
-  | { kind: "topup_pending"; collectionId: string; rare: number; epic: number }
-  | { kind: "topup_fired"; collectionId: string; rare: number; epic: number; source: TopUpSource; at: string }
-  | { kind: "rarity_sold_out"; collectionId: string; rarity: string }
-  | { kind: "event_soon"; eventId: string; label: string; startsAt: string };
-
-export type TopUpSource = "approved" | "manual" | "event";
-
-export type AdminTopUpLogEntry = {
-  id: number;
-  collectionId: string;
-  rare: number;
-  epic: number;
-  source: TopUpSource;
-  at: string;
-};
-
-export type AdminPoolSkewRow = {
-  collectionId: string;
-  label: string;
-  remaining: Record<string, number>;
-  totalRemaining: number;
-  /** Null when nothing is left in the Collection. */
-  rarePlusShare: number | null;
-  pending: { rare: number; epic: number } | null;
-  topUps: AdminTopUpLogEntry[];
-  soldOutCards: { cardId: string; rarity: string }[];
-};
-
-export type AdminPoolSkew = {
-  thresholds: { trigger: number; target: number };
-  collections: AdminPoolSkewRow[];
-};
-
 export type AdminOverview = {
-  banners: AdminBanner[];
   userCount: number;
   totalOwnedCards: number;
   pool: {
@@ -118,7 +80,7 @@ export type AdminStats = {
     cardsOwned: number;
   };
   daily: { date: string; signups: number; activePlayers: number; packs: number; upgrades: number; trades: number }[];
-  diamondFlow: { daily: number; eventGifts: number; streakBonus: number; weeklyGoals: number; achievements: number; chestRewards: number; starterRewards: number; comebackGifts: number; packs: number; chests: number; slots: number };
+  diamondFlow: { daily: number; chestRewards: number; packs: number; chests: number; slots: number };
   upgradesByTier: { from: string; to: string; count: number; cardsPerUpgrade: number }[];
   leaders: Record<"packs" | "upgrades" | "trades" | "diamonds" | "collection", AdminLeader[]>;
   topCards: { cardId: string; rarity: string; copies: number; owners: number }[];
@@ -163,8 +125,6 @@ export type AdminUserDetail = {
   partners: { id: string; username: string; acceptedTrades: number; netValue: number; flaggedTrades: number }[];
   packsOpened: number;
   upgrades: AdminUpgrade[];
-  /** Logged Diamond movements, newest first; grants carry their reason. */
-  diamondHistory: { type: string; diamonds: number; reason: string | null; createdAt: string }[];
 };
 
 export type AdminPoolEntry = {
@@ -327,7 +287,6 @@ export type AdminAnnouncement = {
   id: string;
   title: string;
   body: string;
-  bannerText: string;
   createdAt: string;
 };
 
@@ -342,113 +301,6 @@ export async function createAdminAnnouncement(title: string, body: string): Prom
   });
 }
 
-export async function setAdminAnnouncementBanner(id: string, text: string): Promise<void> {
-  await adminRequest<unknown>(`/api/admin/announcements/${id}/banner`, {
-    method: "PUT",
-    body: JSON.stringify({ text }),
-  });
-}
-
 export async function deleteAdminAnnouncement(id: string): Promise<void> {
   await adminRequest<unknown>(`/api/admin/announcements/${id}`, { method: "DELETE" });
-}
-
-export async function fetchAdminPoolSkew(): Promise<AdminPoolSkew> {
-  return adminRequest<AdminPoolSkew>("/api/admin/pool-skew", { method: "GET" });
-}
-
-export async function approveAdminTopUp(collectionId: string, rare: number, epic: number): Promise<void> {
-  await adminRequest<unknown>(`/api/admin/topups/${collectionId}/approve`, {
-    method: "POST",
-    body: JSON.stringify({ rare, epic }),
-  });
-}
-
-export async function dismissAdminTopUp(collectionId: string): Promise<void> {
-  await adminRequest<unknown>(`/api/admin/topups/${collectionId}/dismiss`, { method: "POST" });
-}
-
-export async function topUpAdminNow(collectionId: string, rare: number, epic: number): Promise<void> {
-  await adminRequest<unknown>("/api/admin/topups/now", {
-    method: "POST",
-    body: JSON.stringify({ collectionId, rare, epic }),
-  });
-}
-
-export type AdminEventStatus = "upcoming" | "running" | "finished";
-
-/** What the builder sends; the server validates it. */
-export type AdminEventDraft = {
-  label: string;
-  startsAt: string;
-  endsAt: string;
-  dailyDiamonds: number | null;
-  chestWaitHours: Partial<Record<string, number>> | null;
-  chestMultiplier: number | null;
-  gift: GameEvent["gift"];
-  topUpCollectionId: string | null;
-};
-
-export type AdminEvent = AdminEventDraft & {
-  id: string;
-  status: AdminEventStatus;
-  topUpFiredAt: string | null;
-};
-
-export async function fetchAdminEvents(): Promise<AdminEvent[]> {
-  return (await adminRequest<{ events: AdminEvent[] }>("/api/admin/events", { method: "GET" })).events;
-}
-
-export async function saveAdminEvent(id: string | null, draft: AdminEventDraft): Promise<void> {
-  await adminRequest<unknown>(id ? `/api/admin/events/${id}` : "/api/admin/events", {
-    method: id ? "PUT" : "POST",
-    body: JSON.stringify(draft),
-  });
-}
-
-export async function deleteAdminEvent(id: string): Promise<void> {
-  await adminRequest<unknown>(`/api/admin/events/${id}`, { method: "DELETE" });
-}
-
-export async function endAdminEvent(id: string): Promise<void> {
-  await adminRequest<unknown>(`/api/admin/events/${id}/end`, { method: "POST" });
-}
-
-export type AdminDiamondFlowDay = {
-  date: string;
-  sources: { daily: number; streak: number; weeklyGoals: number; achievements: number; chestPayouts: number; eventGifts: number; adminGrants: number; starterRewards: number; comebackGifts: number };
-  sinks: { packs: number; chests: number; slots: number };
-  earned: number;
-  spent: number;
-  /** Diamonds moved between players in Trades: neither earned nor spent. */
-  tradeDiamonds: number;
-  activePlayers: number;
-  earnedPerActivePlayer: number | null;
-};
-
-export type AdminDiamondFlow = {
-  target: number;
-  days: AdminDiamondFlowDay[];
-  totals: Omit<AdminDiamondFlowDay, "date" | "activePlayers" | "earnedPerActivePlayer">;
-};
-
-export async function fetchAdminDiamondFlow(days: number): Promise<AdminDiamondFlow> {
-  return adminRequest<AdminDiamondFlow>(`/api/admin/diamond-flow?days=${days}`, { method: "GET" });
-}
-
-export async function grantAdminDiamonds(userId: string, amount: number, reason: string): Promise<{ diamonds: number }> {
-  return adminRequest<{ diamonds: number }>(`/api/admin/users/${userId}/grant-diamonds`, {
-    method: "POST",
-    body: JSON.stringify({ amount, reason }),
-  });
-}
-
-export type { MaintenanceStatus };
-
-export async function fetchAdminMaintenance(): Promise<MaintenanceStatus> {
-  return adminRequest<MaintenanceStatus>("/api/admin/maintenance", { method: "GET" });
-}
-
-export async function saveAdminMaintenance(body: { on: boolean; reopensAt?: string; note?: string }): Promise<MaintenanceStatus> {
-  return adminRequest<MaintenanceStatus>("/api/admin/maintenance", { method: "PUT", body: JSON.stringify(body) });
 }

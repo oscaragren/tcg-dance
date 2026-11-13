@@ -14,11 +14,11 @@ const RARITY_LABEL: Record<string, string> = {
 };
 
 const rarityTextColor: Record<string, string> = {
-  common: "text-tertiary",
-  rare: "text-diamonds",
-  epic: "text-text",
-  legendary: "text-rarity-legendary",
-  special: "text-rarity-epic",
+  common: "text-gray-300",
+  rare: "text-blue-400",
+  epic: "text-purple-400",
+  legendary: "text-amber-400",
+  special: "text-fuchsia-400",
 };
 
 const rarityGlow: Record<string, string> = {
@@ -53,8 +53,8 @@ export function UpgradeRevealModal({ card, onClose }: UpgradeRevealModalProps) {
     >
       <div className="flex flex-col items-center gap-8">
         <div className="text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-text">Uppgradering klar!</h2>
-          <p className="text-text/40 mt-1 text-sm">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">Uppgradering klar!</h2>
+          <p className="text-white/40 mt-1 text-sm">
             {revealed ? "Här är ditt nya kort" : "Tryck på kortet för att vända det"}
           </p>
         </div>
@@ -74,9 +74,9 @@ export function UpgradeRevealModal({ card, onClose }: UpgradeRevealModalProps) {
             <div
               onClick={() => setRevealed(true)}
               style={{ backfaceVisibility: "hidden", position: "absolute", inset: 0 }}
-              className="rounded-2xl bg-raised border-2 border-hairline-strong flex items-center justify-center cursor-pointer group hover:border-accent transition-colors"
+              className="rounded-2xl bg-gradient-to-br from-gray-700 via-gray-800 to-gray-950 border-2 border-gray-600 flex items-center justify-center cursor-pointer group hover:border-purple-400 transition-colors"
             >
-              <span className="text-6xl text-secondary select-none group-hover:scale-110 group-hover:text-accent transition-transform duration-200">
+              <span className="text-6xl text-gray-500 select-none group-hover:scale-110 group-hover:text-purple-300 transition-transform duration-200">
                 ✦
               </span>
             </div>
@@ -109,7 +109,7 @@ export function UpgradeRevealModal({ card, onClose }: UpgradeRevealModalProps) {
           <div className={`text-xs uppercase tracking-wider font-semibold ${rarityTextColor[card.rarity]}`}>
             {RARITY_LABEL[card.rarity]}
           </div>
-          <div className="mt-1 text-lg font-semibold text-text">{card.name}</div>
+          <div className="mt-1 text-lg font-semibold text-white">{card.name}</div>
         </div>
 
         <div className="transition-all duration-300">
@@ -117,7 +117,7 @@ export function UpgradeRevealModal({ card, onClose }: UpgradeRevealModalProps) {
             <Button
               size="lg"
               onClick={onClose}
-              className="bg-surface text-text hover:bg-raised font-semibold px-10"
+              className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-10"
             >
               Stäng
             </Button>

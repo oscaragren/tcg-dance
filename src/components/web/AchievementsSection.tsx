@@ -1,24 +1,26 @@
-import { Check } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "../shared/ui/button";
 import type { Achievement } from "../../types/game";
 import { claimAchievement, fetchAchievements } from "../../utils/gameApi";
-import { DiamondIcon } from "./DiamondIcon";
 
 type AchievementsSectionProps = {
-  /** The Collection whose milestones to show. */
-  collectionId: string;
+  /** Scopes to one collection's achievements (global, collection-less ones are excluded). Omit to show all. */
+  collectionId?: string;
 };
 
-/** The selected Collection's Achievements as milestone chips: done, claimable or not yet. */
 export function AchievementsSection({ collectionId }: AchievementsSectionProps) {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     fetchAchievements()
       .then(setAchievements)
-      .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda prestationer."));
+      .catch((e) => setError(e instanceof Error ? e.message : "Kunde inte ladda prestationer."))
+      .finally(() => setIsLoading(false));
   }, []);
 
   async function handleClaim(id: string) {
@@ -34,44 +36,82 @@ export function AchievementsSection({ collectionId }: AchievementsSectionProps) 
     }
   }
 
-  const milestones = achievements.filter((a) => a.collectionId === collectionId);
-  if (milestones.length === 0 && !error) return null;
+  if (isLoading) return null;
+
+  // Hide achievements the user has already finished and claimed ("inlöst"),
+  // and scope to the active collection tab when one is set.
+  const visibleAchievements = achievements
+    .filter((a) => !a.claimed)
+    .filter((a) => (collectionId ? a.collectionId === collectionId : true));
+  const claimableCount = visibleAchievements.filter((a) => a.complete).length;
 
   return (
-    <section aria-labelledby="milestones-heading">
-      <h2 id="milestones-heading" className="mb-2 font-display text-lg font-semibold">Milstolpar</h2>
-      {error && <p className="mb-2 text-sm text-danger">{error}</p>}
-      <ul className="flex flex-wrap gap-2">
-        {milestones.map((a) => {
-          const base = "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm";
-          const reward = <span className="inline-flex items-center gap-1 text-xs font-semibold text-diamonds">+{a.reward} <DiamondIcon /></span>;
-          return (
-            <li key={a.id}>
-              {a.claimed ? (
-                <span className={`${base} text-secondary`} title={a.description}>
-                  <Check className="h-4 w-4 text-success" aria-hidden /> {a.chip}
-                  <span className="sr-only">, klar</span>
-                </span>
-              ) : a.complete ? (
-                <button
-                  type="button"
-                  disabled={claimingId === a.id}
-                  onClick={() => void handleClaim(a.id)}
-                  title={a.description}
-                  className={`${base} bg-accent text-accent-on font-medium`}
-                >
-                  {a.chip} {reward}
-                  <span className="sr-only">, hämta</span>
-                </button>
-              ) : (
-                <span className={`${base} text-tertiary`} title={a.description}>
-                  {a.chip} <span className="text-xs tabular-nums">{a.progress}/{a.target}</span>
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+    <section className="rounded-2xl border bg-white mb-10 overflow-hidden">
+      <button
+        onClick={() => setIsOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold">Prestationer</h2>
+          {claimableCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+              {claimableCount}
+            </span>
+          )}
+        </div>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <div className="px-4 pb-4">
+          <p className="text-xs text-gray-500 mb-3">Lös in prestationer för att tjäna diamanter.</p>
+
+          {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+
+          {visibleAchievements.length === 0 ? (
+            <p className="text-sm text-gray-400">Inga prestationer kvar — du har löst in alla du klarat.</p>
+          ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {visibleAchievements.map((a) => {
+              const pct = Math.min(100, Math.round((a.progress / a.target) * 100));
+              return (
+                <div key={a.id} className="rounded-lg border px-3 py-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-sm">{a.title}</div>
+                      <div className="text-xs text-gray-500">{a.description}</div>
+                    </div>
+                    <div className="text-xs font-semibold text-blue-600 shrink-0">+{a.reward} ◆</div>
+                  </div>
+
+                  <div className="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className={`h-full ${a.complete ? "bg-green-500" : "bg-purple-500"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className="text-xs text-gray-400">{a.progress} / {a.target}</span>
+                    {a.claimed ? (
+                      <span className="text-xs text-green-600 font-medium">Inlöst</span>
+                    ) : a.complete ? (
+                      <Button
+                        size="sm"
+                        disabled={claimingId === a.id}
+                        onClick={() => handleClaim(a.id)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white h-7 px-3 text-xs"
+                      >
+                        {claimingId === a.id ? "Löser in..." : "Lös in"}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

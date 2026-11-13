@@ -32,7 +32,7 @@ const FAQ_ITEMS: FaqEntry[] = [
     question: "Hur får jag fler kort?",
     answer: (
       <>
-        Köp kortpaket i Butiken — varje paket innehåller 5 kort. Du kan även vinna kort genom
+        Köp kortpaket i Handel — varje paket innehåller 5 kort. Du kan även vinna kort genom
         att öppna kistor.
       </>
     ),
@@ -96,12 +96,12 @@ const FAQ_ITEMS: FaqEntry[] = [
         Mejla oss på{" "}
         <a
           href={`mailto:${CONTACT_EMAIL}?subject=Begäran%20om%20borttagning%20av%20kort/konto`}
-          className="font-medium text-text underline underline hover:text-text underline"
+          className="font-medium text-purple-600 underline hover:text-purple-700"
         >
           {CONTACT_EMAIL}
         </a>{" "}
         så hjälper vi dig. Läs mer om hur vi hanterar dina uppgifter i vår{" "}
-        <Link to="/integritetspolicy" className="font-medium text-text underline underline hover:text-text underline">
+        <Link to="/integritetspolicy" className="font-medium text-purple-600 underline hover:text-purple-700">
           integritetspolicy
         </Link>
         .
@@ -120,15 +120,15 @@ function FaqItem({ entry }: { entry: FaqEntry }) {
         aria-expanded={isOpen}
         className="w-full flex items-center justify-between gap-3 py-3 text-left"
       >
-        <span className="font-medium text-text">{entry.question}</span>
+        <span className="font-medium text-gray-900">{entry.question}</span>
         <ChevronDown
-          className={`w-5 h-5 shrink-0 text-tertiary transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`w-5 h-5 shrink-0 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
       {isOpen && (
         <div className="pb-4 -mt-1">
-          <p className="text-sm leading-relaxed text-text">{entry.answer}</p>
+          <p className="text-sm leading-relaxed text-gray-600">{entry.answer}</p>
         </div>
       )}
     </div>
@@ -138,17 +138,17 @@ function FaqItem({ entry }: { entry: FaqEntry }) {
 /** Landing-page FAQ — collapsed by default, one panel open at a time is not enforced. */
 export function Faq() {
   return (
-    <section className="py-20 bg-raised">
+    <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-6">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">Vanliga frågor</h2>
-            <p className="text-secondary max-w-xl mx-auto">
+            <p className="text-gray-500 max-w-xl mx-auto">
               Kort och gott om hur Peppelinos Bar fungerar.
             </p>
           </div>
 
-          <div className="rounded-2xl border bg-surface divide-y divide-hairline px-6">
+          <div className="rounded-2xl border bg-white divide-y divide-gray-100 px-6">
             {FAQ_ITEMS.map((entry) => (
               <FaqItem key={entry.question} entry={entry} />
             ))}

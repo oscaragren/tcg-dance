@@ -65,11 +65,11 @@ export function CardPlaceholder({
   }, [lightboxOpen, closeLightbox]);
 
   const rarityColors = {
-    common: "from-rarity-common to-rarity-common/60",
-    rare: "from-rarity-rare to-rarity-rare/60",
-    epic: "from-rarity-epic to-rarity-epic/60",
-    legendary: "from-rarity-legendary to-rarity-legendary/60",
-    special: "from-rarity-special to-rarity-epic",
+    common: "from-gray-400 to-gray-600",
+    rare: "from-blue-400 to-blue-600",
+    epic: "from-purple-400 to-purple-600",
+    legendary: "from-amber-400 to-amber-600",
+    special: "from-rose-400 to-fuchsia-600",
   };
 
   const sizes = {
@@ -86,18 +86,18 @@ export function CardPlaceholder({
 
   const rarityGlow = {
     common: "",
-    rare: "shadow-rarity-rare/50",
-    epic: "shadow-rarity-epic/50",
-    legendary: "shadow-rarity-legendary/50",
-    special: "shadow-rarity-special/50",
+    rare: "shadow-blue-500/50",
+    epic: "shadow-purple-500/50",
+    legendary: "shadow-amber-500/50",
+    special: "shadow-fuchsia-500/50",
   };
 
   const rarityCaption = {
-    common: "text-secondary",
-    rare: "text-diamonds",
-    epic: "text-text",
-    legendary: "text-rarity-legendary",
-    special: "text-rarity-epic",
+    common: "text-gray-500",
+    rare: "text-blue-600",
+    epic: "text-purple-600",
+    legendary: "text-amber-700",
+    special: "text-fuchsia-700",
   };
 
   const imageUrl = hideDesign ? undefined : resolveCardDesignUrl(designKey);
@@ -107,27 +107,27 @@ export function CardPlaceholder({
 
   const caption = showCaption ? (
     <div className={`${captionWidths[size]} text-center mt-1.5 space-y-0.5`}>
-      <div className={`text-[10px] uppercase tracking-wider font-semibold ${isLocked ? "text-tertiary" : rarityCaption[rarity]}`}>{rarity}</div>
-      <div className="text-xs text-text leading-snug font-medium">{name}</div>
+      <div className={`text-[10px] uppercase tracking-wider font-semibold ${isLocked ? "text-gray-400" : rarityCaption[rarity]}`}>{rarity}</div>
+      <div className="text-xs text-gray-900 leading-snug font-medium">{name}</div>
       {subtitle && (
-        <div className="text-[10px] text-tertiary leading-tight">{subtitle}</div>
+        <div className="text-[10px] text-gray-400 leading-tight">{subtitle}</div>
       )}
     </div>
   ) : null;
 
   const lockedInner = (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[10px] bg-raised">
-      <span className="text-3xl text-text/25 select-none" aria-hidden>
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[10px] bg-gray-800">
+      <span className="text-3xl text-white/25 select-none" aria-hidden>
         ?
       </span>
-      <span className="px-2 text-center text-[9px] uppercase tracking-wider text-text/30">
+      <span className="px-2 text-center text-[9px] uppercase tracking-wider text-white/30">
         {lockedLabel}
       </span>
     </div>
   );
 
   const thumbnailInner = isLocked ? lockedInner : imageUrl ? (
-    <div className="relative h-full w-full overflow-hidden rounded-[10px] bg-raised">
+    <div className="relative h-full w-full overflow-hidden rounded-[10px] bg-gray-900">
       <ImageWithFallback
         src={imageUrl}
         alt=""
@@ -136,8 +136,8 @@ export function CardPlaceholder({
       />
     </div>
   ) : (
-    <div className="flex h-full w-full items-center justify-center rounded-lg bg-raised">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-text/10">
+    <div className="flex h-full w-full items-center justify-center rounded-lg bg-gray-900">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-white/10 to-white/5">
         <span className="text-3xl" aria-hidden>
           ⚡
         </span>
@@ -146,7 +146,7 @@ export function CardPlaceholder({
   );
 
   const lightboxInner = imageUrl ? (
-    <div className="relative h-full w-full overflow-hidden rounded-[12px] bg-raised">
+    <div className="relative h-full w-full overflow-hidden rounded-[12px] bg-gray-900">
       <ImageWithFallback
         src={imageUrl}
         alt={name}
@@ -154,8 +154,8 @@ export function CardPlaceholder({
       />
     </div>
   ) : (
-    <div className="flex h-full w-full items-center justify-center rounded-[12px] bg-raised">
-      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-text/10 md:h-36 md:w-36">
+    <div className="flex h-full w-full items-center justify-center rounded-[12px] bg-gray-900">
+      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-white/10 to-white/5 md:h-36 md:w-36">
         <span className="text-6xl md:text-7xl" aria-hidden>
           ⚡
         </span>
@@ -165,10 +165,10 @@ export function CardPlaceholder({
 
   const lightboxCaption = (
     <div className="mt-5 max-w-lg px-2 text-center">
-      <div className="text-sm font-medium uppercase tracking-wider text-text/75">{rarity}</div>
-      <div className="mt-1 text-lg font-semibold leading-snug text-text">{name}</div>
+      <div className="text-sm font-medium uppercase tracking-wider text-white/75">{rarity}</div>
+      <div className="mt-1 text-lg font-semibold leading-snug text-white">{name}</div>
       {subtitle && (
-        <div className="mt-1 text-sm text-text/60">{subtitle}</div>
+        <div className="mt-1 text-sm text-white/60">{subtitle}</div>
       )}
     </div>
   );
@@ -195,7 +195,7 @@ export function CardPlaceholder({
           <button
             type="button"
             onClick={closeLightbox}
-            className="absolute -top-1 right-0 z-20 rounded-lg p-2 text-2xl leading-none text-text/90 transition hover:bg-text/10 hover:text-text sm:-right-2 sm:-top-2"
+            className="absolute -top-1 right-0 z-20 rounded-lg p-2 text-2xl leading-none text-white/90 transition hover:bg-white/10 hover:text-white sm:-right-2 sm:-top-2"
             aria-label="Stäng"
           >
             ×
@@ -218,7 +218,7 @@ export function CardPlaceholder({
     <div
       className={
         isLocked
-          ? `${sizes[size]} rounded-xl bg-raised p-0.5 opacity-70`
+          ? `${sizes[size]} rounded-xl bg-gradient-to-br from-gray-300 to-gray-400 p-0.5 opacity-70`
           : `${sizes[size]} rounded-xl bg-gradient-to-br ${rarityColors[rarity]} p-0.5 shadow-lg ${rarityGlow[rarity]} transition-transform hover:scale-105 cursor-pointer`
       }
     >
@@ -235,7 +235,7 @@ export function CardPlaceholder({
           <button
             type="button"
             onClick={openLightbox}
-            className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
             aria-label={`Visa större: ${name}`}
           >
             {cardFrame}
