@@ -27,3 +27,21 @@ export async function sendPasswordResetEmail(toEmail, resetUrl) {
     throw new Error(`Kunde inte skicka e-post: ${error.message ?? error}`);
   }
 }
+
+export async function sendTopUpPendingEmail(toEmail, { collectionLabel, share, rare, epic }) {
+  const percent = (share * 100).toFixed(1);
+  if (!resend) {
+    console.log(`\n[Top-up] RESEND_API_KEY saknas — ${collectionLabel}: Rare+ ${percent}%, förslag ${rare} Rare + ${epic} Epic (till ${toEmail}).\n`);
+    return;
+  }
+  const { error } = await resend.emails.send({
+    from: MAIL_FROM,
+    to: toEmail,
+    subject: `Top-up väntar: ${collectionLabel}`,
+    html: `
+      <p>Andelen Rare eller bättre i ${collectionLabel} har sjunkit till ${percent}%.</p>
+      <p>Föreslagen Top-up: ${rare} Rare och ${epic} Epic. Godkänn eller avfärda den i adminpanelen.</p>
+    `,
+  });
+  if (error) throw new Error(`Kunde inte skicka e-post: ${error.message ?? error}`);
+}

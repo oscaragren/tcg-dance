@@ -26,74 +26,64 @@ export function TopplistaPage({ currentUser }: TopplistaPageProps) {
 
   if (!currentUser) {
     return (
-      <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
-        <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center bg-white border rounded-xl p-10">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">Topplista</h1>
-            <p className="text-gray-600 mb-6">Logga in för att se topplistan.</p>
-            <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
-          </div>
-        </div>
+      <main className="mx-auto max-w-md px-4 py-10 text-center">
+        <h1 className="font-display text-2xl font-bold">Topplista</h1>
+        <p className="mb-5 mt-2 text-secondary">Logga in för att se topplistan.</p>
+        <Button asChild><Link to="/auth?tab=login">Logga in</Link></Button>
       </main>
     );
   }
 
   return (
-    <main className="py-16 bg-gray-50 min-h-[calc(100vh-72px)]">
-      <div className="container mx-auto px-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-3">Topplista</h1>
-            <p className="text-gray-600">
-              Spelare rankade efter flest legendary. Vid lika antal avgör epic, sedan rare och common.
-              Klicka på en spelare för att se hela samlingen.
-            </p>
-          </div>
+    <main className="mx-auto flex max-w-md flex-col gap-3 py-3">
+      <header className="px-4">
+        <h1 className="font-display text-xl font-bold">Topplista</h1>
+        <p className="text-sm text-secondary">
+          Poäng för unika kort: legendary 20, epic 10, rare 5, common 1. Vid lika avgör flest unika legendary, sedan epic och rare.
+        </p>
+      </header>
 
-          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="px-4 text-sm text-danger">{error}</p>}
 
-          {isLoading ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
-              Laddar topplista...
-            </div>
-          ) : entries.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
-              Inga spelare på topplistan ännu.
-            </div>
-          ) : (
-            <ol className="rounded-2xl border bg-white divide-y overflow-hidden">
-              {entries.map((entry) => {
-                const isMe = entry.userId === currentUser.id;
-                return (
-                  <li key={entry.userId} className={isMe ? "bg-purple-50" : ""}>
-                    <Link
-                      to={`/spelare/${entry.userId}`}
-                      className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-gray-50"
-                    >
-                      <span className="w-8 shrink-0 text-center text-lg font-bold text-gray-500">
-                        {MEDALS[entry.rank] ?? entry.rank}
-                      </span>
-                      <span className={`min-w-0 flex-1 ${isMe ? "font-semibold text-purple-700" : "text-gray-900"}`}>
-                        <span className="truncate block">
-                          {entry.username}
-                          {isMe && <span className="ml-2 text-xs text-purple-500">(du)</span>}
-                        </span>
-                        <span className="text-[11px] text-gray-400">
-                          {entry.legendary}L · {entry.epic}E · {entry.rare}R · {entry.common}C
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-right">
-                        <span className="block text-sm font-semibold text-gray-700">{entry.total} kort</span>
-                        <span className="block text-[11px] text-gray-400">Visa samling →</span>
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
+      {isLoading ? (
+        <div className="mx-4 rounded-xl border border-dashed border-hairline-strong bg-surface p-6 text-center text-secondary">
+          Laddar topplista...
         </div>
-      </div>
+      ) : entries.length === 0 ? (
+        <div className="mx-4 rounded-xl border border-dashed border-hairline-strong bg-surface p-6 text-center text-secondary">
+          Inga spelare på topplistan ännu.
+        </div>
+      ) : (
+        <ol className="mx-4 divide-y overflow-hidden rounded-xl border bg-surface">
+          {entries.map((entry) => {
+            const isMe = entry.userId === currentUser.id;
+            return (
+              <li key={entry.userId} className={isMe ? "bg-raised" : ""}>
+                <Link
+                  to={`/spelare/${entry.userId}`}
+                  className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-raised"
+                >
+                  <span className="w-8 shrink-0 text-center font-display text-lg font-bold tabular-nums text-secondary">
+                    {MEDALS[entry.rank] ?? entry.rank}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block truncate ${isMe ? "font-semibold" : ""}`}>
+                      {entry.username}
+                      {isMe && <span className="ml-2 text-xs text-secondary">(du)</span>}
+                    </span>
+                    <span className="text-[11px] text-tertiary">
+                      {entry.total} unika kort · {entry.legendary} legendary · {entry.epic} epic · {entry.rare} rare
+                    </span>
+                  </span>
+                  <span className="shrink-0 font-display text-lg font-bold tabular-nums">
+                    {entry.points} <span className="text-xs font-normal text-secondary">p</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </main>
   );
 }

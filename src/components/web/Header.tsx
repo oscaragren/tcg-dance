@@ -1,208 +1,237 @@
-import { Menu, User, X } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { ArrowLeftRight, ChevronDown, Home, Layers, LogOut, ShieldCheck, Store, Trophy, User, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 import { Button } from "../shared/ui/button";
 import { AnnouncementsMenu } from "./AnnouncementsMenu";
+import { DiamondIcon } from "./DiamondIcon";
 
 type HeaderProps = {
   username: string | null;
   onLogout: () => void;
-  /** Incoming trade offers waiting on the user — drives the red dot on "Byte". */
+  /** Incoming Trades waiting on the player; drives the count on the Byte tab. */
   pendingTradeCount?: number;
-  /** Diamond balance shown next to the username. null while still loading. */
+  /** Diamond balance. null while still loading. */
   diamonds?: number | null;
-  /** At least one chest is ready to collect — drives the red dot on "Samling". */
+  /** At least one Chest is ready to collect; drives the dot on the Butik tab. */
   hasReadyChest?: boolean;
 };
 
-/** Diamond balance pill shown beside the username. */
-function DiamondBalance({ diamonds }: { diamonds: number | null }) {
+type Tab = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+};
+
+const TABS: Tab[] = [
+  { to: "/", label: "Hem", icon: Home, end: true },
+  { to: "/butik", label: "Butik", icon: Store },
+  { to: "/samling", label: "Samling", icon: Layers },
+  { to: "/byte", label: "Byte", icon: ArrowLeftRight },
+  { to: "/topplista", label: "Topplista", icon: Trophy },
+];
+
+export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-sm font-semibold tabular-nums text-blue-700"
-      title="Dina diamanter"
+      className={`font-sign whitespace-nowrap leading-none text-text text-2xl ${className}`}
+      style={{ textShadow: "0 0 6px var(--color-accent), 0 0 18px color-mix(in srgb, var(--color-accent) 55%, transparent)" }}
     >
-      {diamonds === null ? "–" : diamonds.toLocaleString("sv-SE")}
-      <span className="text-blue-400">◆</span>
+      Peppelinos Bar
     </span>
   );
 }
 
-/** Small red count badge, used to flag pending trade offers on the Byte link. */
-function NotificationDot({ count }: { count: number }) {
+/** Diamond balance, shown in the top bar. */
+function DiamondBalance({ diamonds }: { diamonds: number | null }) {
   return (
     <span
-      className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none"
-      aria-label={`${count} nya bytesförfrågningar`}
+      className="inline-flex min-h-11 items-center gap-1.5 px-2 font-bold tabular-nums text-diamonds"
+      title="Dina diamanter"
+      aria-label={diamonds === null ? "Dina diamanter laddas" : `${diamonds} diamanter`}
+    >
+      <DiamondIcon size={20} />
+      {diamonds === null ? "–" : diamonds.toLocaleString("sv-SE")}
+    </span>
+  );
+}
+
+/** Coral count badge: incoming Trades on the Byte tab. */
+function CountBadge({ count }: { count: number }) {
+  return (
+    <span
+      className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold leading-none text-accent-on"
+      aria-label={`${count} nya byteförfrågningar`}
     >
       {count > 9 ? "9+" : count}
     </span>
   );
 }
 
-/** Plain small red dot, used to flag a chest ready to collect on the Samling link. */
-function PlainDot() {
+/** Coral dot: a Chest is ready to collect on the Butik tab. */
+function ReadyDot() {
   return (
     <span
-      className="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0"
+      className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-accent"
       aria-label="En kista är klar att öppna"
       role="img"
     />
   );
 }
 
-export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = null, hasReadyChest = false }: HeaderProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+function tabIndicator(tab: Tab, pendingTradeCount: number, hasReadyChest: boolean) {
+  if (tab.to === "/byte" && pendingTradeCount > 0) return <CountBadge count={pendingTradeCount} />;
+  if (tab.to === "/butik" && hasReadyChest) return <ReadyDot />;
+  return null;
+}
 
-  function closeMobile() { setMobileOpen(false); }
+/** Profile icon with a menu: privacy policy and logout. */
+function ProfileMenu({ username, onLogout }: { username: string; onLogout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   return (
-    <>
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-
-            {/* Logo */}
-            <div className="flex items-center gap-8">
-              <Link to="/" className="flex items-center" onClick={closeMobile}>
-                <span className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Peppelinos Bar
-                </span>
-              </Link>
-
-              {/* Desktop nav */}
-              <nav className="hidden md:flex items-center gap-6">
-                <Link to="/samling" className="relative flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                  Samling
-                  {hasReadyChest && <PlainDot />}
-                </Link>
-                <Link to="/handel"  className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Handel</Link>
-                <Link to="/byte"    className="relative flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                  Byte
-                  {pendingTradeCount > 0 && <NotificationDot count={pendingTradeCount} />}
-                </Link>
-                <Link to="/uppgradering" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Uppgradering</Link>
-                <Link to="/topplista" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Topplista</Link>
-              </nav>
-            </div>
-
-            {/* Desktop auth */}
-            <div className="hidden md:flex items-center gap-3">
-              {username ? (
-                <>
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <AnnouncementsMenu />
-                    <span className="flex items-center">
-                      <User className="w-4 h-4 mr-2" />
-                      {username}
-                    </span>
-                    <DiamondBalance diamonds={diamonds} />
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="border-gray-300 text-gray-700 hover:border-gray-400"
-                    onClick={onLogout}
-                  >
-                    Logga ut
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:border-gray-400">
-                    <Link to="/auth?tab=login">
-                      <User className="w-4 h-4 mr-2" />
-                      Logga in
-                    </Link>
-                  </Button>
-                  <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                    <Link to="/auth?tab=register">Registrera dig</Link>
-                  </Button>
-                </>
-              )}
-            </div>
-
-            {/* Mobile hamburger */}
-            <button
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              onClick={() => setMobileOpen((o) => !o)}
-              aria-label={mobileOpen ? "Stäng meny" : "Öppna meny"}
-            >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-
-          </div>
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full text-secondary transition-colors hover:bg-raised hover:text-text"
+        aria-label={`Profil: ${username}`}
+        aria-expanded={open}
+        aria-haspopup="menu"
+      >
+        <User className="h-5 w-5" aria-hidden />
+        <ChevronDown className="hidden h-4 w-4 lg:block" aria-hidden />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border bg-surface shadow-lg">
+          <p className="truncate border-b px-4 py-3 text-sm text-secondary">{username}</p>
+          <Link
+            to="/integritetspolicy"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 items-center gap-2 px-4 text-base text-text hover:bg-raised"
+          >
+            <ShieldCheck className="h-4 w-4" aria-hidden /> Integritetspolicy
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { setOpen(false); onLogout(); }}
+            className="flex min-h-11 w-full items-center gap-2 px-4 text-left text-base text-text hover:bg-raised"
+          >
+            <LogOut className="h-4 w-4" aria-hidden /> Logga ut
+          </button>
         </div>
-      </header>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40 bg-black/30 md:hidden"
-            onClick={closeMobile}
-          />
-
-          {/* Panel */}
-          <div className="fixed top-[73px] left-0 right-0 z-40 bg-white border-b shadow-lg md:hidden">
-            <nav className="container mx-auto px-6 py-4 flex flex-col gap-1">
-              {[
-                { to: "/samling", label: "Samling", dot: hasReadyChest } as { to: string; label: string; badge?: number; dot?: boolean },
-                { to: "/handel",  label: "Handel" },
-                { to: "/byte",    label: "Byte", badge: pendingTradeCount },
-                { to: "/uppgradering", label: "Uppgradering" },
-                { to: "/topplista", label: "Topplista" },
-              ].map(({ to, label, badge, dot }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={closeMobile}
-                  className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  {label}
-                  {!!badge && badge > 0 && <NotificationDot count={badge} />}
-                  {dot && <PlainDot />}
-                </Link>
-              ))}
-
-              <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2">
-                {username ? (
-                  <>
-                    <div className="px-4 py-2 text-sm text-gray-500 flex items-center gap-2">
-                      <AnnouncementsMenu />
-                      <User className="w-4 h-4" /> {username}
-                      <DiamondBalance diamonds={diamonds} />
-                    </div>
-                    <button
-                      onClick={() => { onLogout(); closeMobile(); }}
-                      className="rounded-lg px-4 py-3 text-sm font-medium text-left text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Logga ut
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/auth?tab=login"
-                      onClick={closeMobile}
-                      className="rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Logga in
-                    </Link>
-                    <Link
-                      to="/auth?tab=register"
-                      onClick={closeMobile}
-                      className="rounded-lg px-4 py-3 text-sm font-medium text-center bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all"
-                    >
-                      Registrera dig
-                    </Link>
-                  </>
-                )}
-              </div>
-            </nav>
-          </div>
-        </>
       )}
-    </>
+    </div>
+  );
+}
+
+/** Slim top bar. On ≥1024px the tabs sit in it; on phones they live in the BottomTabBar. */
+export function Header({ username, onLogout, pendingTradeCount = 0, diamonds = null, hasReadyChest = false }: HeaderProps) {
+  return (
+    <header className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur-sm">
+      <div className="container mx-auto flex min-h-14 items-center justify-between gap-4 px-4 lg:px-6">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex min-h-11 items-center" aria-label="Peppelinos Bar, till startsidan">
+            <Wordmark />
+          </Link>
+
+          {username && (
+            <nav className="hidden items-center gap-1 lg:flex" aria-label="Huvudmeny">
+              {TABS.map((tab) => (
+                <NavLink
+                  key={tab.to}
+                  to={tab.to}
+                  end={tab.end}
+                  className={({ isActive }) =>
+                    `flex min-h-11 items-center gap-2 rounded-md px-3 text-base font-medium transition-colors ${
+                      isActive ? "text-accent" : "text-secondary hover:text-text"
+                    }`
+                  }
+                >
+                  {tab.label}
+                  {tabIndicator(tab, pendingTradeCount, hasReadyChest)}
+                </NavLink>
+              ))}
+            </nav>
+          )}
+        </div>
+
+        {username ? (
+          <div className="flex items-center gap-1">
+            <DiamondBalance diamonds={diamonds} />
+            <AnnouncementsMenu />
+            <ProfileMenu username={username} onLogout={onLogout} />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link to="/auth?tab=login">Logga in</Link>
+            </Button>
+            <Button asChild className="hidden sm:inline-flex">
+              <Link to="/auth?tab=register">Registrera dig</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+/** Bottom tab bar, phones only. The active tab is coral; Byte shows the incoming Trade count and Butik a dot when a Chest is ready. */
+export function BottomTabBar({ pendingTradeCount = 0, hasReadyChest = false }: Pick<HeaderProps, "pendingTradeCount" | "hasReadyChest">) {
+  return (
+    <nav
+      aria-label="Huvudmeny"
+      className="fixed inset-x-0 bottom-0 z-50 border-t bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+    >
+      <ul className="mx-auto grid max-w-xl grid-cols-5">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <li key={tab.to}>
+              <NavLink
+                to={tab.to}
+                end={tab.end}
+                className={({ isActive }) =>
+                  `relative flex min-h-16 min-w-11 flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
+                    isActive ? "text-accent" : "text-secondary"
+                  }`
+                }
+              >
+                <span className="relative">
+                  <Icon className="h-6 w-6" aria-hidden />
+                  {tab.to === "/byte" && pendingTradeCount > 0 && (
+                    <span className="absolute -right-3 -top-2"><CountBadge count={pendingTradeCount} /></span>
+                  )}
+                  {tab.to === "/butik" && hasReadyChest && (
+                    <span className="absolute -right-2 -top-1"><ReadyDot /></span>
+                  )}
+                </span>
+                {tab.label}
+              </NavLink>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
