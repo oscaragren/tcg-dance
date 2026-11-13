@@ -25,7 +25,7 @@ test("lists every source and sink per day for a seeded set of actions", async ()
   fund(alice, 1000);
   await post("/api/game/claim-daily-diamonds", alice);              // +150 daily
   await post("/api/game/buy-pack", alice, { collectionId: "test", quantity: 1 }); // -100 packs
-  await post("/api/game/chests/buy", alice, { type: "bronze" });    // -10 chests
+  await post("/api/game/chests/buy", alice, { type: "bronze" });    // -5 chests
   await post("/api/game/chests/buy-slot", alice, { type: "bronze" }); // slots
   // Streak: 7th claim pays the bonus (the 6th step was claimed yesterday, so it is still alive)
   t.db.prepare("UPDATE player_state SET diamond_streak = 6, last_daily_claim_date = '2026-03-09' WHERE user_id = ?").run(bob.userId);
@@ -35,7 +35,7 @@ test("lists every source and sink per day for a seeded set of actions", async ()
   assert.equal(d.sources.daily, 300);
   assert.ok(d.sources.streak > 0);
   assert.equal(d.sinks.packs, 100);
-  assert.equal(d.sinks.chests, 10);
+  assert.equal(d.sinks.chests, 5);
   assert.ok(d.sinks.slots > 0);
   for (const k of ["daily", "streak", "weeklyGoals", "achievements", "chestPayouts", "eventGifts", "adminGrants"]) {
     assert.equal(typeof d.sources[k], "number", k);

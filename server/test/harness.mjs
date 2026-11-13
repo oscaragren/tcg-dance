@@ -47,7 +47,7 @@ export const TEST_CATALOG = {
     current: "v2",
     tables: {
       v1: { bronze: { min: 15, max: 30, step: 5 }, silver: { min: 50, max: 100, step: 5 }, gold: { min: 100, max: 250, step: 5 } },
-      v2: { bronze: { min: 15, max: 20, step: 5 }, silver: { min: 35, max: 40, step: 5 }, gold: { min: 65, max: 85, step: 5 } },
+      v2: { bronze: { min: 10, max: 20, step: 5 }, silver: { min: 30, max: 50, step: 5 }, gold: { min: 50, max: 100, step: 5 } },
     },
   },
   weeklyGoals: [

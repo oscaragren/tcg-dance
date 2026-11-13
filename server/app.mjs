@@ -2099,7 +2099,7 @@ const CHEST_TYPES = {
   bronze: {
     id: "bronze",
     label: "Bronskista",
-    price: 10,
+    price: 5,
     waitMs: 1 * HOUR_MS,
     // Each roll is independent.
     cardRolls: [
@@ -2110,7 +2110,7 @@ const CHEST_TYPES = {
   silver: {
     id: "silver",
     label: "Silverkista",
-    price: 25,
+    price: 15,
     waitMs: 5 * HOUR_MS,
     cardRolls: [
       { rarity: "common", chance: 0.25 },
@@ -2121,7 +2121,7 @@ const CHEST_TYPES = {
   gold: {
     id: "gold",
     label: "Guldkista",
-    price: 50,
+    price: 25,
     waitMs: 12 * HOUR_MS,
     cardRolls: [
       { rarity: "common", chance: 0.25 },
