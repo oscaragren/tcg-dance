@@ -4954,10 +4954,10 @@
         }
       },
       "copiesPerRarity": {
-        "legendary": 10,
-        "epic": 30,
-        "rare": 80,
-        "common": 100,
+        "legendary": 5,
+        "epic": 15,
+        "rare": 35,
+        "common": 120,
         "special": 1
       },
       "cards": [
