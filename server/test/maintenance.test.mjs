@@ -82,3 +82,40 @@ test("the switch is stored in the database, not in memory", async () => {
   const row = t.db.prepare("SELECT value FROM settings WHERE key = 'maintenance'").get();
   assert.ok(row);
 });
+
+// Auto-reopen: a maintenance window set with autoReopen lifts itself at reopensAt.
+import { fakeClock } from "./harness.mjs";
+import { setMaintenance } from "../maintenance.mjs";
+
+test("autoReopen: player routes stay closed until reopensAt, then open without any admin action", async () => {
+  const clock = fakeClock("2026-11-13T23:30:00+01:00");
+  t = await startTestApp({ clock });
+  const p = await t.registerPlayer();
+  setMaintenance(t.db, { on: true, reopensAt: "2026-11-14T00:00:00+01:00", note: "Vi uppdaterar", autoReopen: true });
+
+  assert.equal((await t.request("GET", "/api/game/state", { cookie: p.cookie })).status, 503);
+  clock.set("2026-11-13T23:59:59+01:00");
+  assert.equal((await t.request("GET", "/api/game/state", { cookie: p.cookie })).status, 503);
+  clock.set("2026-11-14T00:00:00+01:00");
+  assert.equal((await t.request("GET", "/api/game/state", { cookie: p.cookie })).status, 200);
+  assert.equal((await t.request("GET", "/api/maintenance")).body.on, false);
+});
+
+test("autoReopen: the public status endpoint reports the reopening too (the page polls it)", async () => {
+  const clock = fakeClock("2026-11-13T23:30:00+01:00");
+  t = await startTestApp({ clock });
+  setMaintenance(t.db, { on: true, reopensAt: "2026-11-14T00:00:00+01:00", autoReopen: true });
+  assert.equal((await t.request("GET", "/api/maintenance")).body.on, true);
+  clock.set("2026-11-14T00:00:01+01:00");
+  assert.equal((await t.request("GET", "/api/maintenance")).body.on, false);
+});
+
+test("without autoReopen, a past reopensAt does not open the game (it is only a displayed estimate)", async () => {
+  const clock = fakeClock("2026-11-13T23:30:00+01:00");
+  t = await startTestApp({ clock });
+  const p = await t.registerPlayer();
+  setMaintenance(t.db, { on: true, reopensAt: "2026-11-14T00:00:00+01:00" });
+  clock.set("2026-11-14T06:00:00+01:00");
+  assert.equal((await t.request("GET", "/api/game/state", { cookie: p.cookie })).status, 503);
+  assert.equal((await t.request("GET", "/api/maintenance")).body.on, true);
+});

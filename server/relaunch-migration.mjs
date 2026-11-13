@@ -25,7 +25,7 @@ const MARKER = "relaunch_migration";
 export const LEGACY_CHEST_TABLE = "v1";
 const STREAK_LAST_STEP = 6;
 
-export function runRelaunchMigration(db, deps, { reopensAt = null, note = null } = {}) {
+export function runRelaunchMigration(db, deps, { reopensAt = null, note = null, autoReopen = false } = {}) {
   const { allCards, collections, achievementById, nowIso, todayIso, collectionTopUp, applyTopUp } = deps;
 
   if (db.prepare("SELECT 1 FROM settings WHERE key = ?").get(MARKER)) {
@@ -46,7 +46,7 @@ export function runRelaunchMigration(db, deps, { reopensAt = null, note = null }
 
   const run = db.transaction(() => {
     // 1. maintenance on
-    setMaintenance(db, { on: true, reopensAt, note });
+    setMaintenance(db, { on: true, reopensAt, note, autoReopen });
 
     // 2. cancel pending Trades (expired-but-unsettled ones too: nothing may stay pending)
     const pending = db.prepare("SELECT id, sender_user_id, receiver_user_id FROM trades WHERE status = 'pending'").all();

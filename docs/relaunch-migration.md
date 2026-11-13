@@ -28,3 +28,14 @@ Live game: Railway project `ravishing-joy`, service `tcg-dance` (it has the Volu
 2. Open a shell in the running service: `railway ssh`.
 3. In it: `node scripts/relaunch-migration.mjs --reopens-at <ISO time> --note "Vi uppdaterar"` (`DB_PATH` is already set by the service; add `--db` to override).
 4. Check the report and the game through the admin panel, then switch maintenance off by hand.
+
+## Automatic relaunch at boot (opt-in)
+
+Instead of `railway ssh`, set the service variable `RELAUNCH_AUTO_AT` (ISO time with offset, e.g. `2026-11-14T00:00:00+01:00`) **before** merging. The first boot of the new version then runs the migration before the server listens (`server/relaunch-boot.mjs`), with maintenance on and `autoReopen`, so the game reopens by itself at that time and no player ever sees the new version unmigrated.
+
+- Unset variable: nothing happens (the default).
+- Later boots: the marker makes it a no-op; the variable can stay or be removed.
+- Migration throws (rolled back, nothing changed): the game stays closed with no auto-reopen; read the `[relaunch] migration FAILED` log line, fix, and reopen in the admin panel.
+- A bad time (`[relaunch] ... not a valid time`): nothing runs and the game is NOT closed.
+- A Collection whose Pack is not on sale yet (SM 2016 before its `releaseAt`) gets no migration Top-up, so it keeps its Copies per Rarity; the normal admin-approved Top-up rule applies after release.
+- Manual maintenance is unchanged: without `autoReopen`, `reopensAt` is only a displayed estimate.

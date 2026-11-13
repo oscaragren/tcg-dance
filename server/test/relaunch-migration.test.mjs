@@ -131,6 +131,16 @@ test("Top-ups: a Collection under 3% Rare+ gets its first Top-up, logged", async
   assert.equal((await t.request("GET", "/api/admin/topups", { cookie: admin })).body.log.length, 1);
 });
 
+test("Top-ups: a Collection whose Pack is not on sale yet is left alone (its Copies per Rarity are the launch distribution)", async () => {
+  const unreleased = { ...CATALOG, collections: [{ ...CATALOG.collections[0], pack: { ...CATALOG.collections[0].pack, releaseAt: "2026-03-11T00:00:00+01:00" } }] };
+  await setup({ catalog: unreleased });
+  const rem = (id, n) => t.db.prepare("UPDATE card_pool SET copies_remaining = ? WHERE card_id = ?").run(n, id);
+  rem("r1", 5); rem("r2", 0); rem("e1", 0); rem("l1", 0); // 2.4%, would qualify
+  const report = await t.runRelaunchMigration();
+  assert.deepEqual(report.topUps, []);
+  assert.equal(t.db.prepare("SELECT COUNT(*) AS n FROM topup_log").get().n, 0);
+});
+
 test("Top-ups: a healthy Collection is left alone", async () => {
   await setup();
   await t.runRelaunchMigration();

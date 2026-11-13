@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.mjs";
+import { runRelaunchOnBoot } from "./relaunch-boot.mjs";
 import { openDatabase } from "./db.mjs";
 import { sendPasswordResetEmail, sendTopUpPendingEmail } from "./mailer.mjs";
 
@@ -18,7 +19,7 @@ const db = openDatabase(process.env.DB_PATH ?? path.join(workspaceRoot, "data", 
   legacyJsonDir: path.join(workspaceRoot, "data"),
 });
 
-const { app, startBackgroundJobs } = await createApp({
+const { app, startBackgroundJobs, runRelaunchMigration } = await createApp({
   db,
   clock: { now: () => Date.now() },
   random: Math.random,
@@ -33,6 +34,10 @@ const { app, startBackgroundJobs } = await createApp({
     distPath: path.join(workspaceRoot, "dist"),
   },
 });
+
+// Opt-in relaunch: with RELAUNCH_AUTO_AT set, migrate once BEFORE listening, so no
+// player ever sees the new version unmigrated (see docs/relaunch-migration.md).
+runRelaunchOnBoot({ db, env: process.env, runMigration: runRelaunchMigration });
 
 startBackgroundJobs();
 app.listen(PORT, () => {

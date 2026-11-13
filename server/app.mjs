@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import { loadGameCatalog } from "./gameCatalog.mjs";
 import { runRelaunchMigration, readRelaunchMigrationMarker } from "./relaunch-migration.mjs";
 import { buildAchievementDefinitions, computeAchievementProgress } from "./achievements.mjs";
-import { getMaintenance, setMaintenance } from "./maintenance.mjs";
+import { getMaintenance, setMaintenance, liftMaintenanceIfDue } from "./maintenance.mjs";
 
 /**
  * Build the game server. Everything that touches the outside world is injected:
@@ -49,6 +49,7 @@ app.use(cookieParser());
 // Maintenance mode: while on, everything under /api except admin routes, the
 // public status endpoint and the health check refuses with 503.
 app.use("/api", (request, response, next) => {
+  liftMaintenanceIfDue(db, clock.now()); // an autoReopen window ends by itself at its reopensAt
   if (/^\/(admin(\/|$)|maintenance$|health$)/.test(request.path)) { next(); return; }
   const m = getMaintenance(db);
   if (!m.on) { next(); return; }
@@ -3819,6 +3820,9 @@ function runRelaunchMigrationNow(options) {
     nowIso: new Date(clock.now()).toISOString(),
     todayIso: todayIso(),
     collectionTopUp(collectionId) {
+      // A Collection not on sale yet keeps its launch distribution; the normal
+      // (admin-approved) Top-up rule covers it once it is released.
+      if (!isPackOnSale(collectionsMap.get(collectionId)?.pack)) return null;
       const stats = collectionPoolStats(collectionId);
       if (stats.share === null || stats.share >= TOPUP_TRIGGER) return null;
       const amounts = computeTopUpAmounts(collectionId, stats);
