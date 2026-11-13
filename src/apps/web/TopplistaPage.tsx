@@ -39,7 +39,7 @@ export function TopplistaPage({ currentUser }: TopplistaPageProps) {
       <header className="px-4">
         <h1 className="font-display text-xl font-bold">Topplista</h1>
         <p className="text-sm text-secondary">
-          Rankad efter antal unika kort. Vid lika avgör flest unika legendary, sedan epic och rare.
+          Poäng för unika kort: legendary 20, epic 10, rare 5, common 1. Vid lika avgör flest unika legendary, sedan epic och rare.
         </p>
       </header>
 
@@ -72,11 +72,11 @@ export function TopplistaPage({ currentUser }: TopplistaPageProps) {
                       {isMe && <span className="ml-2 text-xs text-secondary">(du)</span>}
                     </span>
                     <span className="text-[11px] text-tertiary">
-                      {entry.legendary} legendary · {entry.epic} epic · {entry.rare} rare
+                      {entry.total} unika kort · {entry.legendary} legendary · {entry.epic} epic · {entry.rare} rare
                     </span>
                   </span>
                   <span className="shrink-0 font-display text-lg font-bold tabular-nums">
-                    {entry.total} <span className="text-xs font-normal text-secondary">kort</span>
+                    {entry.points} <span className="text-xs font-normal text-secondary">p</span>
                   </span>
                 </Link>
               </li>

@@ -120,6 +120,7 @@ export type LeaderboardEntry = {
   rank: number;
   userId: string;
   username: string;
+  points: number;
   total: number;
   legendary: number;
   epic: number;

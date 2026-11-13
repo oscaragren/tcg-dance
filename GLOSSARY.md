@@ -113,7 +113,7 @@ A one-off Diamond reward for a player returning after a long absence.
 _Avoid_: Welcome-back bonus
 
 **Topplista**:
-The ranking of players shown to everyone, by unique Cards owned across all Collections (Special left out); ties break on unique Legendary, then Epic, then Rare, and players still tied share the rank.
+The ranking of players shown to everyone, by points for unique Cards owned across all Collections (Common 1, Rare 5, Epic 10, Legendary 20; Special left out); ties break on unique Legendary, then Epic, then Rare, and players still tied share the rank.
 _Avoid_: Leaderboard (in Swedish UI text)
 
 ### Communication

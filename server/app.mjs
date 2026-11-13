@@ -842,10 +842,11 @@ app.get("/api/game/collections", (_request, response) => {
   response.json(collections);
 });
 
-// Topplista — players ranked by unique Cards owned across all Collections,
-// Special left out (the same count as Collection progress). Ties break on unique
-// Legendary, then Epic, then Rare. Copies never count. Players still tied share
-// the rank (1, 2, 2, 4) and are listed alphabetically.
+// Topplista — players ranked by points for unique Cards owned across all
+// Collections: Common 1, Rare 5, Epic 10, Legendary 20. Special left out.
+// Ties break on unique Legendary, then Epic, then Rare. Copies never count.
+// Players still tied share the rank (1, 2, 2, 4) and are listed alphabetically.
+const TOPPLISTA_POINTS = { common: 1, rare: 5, epic: 10, legendary: 20 };
 app.get("/api/leaderboard", authed, (_request, response) => {
   const users = db.prepare("SELECT id, username FROM users").all();
   const ownedStmt = db.prepare("SELECT DISTINCT card_id FROM owned_cards WHERE user_id = ?");
@@ -857,11 +858,12 @@ app.get("/api/leaderboard", authed, (_request, response) => {
       if (card && counts[card.rarity] !== undefined) counts[card.rarity] += 1;
     }
     const total = counts.common + counts.rare + counts.epic + counts.legendary;
-    return { userId: u.id, username: u.username, total, ...counts };
+    const points = Object.entries(counts).reduce((sum, [rarity, n]) => sum + n * TOPPLISTA_POINTS[rarity], 0);
+    return { userId: u.id, username: u.username, points, total, ...counts };
   });
 
   entries.sort((a, b) =>
-    b.total - a.total ||
+    b.points - a.points ||
     b.legendary - a.legendary ||
     b.epic - a.epic ||
     b.rare - a.rare ||
@@ -869,7 +871,7 @@ app.get("/api/leaderboard", authed, (_request, response) => {
   );
 
   const sameScore = (a, b) =>
-    a.total === b.total && a.legendary === b.legendary && a.epic === b.epic && a.rare === b.rare;
+    a.points === b.points && a.legendary === b.legendary && a.epic === b.epic && a.rare === b.rare;
   const ranked = entries.slice(0, 100).map((e, i, all) => ({
     rank: i > 0 && sameScore(all[i - 1], e) ? null : i + 1,
     ...e,

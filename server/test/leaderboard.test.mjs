@@ -41,6 +41,23 @@ test("ranks by unique Cards, not Copies", async () => {
   const entries = await board(a);
   assert.deepEqual(order(entries), [b.username, a.username]);
   assert.deepEqual(entries.map((e) => e.total), [2, 1]);
+  assert.deepEqual(entries.map((e) => e.points), [2, 1]);
+});
+
+test("scores Common 1, Rare 5, Epic 10, Legendary 20 and leaves Special out", async () => {
+  const a = await t.registerPlayer();
+  give(a.userId, "c1", "c2", "r1", "e1", "l1", "s1");
+  const [entry] = await board(a);
+  assert.equal(entry.points, 1 + 1 + 5 + 10 + 20);
+  assert.equal(entry.total, 5);
+});
+
+test("a rare+ Card outranks several Commons", async () => {
+  const a = await t.registerPlayer();
+  const b = await t.registerPlayer();
+  give(a.userId, "c1", "c2", "c3", "c4"); // 4 points
+  give(b.userId, "r1"); // 5 points
+  assert.deepEqual(order(await board(a)), [b.username, a.username]);
 });
 
 test("counts unique Cards across all Collections and leaves Special out", async () => {
@@ -53,24 +70,24 @@ test("counts unique Cards across all Collections and leaves Special out", async 
 test("ties break on unique Legendary", async () => {
   const a = await t.registerPlayer();
   const b = await t.registerPlayer();
-  give(a.userId, "c1", "c2", "c3"); // 3 unique, 0 legendary
-  give(b.userId, "l1", "c1", "c2"); // 3 unique, 1 legendary
+  give(a.userId, "e1", "e2"); // 20 points, 0 legendary
+  give(b.userId, "l1"); // 20 points, 1 legendary
   assert.deepEqual(order(await board(a)), [b.username, a.username]);
 });
 
 test("then on unique Epic", async () => {
   const a = await t.registerPlayer();
   const b = await t.registerPlayer();
-  give(a.userId, "r1", "r2", "c1");
-  give(b.userId, "e1", "c1", "c2");
+  give(a.userId, "r1", "r2"); // 10 points, 0 epic
+  give(b.userId, "e1"); // 10 points, 1 epic
   assert.deepEqual(order(await board(a)), [b.username, a.username]);
 });
 
 test("then on unique Rare", async () => {
   const a = await t.registerPlayer();
   const b = await t.registerPlayer();
-  give(a.userId, "c1", "c2", "c3");
-  give(b.userId, "r1", "c1", "c2");
+  give(a.userId, "c1", "c2", "c3", "c4", "o1"); // 5 points, 0 rare
+  give(b.userId, "r1"); // 5 points, 1 rare
   assert.deepEqual(order(await board(a)), [b.username, a.username]);
 });
 

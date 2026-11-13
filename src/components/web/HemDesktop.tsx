@@ -136,7 +136,7 @@ export function HemDesktop(p: HemDesktopProps) {
             {top5.map((e) => (
               <li key={e.userId} className={`flex items-center justify-between gap-2 py-1.5 text-sm ${e.username === p.username ? "font-semibold text-accent" : ""}`}>
                 <span className="truncate">{e.rank}. {e.username}</span>
-                <span className="shrink-0 tabular-nums text-secondary">{e.total} unika kort</span>
+                <span className="shrink-0 tabular-nums text-secondary">{e.points} p</span>
               </li>
             ))}
           </ol>

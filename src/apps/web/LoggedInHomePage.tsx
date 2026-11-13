@@ -249,7 +249,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       </section>
 
       <Link to="/topplista" className="mx-4 rounded-xl border bg-surface px-3 py-2 text-sm">
-        {me ? <>Du är <span className="font-semibold">#{me.rank}</span> · {me.total} unika kort</> : "Topplista"}
+        {me ? <>Du är <span className="font-semibold">#{me.rank}</span> · {me.points} p</> : "Topplista"}
         {top && <span className="text-secondary"> · topp: {top}</span>}
       </Link>
     </main>
