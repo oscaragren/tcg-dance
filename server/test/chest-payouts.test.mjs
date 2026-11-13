@@ -35,7 +35,7 @@ test("a newly bought Chest records the current payout table", async () => {
   assert.equal(t.db.prepare("SELECT payout_table FROM chests").get().payout_table, "v2");
 });
 
-for (const [type, min, max] of [["bronze", 15, 20], ["silver", 30, 45], ["gold", 55, 95]]) {
+for (const [type, min, max] of [["bronze", 15, 20], ["silver", 35, 40], ["gold", 65, 85]]) {
   test(`a new ${type} Chest pays ${min}–${max} Diamonds`, async () => {
     await setup(seededRandom([LOW]));
     await buy(type);
@@ -64,6 +64,6 @@ test("the Chest list shows the current payout range, prices and waits unchanged"
   await setup(seededRandom([0]));
   const { body } = await t.request("GET", "/api/game/chests", { cookie: player.cookie });
   assert.deepEqual(body.types.map((c) => [c.id, c.price, c.waitHours, c.diamondMin, c.diamondMax]), [
-    ["bronze", 10, 1, 15, 20], ["silver", 25, 5, 30, 45], ["gold", 50, 12, 55, 95],
+    ["bronze", 10, 1, 15, 20], ["silver", 25, 5, 35, 40], ["gold", 50, 12, 65, 85],
   ]);
 });
