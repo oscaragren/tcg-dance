@@ -183,3 +183,42 @@ test("the admin overview has banners for a pending Top-up, a fired Top-up and a 
   assert.ok(kinds.includes("topup_fired"));
   assert.ok(kinds.includes("rarity_sold_out"));
 });
+
+// ── Reversing the relaunch migration's Top-up ────────────────────────────────
+
+async function withMigrationTopUp(admin, amounts) {
+  await t.request("POST", "/api/admin/topups/now", { cookie: admin, body: { collectionId: "test", ...amounts } });
+  t.db.prepare("INSERT INTO settings (key, value) VALUES ('relaunch_migration', ?)")
+    .run(JSON.stringify({ at: "2026-11-14T00:00:00.000Z", topUps: [{ collectionId: "test", ...amounts }], cancelledTrades: 0 }));
+}
+
+test("reversing the relaunch Top-up takes the unpulled Copies back out of the pool and out of bonus_copies", async () => {
+  const admin = await setup();
+  await withMigrationTopUp(admin, { rare: 9, epic: 2 });
+  const before = t.db.prepare("SELECT SUM(total_copies) n FROM card_pool").get().n;
+  const res = await t.request("POST", "/api/admin/topups/test/reverse-relaunch", { cookie: admin });
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body.removed, { rare: 9, epic: 2 });
+  assert.equal(t.db.prepare("SELECT SUM(total_copies) n FROM card_pool").get().n, before - 11);
+  assert.equal(t.db.prepare("SELECT SUM(bonus_copies) n FROM card_pool").get().n, 0);
+  assert.deepEqual([poolOf("r1").rem, poolOf("r2").rem, poolOf("e1").rem], [10, 10, 5]);
+});
+
+test("Top-up Copies already pulled stay with players; only what is left in the pool is removed", async () => {
+  const admin = await setup();
+  await withMigrationTopUp(admin, { rare: 9, epic: 2 });
+  remaining("r1", 2); // r1 had 10 + 5 added; 13 were pulled, so only 2 remain
+  const res = await t.request("POST", "/api/admin/topups/test/reverse-relaunch", { cookie: admin });
+  assert.deepEqual(res.body.removed, { rare: 2 + 4, epic: 2 });
+  assert.equal(poolOf("r1").rem, 0);
+  assert.equal(poolOf("r1").total, 10 + 5 - 2);
+});
+
+test("the relaunch Top-up can be reversed only once, and only if the relaunch made one", async () => {
+  const admin = await setup();
+  assert.equal((await t.request("POST", "/api/admin/topups/test/reverse-relaunch", { cookie: admin })).status, 404);
+  await withMigrationTopUp(admin, { rare: 9, epic: 2 });
+  assert.equal((await t.request("POST", "/api/admin/topups/test/reverse-relaunch", { cookie: admin })).status, 200);
+  assert.equal((await t.request("POST", "/api/admin/topups/test/reverse-relaunch", { cookie: admin })).status, 409);
+  assert.equal((await t.request("POST", "/api/admin/topups/test/reverse-relaunch")).status, 401);
+});
