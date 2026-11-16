@@ -2590,6 +2590,8 @@ const TOPUP_TRIGGER = topUpConfig?.triggerShare ?? 0.03;
 const TOPUP_TARGET = topUpConfig?.targetShare ?? 0.07;
 const RARE_PLUS = ["rare", "epic", "legendary", "special"];
 const TOPUP_RARITIES = ["rare", "epic"];
+// Legendary is never suggested, but an admin may add Legendary Copies by hand.
+const APPLY_RARITIES = [...TOPUP_RARITIES, "legendary"];
 const TOPUP_FIRED_BANNER_DAYS = 7;
 
 function collectionPoolStats(collectionId) {
@@ -2657,7 +2659,7 @@ try { refreshTopUps(); } catch (err) { console.error(err); }
 
 /** Adds Copies to the Collection's Cards of a Rarity, spread evenly, and logs it. */
 const applyTopUp = db.transaction((collectionId, amounts, source) => {
-  for (const rarity of TOPUP_RARITIES) {
+  for (const rarity of APPLY_RARITIES) {
     const n = amounts[rarity];
     if (!n) continue;
     const rows = db
@@ -2673,22 +2675,23 @@ const applyTopUp = db.transaction((collectionId, amounts, source) => {
       if (share) stmt.run(share, share, share, r.card_id);
     });
   }
-  db.prepare("INSERT INTO topup_log (collection_id, rare, epic, source, created_at) VALUES (?, ?, ?, ?, ?)")
-    .run(collectionId, amounts.rare ?? 0, amounts.epic ?? 0, source, new Date(clock.now()).toISOString());
+  db.prepare("INSERT INTO topup_log (collection_id, rare, epic, legendary, source, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .run(collectionId, amounts.rare ?? 0, amounts.epic ?? 0, amounts.legendary ?? 0, source, new Date(clock.now()).toISOString());
   db.prepare("DELETE FROM topups WHERE collection_id = ? AND status = 'pending'").run(collectionId);
 });
 
 function parseAmounts(body) {
   const rare = Number(body?.rare ?? 0);
   const epic = Number(body?.epic ?? 0);
-  if (![rare, epic].every((n) => Number.isInteger(n) && n >= 0 && n <= 100000) || rare + epic === 0) return null;
-  return { rare, epic };
+  const legendary = Number(body?.legendary ?? 0);
+  if (![rare, epic, legendary].every((n) => Number.isInteger(n) && n >= 0 && n <= 100000) || rare + epic + legendary === 0) return null;
+  return { rare, epic, legendary };
 }
 
 function fireTopUp(request, response, collectionId, source) {
   if (!collectionsMap.has(collectionId)) { response.status(400).json({ message: "Okänd samling." }); return; }
   const amounts = parseAmounts(request.body);
-  if (!amounts) { response.status(400).json({ message: "Ange antal Rare och Epic (heltal, minst ett över 0)." }); return; }
+  if (!amounts) { response.status(400).json({ message: "Ange antal Rare, Epic och Legendary (heltal, minst ett över 0)." }); return; }
   try {
     applyTopUp(collectionId, amounts, source);
   } catch (err) {
@@ -2699,7 +2702,7 @@ function fireTopUp(request, response, collectionId, source) {
   response.json({ ok: true, ...amounts });
 }
 
-const topUpLogRow = (r) => ({ id: r.id, collectionId: r.collection_id, rare: r.rare, epic: r.epic, source: r.source, at: r.created_at });
+const topUpLogRow = (r) => ({ id: r.id, collectionId: r.collection_id, rare: r.rare, epic: r.epic, legendary: r.legendary, source: r.source, at: r.created_at });
 
 app.get("/api/admin/topups", requireAdmin, (_request, response) => {
   refreshTopUps();

@@ -265,6 +265,9 @@ db.exec(`
     created_at    TEXT NOT NULL
   );
 `);
+if (db.prepare("SELECT COUNT(*) as n FROM pragma_table_info('topup_log') WHERE name='legendary'").get().n === 0) {
+  db.exec("ALTER TABLE topup_log ADD COLUMN legendary INTEGER NOT NULL DEFAULT 0");
+}
 // Events are built in the admin panel. Times are UTC ISO strings. An Event that
 // is ended early has its ends_at moved to that moment. events_seeded remembers
 // which content-file Events were already carried over, so deleting one sticks.
