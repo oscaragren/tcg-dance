@@ -85,11 +85,12 @@ export type UpgradeResponse = {
   state: GameState;
 };
 
-/** The game's automatic pick for an Upgrade (Duplicates only, skipping Behåll). */
+/** The game's suggested pick for an Upgrade (Duplicates only, skipping Behåll); `owned` counts every Copy. */
 export type UpgradePick = {
   cost: number;
   needed: number;
   have: number;
+  owned: number;
   cardIds: string[];
   targetRarity: CardRarity;
   canUpgrade: boolean;

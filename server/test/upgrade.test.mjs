@@ -62,27 +62,22 @@ test("an Upgrade is refused, charging nothing, when the pool has no Copy of the 
   assert.equal(pool("c1"), poolBefore);
 });
 
-test("an Upgrade never consumes a player's only Copy", async () => {
+test("an Upgrade can consume a player's only Copies and Cards set to Behåll", async () => {
   const p = await setup();
-  give(p, "c1", 100); // 99 Duplicates...
-  give(p, "c2", 1); // ...plus one only Copy
-  const res = await upgrade(p, [...ids("c1", 99), "c2"]);
-  assert.equal(res.status, 400);
-  assert.equal(owned(p, "c1"), 100);
-  assert.equal(owned(p, "c2"), 1);
-});
-
-test("an Upgrade refuses Copies of a Card set to Behåll", async () => {
-  const p = await setup();
-  give(p, "c1", 60);
-  give(p, "c2", 60);
+  give(p, "c1", 100);
   await t.request("PUT", "/api/game/keep/c1", { cookie: p.cookie, body: { keep: true } });
-  const res = await upgrade(p, [...ids("c1", 50), ...ids("c2", 50)]);
-  assert.equal(res.status, 400);
-  assert.equal(owned(p, "c1"), 60);
+  const res = await upgrade(p, ids("c1", 100));
+  assert.equal(res.status, 200);
+  assert.equal(owned(p, "c1"), 0);
 });
 
-test("the automatic pick uses only Duplicates and skips Cards set to Behåll", async () => {
+test("an Upgrade refuses more Copies than the player owns", async () => {
+  const p = await setup();
+  const res = await upgrade(p, ids("c1", 100));
+  assert.equal(res.status, 400);
+});
+
+test("the suggested pick uses only Duplicates and skips Cards set to Behåll", async () => {
   const p = await setup();
   give(p, "c1", 80); // 79 Duplicates
   give(p, "c2", 61); // 60 Duplicates, but kept
@@ -90,7 +85,8 @@ test("the automatic pick uses only Duplicates and skips Cards set to Behåll", a
   let body = (await pick(p, "common")).body;
   assert.equal(body.have, 79);
   assert.equal(body.needed, 100);
-  assert.equal(body.canUpgrade, false);
+  assert.equal(body.owned, 141);
+  assert.equal(body.canUpgrade, true); // any owned Copy counts, not just Duplicates
   assert.deepEqual(body.cardIds, ids("c1", 79)); // never c2, never the last c1
 
   await t.request("PUT", "/api/game/keep/c2", { cookie: p.cookie, body: { keep: false } });

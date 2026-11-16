@@ -117,15 +117,15 @@ export function CollectionPage({ userEmail }: { userEmail: string | null }) {
   const goPrev = useCallback(() => { if (selectedIndex > 0) setSelected(navigable[selectedIndex - 1]); }, [selectedIndex, navigable]);
   const goNext = useCallback(() => { if (selectedIndex >= 0 && selectedIndex < navigable.length - 1) setSelected(navigable[selectedIndex + 1]); }, [selectedIndex, navigable]);
 
-  // Duplicates of Cards not set to Behåll, per Rarity: what an Upgrade can spend.
+  // Every Copy owned per Rarity: what an Upgrade can spend.
   const spareByRarity = useMemo(() => {
     const out: Partial<Record<CardRarity, number>> = {};
     for (const c of collectionCards) {
       const n = copies.get(c.id) ?? 0;
-      if (n > 1 && !keptCardIds.has(c.id)) out[c.rarity] = (out[c.rarity] ?? 0) + n - 1;
+      if (n > 0) out[c.rarity] = (out[c.rarity] ?? 0) + n;
     }
     return out;
-  }, [collectionCards, copies, keptCardIds]);
+  }, [collectionCards, copies]);
 
   async function confirmUpgrade(cardIds: string[]) {
     if (isUpgrading) return;

@@ -1316,9 +1316,9 @@ function logGameEvent(userId, type, { collectionId = null, quantity = 0, diamond
   stmtLogEvent.run(userId, type, collectionId, quantity, diamonds, new Date(clock.now()).toISOString(), reason);
 }
 
-// The game's automatic pick for an Upgrade: Duplicates only, skipping Cards set
-// to Behåll, taken from the Cards with the most spare Copies first. The player
-// can adjust it before confirming.
+// The game's suggested pick for an Upgrade (the "select Duplicates" button):
+// Duplicates only, skipping Cards set to Behåll, from the Cards with the most
+// spare Copies first. Any owned Copy can be Upgraded; `owned` counts them all.
 app.get("/api/game/upgrade/pick/:collectionId/:rarity", authed, (request, response) => {
   const userId = request.auth.userId;
   const { collectionId, rarity } = request.params;
@@ -1332,12 +1332,17 @@ app.get("/api/game/upgrade/pick/:collectionId/:rarity", authed, (request, respon
     .filter((a) => cardById.get(a.cardId)?.collectionId === collectionId && cardById.get(a.cardId)?.rarity === rarity)
     .sort((a, b) => b.quantity - a.quantity || a.cardId.localeCompare(b.cardId));
   const have = spare.reduce((n, a) => n + a.quantity, 0);
+  let owned = 0;
+  for (const [cardId, n] of ownedCountMap(userId)) {
+    const card = cardById.get(cardId);
+    if (card?.collectionId === collectionId && card?.rarity === rarity) owned += n;
+  }
   const cardIds = [];
   for (const { cardId, quantity } of spare) {
     for (let i = 0; i < quantity && cardIds.length < cost; i++) cardIds.push(cardId);
   }
   const poolHasTarget = stmtCountCardsOfRarity.get(collectionId, targetRarity).n > 0;
-  response.json({ cost, needed: cost, have, cardIds, targetRarity, canUpgrade: have >= cost && poolHasTarget });
+  response.json({ cost, needed: cost, have, owned, cardIds, targetRarity, canUpgrade: owned >= cost && poolHasTarget });
 });
 
 app.post("/api/game/upgrade", authed, (request, response) => {
@@ -1378,12 +1383,11 @@ app.post("/api/game/upgrade", authed, (request, response) => {
   const requestedCounts = new Map();
   for (const id of requestedCardIds) requestedCounts.set(id, (requestedCounts.get(id) ?? 0) + 1);
 
-  // Only Duplicates can be given up (never a player's only Copy), and never a
-  // Card set to Behåll: the same Copies that are Available for Trade.
-  const spare = new Map(availableForTrade(userId).map((a) => [a.cardId, a.quantity]));
+  // Any Copy the player owns can be given up, including an only Copy.
+  const ownedCounts = ownedCountMap(userId);
   for (const [cardId, count] of requestedCounts) {
-    if ((spare.get(cardId) ?? 0) < count) {
-      response.status(400).json({ message: "Du kan bara byta in dubbletter av kort du inte har satt till Behåll." });
+    if ((ownedCounts.get(cardId) ?? 0) < count) {
+      response.status(400).json({ message: "Du äger inte alla valda kort." });
       return;
     }
   }
