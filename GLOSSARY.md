@@ -65,7 +65,7 @@ A purchasable bundle that yields a number of Copies drawn from a Collection's Ca
 _Avoid_: Booster
 
 **Upgrade**:
-Giving up a fixed number of same-Rarity Copies from one Collection to receive one Copy of the next Rarity up.
+Giving up a fixed number of same-Rarity Copies from one Collection to receive one Copy of the next Rarity up. Any owned Copy can be given up (including an only Copy or a Card set to Behåll); the player picks them manually, with a button that suggests Duplicates.
 _Avoid_: Combine, craft, fuse
 
 **Trade**:

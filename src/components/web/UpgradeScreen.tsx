@@ -21,8 +21,8 @@ type UpgradeScreenProps = {
 };
 
 /**
- * Full-screen Upgrade list on a phone, right side panel at ≥1024px. The game has already picked Duplicates (never an
- * only Copy, skipping Behåll); the player adjusts with −/+ before confirming.
+ * Full-screen Upgrade list on a phone, right side panel at ≥1024px. The player picks any owned Copies with −/+; the
+ * "Välj dubbletter" button fills in the game's suggestion (Duplicates only, skipping Behåll).
  */
 export function UpgradeScreen({ collectionId, rarity, ownedCardIds, keptCardIds, isSubmitting, error, onConfirm, onClose }: UpgradeScreenProps) {
   const [pick, setPick] = useState<UpgradePick | null>(null);
@@ -36,22 +36,17 @@ export function UpgradeScreen({ collectionId, rarity, ownedCardIds, keptCardIds,
       .then((p) => {
         if (cancelled) return;
         setPick(p);
-        const initial: Record<string, number> = {};
-        for (const id of p.cardIds) initial[id] = (initial[id] ?? 0) + 1;
-        setSelected(initial);
       })
       .catch((e) => { if (!cancelled) setLoadError(e instanceof Error ? e.message : "Kunde inte ladda uppgraderingen."); });
     return () => { cancelled = true; };
   }, [collectionId, rarity]);
 
-  // Spare Copies per Card: Duplicates of Cards not set to Behåll.
+  // Copies owned per Card: any of them can be given up.
   const spare = useMemo(() => {
     const owned: Record<string, number> = {};
     for (const id of ownedCardIds) owned[id] = (owned[id] ?? 0) + 1;
-    const out: Record<string, number> = {};
-    for (const [id, n] of Object.entries(owned)) if (n > 1 && !keptCardIds.has(id)) out[id] = n - 1;
-    return out;
-  }, [ownedCardIds, keptCardIds]);
+    return owned;
+  }, [ownedCardIds]);
 
   const rows = useMemo(
     () =>
@@ -74,6 +69,13 @@ export function UpgradeScreen({ collectionId, rarity, ownedCardIds, keptCardIds,
     });
   }
 
+  function selectDuplicates() {
+    if (!pick) return;
+    const next: Record<string, number> = {};
+    for (const id of pick.cardIds) next[id] = (next[id] ?? 0) + 1;
+    setSelected(next);
+  }
+
   function confirm() {
     const ids: string[] = [];
     for (const [id, n] of Object.entries(selected)) for (let i = 0; i < n; i++) ids.push(id);
@@ -88,7 +90,7 @@ export function UpgradeScreen({ collectionId, rarity, ownedCardIds, keptCardIds,
             {rarityLabel[rarity]} → {target ? rarityLabel[target] : ""}
           </h2>
           <p className="text-xs text-secondary">
-            Kostar {cost || "…"} dubbletter. Spelet har valt åt dig, justera med − och +.
+            Kostar {cost || "…"} kort. Välj vilka med − och +.
           </p>
         </div>
         <button type="button" onClick={onClose} aria-label="Stäng" className="rounded p-2 text-secondary" disabled={isSubmitting}>
@@ -100,21 +102,26 @@ export function UpgradeScreen({ collectionId, rarity, ownedCardIds, keptCardIds,
         {(loadError || error) && <p className="mb-3 text-sm text-danger">{loadError ?? error}</p>}
         {pick && !pick.canUpgrade && (
           <p className="mb-3 text-sm text-secondary">
-            {pick.have < pick.needed
-              ? `Du har ${pick.have} av ${pick.needed} dubbletter som behövs.`
+            {pick.owned < pick.needed
+              ? `Du har ${pick.owned} av ${pick.needed} kort som behövs.`
               : "Det finns inga kort kvar att uppgradera till just nu."}
           </p>
         )}
+        <div className="mx-auto mb-3 max-w-3xl">
+          <Button type="button" variant="outline" onClick={selectDuplicates} disabled={!pick || pick.cardIds.length === 0 || isSubmitting}>
+            Välj dubbletter automatiskt
+          </Button>
+        </div>
         <ul className="mx-auto grid max-w-3xl grid-cols-1 gap-2">
           {rows.map((card) => {
             const n = selected[card.id] ?? 0;
             const max = spare[card.id] ?? 0;
             return (
               <li key={card.id} className="flex items-center gap-3 rounded-lg bg-surface p-2">
-                <div className="w-14 shrink-0"><CardThumb card={card} copies={max + 1} showName={false} /></div>
+                <div className="w-14 shrink-0"><CardThumb card={card} copies={max} showName={false} /></div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{card.name}</div>
-                  <div className="text-xs text-secondary">{max} dubbletter</div>
+                  <div className="text-xs text-secondary">Du har {max}{keptCardIds.has(card.id) ? " · Behåll" : ""}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={() => adjust(card.id, -1)} disabled={n === 0 || isSubmitting}
