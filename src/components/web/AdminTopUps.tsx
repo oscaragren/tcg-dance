@@ -53,6 +53,7 @@ function amountInput(value: string, onChange: (v: string) => void, label: string
 function CollectionSkew({ row, thresholds, onChanged }: { row: AdminPoolSkewRow; thresholds: AdminPoolSkew["thresholds"]; onChanged: () => void }) {
   const [rare, setRare] = useState(String(row.pending?.rare ?? 0));
   const [epic, setEpic] = useState(String(row.pending?.epic ?? 0));
+  const [legendary, setLegendary] = useState("0");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCards, setShowCards] = useState(false);
@@ -62,7 +63,7 @@ function CollectionSkew({ row, thresholds, onChanged }: { row: AdminPoolSkewRow;
     setError(null);
     try { await action(); onChanged(); } catch (e) { setError(e instanceof Error ? e.message : "Något gick fel."); } finally { setBusy(false); }
   }
-  const amounts: [number, number] = [Number(rare), Number(epic)];
+  const amounts: [number, number, number] = [Number(rare), Number(epic), Number(legendary)];
   const share = row.rarePlusShare;
   const bar = Math.min(100, (share ?? 0) * 100 / (thresholds.target * 2)); // scale: full bar = 2x target
 
@@ -91,6 +92,7 @@ function CollectionSkew({ row, thresholds, onChanged }: { row: AdminPoolSkewRow;
       <div className="flex flex-wrap items-center gap-3">
         {amountInput(rare, setRare, "Rare")}
         {amountInput(epic, setEpic, "Epic")}
+        {amountInput(legendary, setLegendary, "Legendary")}
         {row.pending ? (
           <>
             <Button size="sm" disabled={busy} onClick={() => void run(() => approveAdminTopUp(row.collectionId, ...amounts))}>Godkänn</Button>
@@ -110,7 +112,7 @@ function CollectionSkew({ row, thresholds, onChanged }: { row: AdminPoolSkewRow;
         ) : (
           <ul className="text-secondary">
             {row.topUps.map((t) => (
-              <li key={t.id}>{new Date(t.at).toLocaleString("sv-SE")} — {t.rare} Rare + {t.epic} Epic ({SOURCE_LABEL[t.source]})</li>
+              <li key={t.id}>{new Date(t.at).toLocaleString("sv-SE")} — {t.rare} Rare + {t.epic} Epic{t.legendary ? ` + ${t.legendary} Legendary` : ""} ({SOURCE_LABEL[t.source]})</li>
             ))}
           </ul>
         )}

@@ -16,6 +16,7 @@ export type AdminTopUpLogEntry = {
   collectionId: string;
   rare: number;
   epic: number;
+  legendary: number;
   source: TopUpSource;
   at: string;
 };
@@ -300,6 +301,10 @@ export async function fetchAdminTrades(): Promise<AdminTrade[]> {
   return adminRequest<AdminTrade[]>("/api/admin/trades", { method: "GET" });
 }
 
+export async function reverseAdminTrade(tradeId: string): Promise<{ id: string; status: "reversed" }> {
+  return adminRequest<{ id: string; status: "reversed" }>(`/api/admin/trades/${tradeId}/reverse`, { method: "POST" });
+}
+
 export async function fetchAdminTradePairs(): Promise<AdminTradePair[]> {
   return adminRequest<AdminTradePair[]>("/api/admin/trade-pairs", { method: "GET" });
 }
@@ -357,10 +362,10 @@ export async function fetchAdminPoolSkew(): Promise<AdminPoolSkew> {
   return adminRequest<AdminPoolSkew>("/api/admin/pool-skew", { method: "GET" });
 }
 
-export async function approveAdminTopUp(collectionId: string, rare: number, epic: number): Promise<void> {
+export async function approveAdminTopUp(collectionId: string, rare: number, epic: number, legendary = 0): Promise<void> {
   await adminRequest<unknown>(`/api/admin/topups/${collectionId}/approve`, {
     method: "POST",
-    body: JSON.stringify({ rare, epic }),
+    body: JSON.stringify({ rare, epic, legendary }),
   });
 }
 
@@ -368,10 +373,10 @@ export async function dismissAdminTopUp(collectionId: string): Promise<void> {
   await adminRequest<unknown>(`/api/admin/topups/${collectionId}/dismiss`, { method: "POST" });
 }
 
-export async function topUpAdminNow(collectionId: string, rare: number, epic: number): Promise<void> {
+export async function topUpAdminNow(collectionId: string, rare: number, epic: number, legendary = 0): Promise<void> {
   await adminRequest<unknown>("/api/admin/topups/now", {
     method: "POST",
-    body: JSON.stringify({ collectionId, rare, epic }),
+    body: JSON.stringify({ collectionId, rare, epic, legendary }),
   });
 }
 

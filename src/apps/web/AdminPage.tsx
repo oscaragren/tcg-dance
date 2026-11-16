@@ -27,6 +27,7 @@ import {
   fetchAdminSpecialCards,
   fetchAdminTradePairs,
   fetchAdminTrades,
+  reverseAdminTrade,
   fetchAdminUserDetail,
   fetchAdminUsers,
   type AdminAnnouncement,
@@ -512,6 +513,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         <th className="text-right px-4 py-2" title="Större sidan delat med mindre sidan">Kvot</th>
                         <th className="text-left px-4 py-2">Status</th>
                         <th className="text-right px-4 py-2">Flaggor</th>
+                        <th className="text-right px-4 py-2"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -537,6 +539,21 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           </td>
                           <td className="px-4 py-2 capitalize text-secondary">{t.status}</td>
                           <td className="px-4 py-2 text-right"><FlagBadges flags={t.flags} /></td>
+                          <td className="px-4 py-2 text-right">
+                            {t.status === "accepted" && (
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  if (!window.confirm(`Ångra bytet mellan ${t.sender.username} och ${t.receiver.username}? Alla kort och diamanter går tillbaka.`)) return;
+                                  reverseAdminTrade(t.id)
+                                    .then(() => setTrades((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: "reversed" } : x))))
+                                    .catch((err) => window.alert(err instanceof Error ? err.message : "Kunde inte ångra bytet."));
+                                }}
+                              >
+                                Ångra
+                              </Button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

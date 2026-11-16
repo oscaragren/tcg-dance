@@ -819,7 +819,8 @@ app.get("/api/game/trophies", authed, (request, response) => {
 });
 
 // What players may know about the Card pool: whether a Collection is sold out
-// and which Rarities still have Copies. Never how many (admin has /api/admin/pool).
+// and how many Copies of each Rarity (Special included) are left. Never which
+// individual Cards (admin has /api/admin/pool).
 app.get("/api/game/availability", (_request, response) => {
   const rows = db
     .prepare(
@@ -828,12 +829,13 @@ app.get("/api/game/availability", (_request, response) => {
     )
     .all();
   const result = {};
-  for (const collection of collections) result[collection.id] = { soldOut: true, rarityInStock: {} };
+  for (const collection of collections) result[collection.id] = { soldOut: true, rarityInStock: {}, copiesLeft: {} };
   for (const row of rows) {
     const entry = result[row.collection_id];
     if (!entry) continue;
     const inStock = row.remaining > 0;
     entry.rarityInStock[row.rarity] = inStock;
+    entry.copiesLeft[row.rarity] = row.remaining;
     if (inStock) entry.soldOut = false;
   }
   response.json(result);
@@ -2588,6 +2590,8 @@ const TOPUP_TRIGGER = topUpConfig?.triggerShare ?? 0.03;
 const TOPUP_TARGET = topUpConfig?.targetShare ?? 0.07;
 const RARE_PLUS = ["rare", "epic", "legendary", "special"];
 const TOPUP_RARITIES = ["rare", "epic"];
+// Legendary is never suggested, but an admin may add Legendary Copies by hand.
+const APPLY_RARITIES = [...TOPUP_RARITIES, "legendary"];
 const TOPUP_FIRED_BANNER_DAYS = 7;
 
 function collectionPoolStats(collectionId) {
@@ -2655,7 +2659,7 @@ try { refreshTopUps(); } catch (err) { console.error(err); }
 
 /** Adds Copies to the Collection's Cards of a Rarity, spread evenly, and logs it. */
 const applyTopUp = db.transaction((collectionId, amounts, source) => {
-  for (const rarity of TOPUP_RARITIES) {
+  for (const rarity of APPLY_RARITIES) {
     const n = amounts[rarity];
     if (!n) continue;
     const rows = db
@@ -2671,22 +2675,23 @@ const applyTopUp = db.transaction((collectionId, amounts, source) => {
       if (share) stmt.run(share, share, share, r.card_id);
     });
   }
-  db.prepare("INSERT INTO topup_log (collection_id, rare, epic, source, created_at) VALUES (?, ?, ?, ?, ?)")
-    .run(collectionId, amounts.rare ?? 0, amounts.epic ?? 0, source, new Date(clock.now()).toISOString());
+  db.prepare("INSERT INTO topup_log (collection_id, rare, epic, legendary, source, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .run(collectionId, amounts.rare ?? 0, amounts.epic ?? 0, amounts.legendary ?? 0, source, new Date(clock.now()).toISOString());
   db.prepare("DELETE FROM topups WHERE collection_id = ? AND status = 'pending'").run(collectionId);
 });
 
 function parseAmounts(body) {
   const rare = Number(body?.rare ?? 0);
   const epic = Number(body?.epic ?? 0);
-  if (![rare, epic].every((n) => Number.isInteger(n) && n >= 0 && n <= 100000) || rare + epic === 0) return null;
-  return { rare, epic };
+  const legendary = Number(body?.legendary ?? 0);
+  if (![rare, epic, legendary].every((n) => Number.isInteger(n) && n >= 0 && n <= 100000) || rare + epic + legendary === 0) return null;
+  return { rare, epic, legendary };
 }
 
 function fireTopUp(request, response, collectionId, source) {
   if (!collectionsMap.has(collectionId)) { response.status(400).json({ message: "Okänd samling." }); return; }
   const amounts = parseAmounts(request.body);
-  if (!amounts) { response.status(400).json({ message: "Ange antal Rare och Epic (heltal, minst ett över 0)." }); return; }
+  if (!amounts) { response.status(400).json({ message: "Ange antal Rare, Epic och Legendary (heltal, minst ett över 0)." }); return; }
   try {
     applyTopUp(collectionId, amounts, source);
   } catch (err) {
@@ -2697,7 +2702,7 @@ function fireTopUp(request, response, collectionId, source) {
   response.json({ ok: true, ...amounts });
 }
 
-const topUpLogRow = (r) => ({ id: r.id, collectionId: r.collection_id, rare: r.rare, epic: r.epic, source: r.source, at: r.created_at });
+const topUpLogRow = (r) => ({ id: r.id, collectionId: r.collection_id, rare: r.rare, epic: r.epic, legendary: r.legendary, source: r.source, at: r.created_at });
 
 app.get("/api/admin/topups", requireAdmin, (_request, response) => {
   refreshTopUps();
@@ -2723,6 +2728,50 @@ app.post("/api/admin/topups/:collectionId/dismiss", requireAdmin, (request, resp
     .run(request.params.collectionId);
   if (result.changes === 0) { response.status(404).json({ message: "Ingen väntande Top-up för samlingen." }); return; }
   response.json({ ok: true });
+});
+
+// Undo the relaunch migration's Top-up of one Collection. The amounts come from
+// the migration marker, and are taken back per Card exactly as applyTopUp spread
+// them. Copies already pulled by players stay with them: a Card gives back at
+// most what is still in the pool (and at most its bonus_copies), so the Top-up
+// Copies that were pulled remain in play. Runs once per Collection. A later
+// pending Top-up may appear afterwards if the Rare+ share is below the trigger.
+const reversedKey = (collectionId) => `relaunch_topup_reversed:${collectionId}`;
+
+const reverseRelaunchTopUp = db.transaction((collectionId, amounts) => {
+  const removed = { rare: 0, epic: 0 };
+  for (const rarity of TOPUP_RARITIES) {
+    const n = amounts[rarity];
+    if (!n) continue;
+    const rows = db
+      .prepare("SELECT card_id, copies_remaining, bonus_copies FROM card_pool WHERE collection_id = ? AND rarity = ? ORDER BY card_id")
+      .all(collectionId, rarity)
+      .filter((r) => cardById.has(r.card_id));
+    const stmt = db.prepare(
+      "UPDATE card_pool SET total_copies = total_copies - ?, copies_remaining = copies_remaining - ?, bonus_copies = bonus_copies - ? WHERE card_id = ?",
+    );
+    rows.forEach((r, i) => {
+      const share = Math.floor(n / rows.length) + (i < n % rows.length ? 1 : 0);
+      const take = Math.min(share, r.copies_remaining, r.bonus_copies);
+      if (take > 0) { stmt.run(take, take, take, r.card_id); removed[rarity] += take; }
+    });
+  }
+  const result = { at: new Date(clock.now()).toISOString(), requested: amounts, removed };
+  db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)").run(reversedKey(collectionId), JSON.stringify(result));
+  return result;
+});
+
+app.post("/api/admin/topups/:collectionId/reverse-relaunch", requireAdmin, (request, response) => {
+  const { collectionId } = request.params;
+  const amounts = readRelaunchMigrationMarker(db)?.topUps?.find((t) => t.collectionId === collectionId);
+  if (!amounts) { response.status(404).json({ message: "Relanseringen la ingen Top-up på samlingen." }); return; }
+  if (db.prepare("SELECT 1 FROM settings WHERE key = ?").get(reversedKey(collectionId))) {
+    response.status(409).json({ message: "Relanseringens Top-up är redan ångrad för samlingen." });
+    return;
+  }
+  const result = reverseRelaunchTopUp(collectionId, { rare: amounts.rare ?? 0, epic: amounts.epic ?? 0 });
+  refreshTopUps();
+  response.json({ ok: true, ...result });
 });
 
 // ── Event Top-up on start ─────────────────────────────────────────────────────
@@ -3589,6 +3638,62 @@ app.get("/api/admin/trades", requireAdmin, (_request, response) => {
       };
     }),
   );
+});
+
+// Undo an accepted Trade (e.g. the receiver accepted by mistake): every Copy and
+// Diamond goes back to where it came from and the Trade becomes 'reversed'.
+// All-or-nothing: if either side no longer holds what it received (traded or
+// upgraded onward, Diamonds spent) nothing moves and the admin is told what is
+// missing. Weekly goal progress and "ever owned" history are not rolled back.
+app.post("/api/admin/trades/:id/reverse", requireAdmin, (request, response) => {
+  const row = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
+  if (!row) { response.status(404).json({ message: "Handeln hittades inte." }); return; }
+  if (row.status !== "accepted") { response.status(400).json({ message: "Bara genomförda byten kan ångras." }); return; }
+
+  const offeredCardIds = JSON.parse(row.offered_card_ids);
+  const requestedCardIds = JSON.parse(row.requested_card_ids);
+  const senderId = row.sender_user_id;
+  const receiverId = row.receiver_user_id;
+
+  try {
+    db.transaction(() => {
+      const stmtCountOwned = db.prepare("SELECT COUNT(*) AS n FROM owned_cards WHERE user_id = ? AND card_id = ?");
+      // The receiver got the offered Copies and must hand them back; the sender got the requested ones.
+      for (const [cardId, need] of tallyIds(offeredCardIds)) {
+        if (stmtCountOwned.get(receiverId, cardId).n < need)
+          throw new Error(`Mottagaren äger inte längre alla kort från bytet (saknar ${cardId}).`);
+      }
+      for (const [cardId, need] of tallyIds(requestedCardIds)) {
+        if (stmtCountOwned.get(senderId, cardId).n < need)
+          throw new Error(`Avsändaren äger inte längre alla kort från bytet (saknar ${cardId}).`);
+      }
+      const diamondsOf = (id) => { ensurePlayerState(id); return db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(id).diamonds; };
+      if (row.offered_diamonds > 0 && diamondsOf(receiverId) < row.offered_diamonds)
+        throw new Error("Mottagaren har inte längre tillräckligt med diamanter.");
+      if (row.requested_diamonds > 0 && diamondsOf(senderId) < row.requested_diamonds)
+        throw new Error("Avsändaren har inte längre tillräckligt med diamanter.");
+
+      const stmtMove = db.prepare("UPDATE owned_cards SET user_id = ? WHERE id = (SELECT id FROM owned_cards WHERE user_id = ? AND card_id = ? LIMIT 1)");
+      for (const cardId of offeredCardIds) stmtMove.run(senderId, receiverId, cardId);
+      for (const cardId of requestedCardIds) stmtMove.run(receiverId, senderId, cardId);
+
+      const stmtDiamonds = db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?");
+      if (row.offered_diamonds > 0) {
+        stmtDiamonds.run(-row.offered_diamonds, receiverId); stmtDiamonds.run(row.offered_diamonds, senderId);
+        logGameEvent(receiverId, "trade_reversal", { diamonds: -row.offered_diamonds });
+        logGameEvent(senderId, "trade_reversal", { diamonds: row.offered_diamonds });
+      }
+      if (row.requested_diamonds > 0) {
+        stmtDiamonds.run(-row.requested_diamonds, senderId); stmtDiamonds.run(row.requested_diamonds, receiverId);
+        logGameEvent(senderId, "trade_reversal", { diamonds: -row.requested_diamonds });
+        logGameEvent(receiverId, "trade_reversal", { diamonds: row.requested_diamonds });
+      }
+      db.prepare("UPDATE trades SET status = 'reversed' WHERE id = ?").run(row.id);
+    })();
+    response.json({ id: row.id, status: "reversed" });
+  } catch (err) {
+    response.status(409).json({ message: err.message });
+  }
 });
 
 function pairKey(a, b) {

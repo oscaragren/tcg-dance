@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/shared/ui/button";
 import { ChestsSection } from "../../components/web/ChestsSection";
+import { PoolSheet } from "../../components/web/PoolSheet";
 import { PackOpeningModal } from "../../components/web/PackOpeningModal";
 import { SmCollectionDisclaimer } from "../../components/web/SmCollectionDisclaimer";
 import { collections, isPackPurchasable, packReleaseLabel } from "../../data/packs";
@@ -24,6 +25,8 @@ export function ButikPage({ currentUser }: ButikPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [openedPack, setOpenedPack] = useState<{ label: string; cards: DanceCard[] } | null>(null);
   const [availability, setAvailability] = useState<CollectionAvailability>({});
+  // The "Kvar i packet" sheet: counts are refetched each time it opens (null = loading).
+  const [poolSheet, setPoolSheet] = useState<{ collectionId: string; label: string; copiesLeft: CollectionAvailability[string]["copiesLeft"] | null } | null>(null);
   // Ticks so a scheduled pack release unlocks without reloading the page.
   const now = useNow();
 
@@ -39,6 +42,16 @@ export function ButikPage({ currentUser }: ButikPageProps) {
     if (!currentUser) return;
     fetchAvailability().then(setAvailability).catch(() => {});
   }, [currentUser]);
+
+  function openPoolSheet(collectionId: string, label: string) {
+    setPoolSheet({ collectionId, label, copiesLeft: null });
+    fetchAvailability()
+      .then((a) => {
+        setAvailability(a);
+        setPoolSheet((cur) => (cur?.collectionId === collectionId ? { ...cur, copiesLeft: a[collectionId]?.copiesLeft ?? {} } : cur));
+      })
+      .catch(() => setPoolSheet(null));
+  }
 
   async function handleBuyPack(collectionId: string, quantity: number) {
     if (buyingPack) return;
@@ -86,6 +99,8 @@ export function ButikPage({ currentUser }: ButikPageProps) {
         />
       )}
 
+      {poolSheet && <PoolSheet packLabel={poolSheet.label} copiesLeft={poolSheet.copiesLeft} onClose={() => setPoolSheet(null)} />}
+
       <main className="min-h-[calc(100vh-72px)] bg-background py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto space-y-10 lg:max-w-6xl">
@@ -122,6 +137,7 @@ export function ButikPage({ currentUser }: ButikPageProps) {
                     isBuying={buyingPack === collection.id}
                     disabled={isLoadingState || !!buyingPack}
                     onBuy={(qty) => void handleBuyPack(collection.id, qty)}
+                    onShowPool={() => openPoolSheet(collection.id, collection.pack.label)}
                   />
                 ))}
               </div>
@@ -162,10 +178,11 @@ type PackCardProps = {
   isBuying: boolean;
   disabled: boolean;
   onBuy: (quantity: number) => void;
+  onShowPool: () => void;
 };
 
 /** One big Pack card per live Collection (Skyltfönster). */
-function PackCard({ collection, diamonds, soldOut, purchasable, releaseLabel, isBuying, disabled, onBuy }: PackCardProps) {
+function PackCard({ collection, diamonds, soldOut, purchasable, releaseLabel, isBuying, disabled, onBuy, onShowPool }: PackCardProps) {
   const { pack } = collection;
   const art = coverArt(collection.id);
   const buyable = purchasable && !soldOut;
@@ -218,6 +235,11 @@ function PackCard({ collection, diamonds, soldOut, purchasable, releaseLabel, is
             );
           })}
         </div>
+        {purchasable && (
+          <button type="button" onClick={onShowPool} className="text-sm font-semibold text-accent hover:underline">
+            Kvar i packet
+          </button>
+        )}
       </div>
     </div>
   );

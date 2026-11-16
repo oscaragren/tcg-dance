@@ -44,6 +44,21 @@ function tileText(item: WaitingItem): { title: string; sub: string; action: stri
   }
 }
 
+/**
+ * Colour per tile kind so a Byte (a decision about another player) never reads like a Kista (a
+ * reward): trade = blue-violet, chest = amber, everything else neutral.
+ */
+function tileStyle(item: WaitingItem): { icon: string; tile: string; button: string } {
+  switch (item.type) {
+    case "trade":
+      return { icon: "⇄", tile: "border-[#8b7bff] bg-[#8b7bff]/10", button: "bg-[#8b7bff] text-white" };
+    case "chest":
+      return { icon: "▣", tile: "border-[#f2b134] bg-[#f2b134]/10", button: "bg-[#f2b134] text-[#1f1513]" };
+    default:
+      return { icon: "", tile: "bg-surface", button: "bg-accent text-accent-on" };
+  }
+}
+
 /** "Väntar på dig": a horizontal swipe strip of tiles, each with the action its home screen uses. */
 export function WaitingStrip({ items, busyId, onAct, layout = "strip" }: WaitingStripProps) {
   if (items.length === 0) return null;
@@ -54,12 +69,13 @@ export function WaitingStrip({ items, busyId, onAct, layout = "strip" }: Waiting
       <ul className={grid ? "grid grid-cols-3 gap-3" : "flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1"}>
         {items.map((item) => {
           const { title, sub, action, to } = tileText(item);
+          const style = tileStyle(item);
           return (
-            <li key={`${item.type}-${item.id}`} className={`rounded-xl border bg-surface p-2.5 ${grid ? "" : "w-[150px] shrink-0 snap-start"}`}>
+            <li key={`${item.type}-${item.id}`} className={`rounded-xl border p-2.5 ${style.tile} ${grid ? "" : "w-[150px] shrink-0 snap-start"}`}>
               {to ? (
-                <Link to={to} className="block truncate text-sm font-semibold hover:underline">{title}</Link>
+                <Link to={to} className="block truncate text-sm font-semibold hover:underline">{style.icon && <span aria-hidden className="mr-1">{style.icon}</span>}{title}</Link>
               ) : (
-                <p className="truncate text-sm font-semibold">{title}</p>
+                <p className="truncate text-sm font-semibold">{style.icon && <span aria-hidden className="mr-1">{style.icon}</span>}{title}</p>
               )}
               <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-secondary">
                 {sub}{(item.type === "achievement" || item.type === "weekly_goal" || item.type === "starter_step" || item.type === "comeback_gift" || (item.type === "event_gift" && item.gift.type === "diamonds")) && <span className="text-diamonds" aria-hidden><DiamondIcon /></span>}
@@ -68,7 +84,7 @@ export function WaitingStrip({ items, busyId, onAct, layout = "strip" }: Waiting
                 type="button"
                 onClick={() => onAct(item)}
                 disabled={busyId === item.id}
-                className="mt-2 w-full rounded-lg bg-accent py-1 text-xs font-semibold text-accent-on disabled:opacity-60"
+                className={`mt-2 w-full rounded-lg py-1 text-xs font-semibold disabled:opacity-60 ${style.button}`}
               >
                 {busyId === item.id ? "…" : action}
               </button>
