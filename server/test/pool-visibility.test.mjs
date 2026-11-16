@@ -45,15 +45,27 @@ test("availability reports which Rarities still have Copies, as booleans", async
   assert.deepEqual(after.test.rarityInStock, { common: false, rare: false, legendary: false });
 });
 
-test("no player-facing response exposes remaining pool counts", async () => {
+test("availability reports Copies left per Rarity and they drop as Packs are bought", async () => {
+  const player = await setup();
+  const { body } = await t.request("GET", "/api/game/availability");
+  const total = Object.values(body.test.copiesLeft).reduce((a, b) => a + b, 0);
+  assert.equal(total, 4);
+  assert.equal(body.test.copiesLeft.legendary, 1);
+  await buy(player, 5);
+  const after = (await t.request("GET", "/api/game/availability")).body;
+  assert.deepEqual(Object.values(after.test.copiesLeft).filter((n) => n > 0), []);
+});
+
+test("no other player-facing response exposes pool counts or individual Cards left", async () => {
   const player = await setup(TEST_CATALOG);
   assert.equal((await fetch(`${t.baseUrl}/api/game/pool`)).status, 404);
   const text = JSON.stringify([
-    (await t.request("GET", "/api/game/availability")).body,
     (await t.request("GET", "/api/game/collections")).body,
     (await t.request("GET", "/api/game/state", { cookie: player.cookie })).body,
   ]);
-  assert.doesNotMatch(text, /copiesRemaining|totalCopies|remaining/i);
+  assert.doesNotMatch(text, /copiesRemaining|totalCopies|remaining|copiesLeft/i);
+  const availability = JSON.stringify((await t.request("GET", "/api/game/availability")).body);
+  assert.doesNotMatch(availability, /cardId|card_id/i);
 });
 
 test("admin keeps the pool counts", async () => {

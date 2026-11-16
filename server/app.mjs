@@ -819,7 +819,8 @@ app.get("/api/game/trophies", authed, (request, response) => {
 });
 
 // What players may know about the Card pool: whether a Collection is sold out
-// and which Rarities still have Copies. Never how many (admin has /api/admin/pool).
+// and how many Copies of each Rarity (Special included) are left. Never which
+// individual Cards (admin has /api/admin/pool).
 app.get("/api/game/availability", (_request, response) => {
   const rows = db
     .prepare(
@@ -828,12 +829,13 @@ app.get("/api/game/availability", (_request, response) => {
     )
     .all();
   const result = {};
-  for (const collection of collections) result[collection.id] = { soldOut: true, rarityInStock: {} };
+  for (const collection of collections) result[collection.id] = { soldOut: true, rarityInStock: {}, copiesLeft: {} };
   for (const row of rows) {
     const entry = result[row.collection_id];
     if (!entry) continue;
     const inStock = row.remaining > 0;
     entry.rarityInStock[row.rarity] = inStock;
+    entry.copiesLeft[row.rarity] = row.remaining;
     if (inStock) entry.soldOut = false;
   }
   response.json(result);
