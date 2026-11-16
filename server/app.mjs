@@ -2727,6 +2727,50 @@ app.post("/api/admin/topups/:collectionId/dismiss", requireAdmin, (request, resp
   response.json({ ok: true });
 });
 
+// Undo the relaunch migration's Top-up of one Collection. The amounts come from
+// the migration marker, and are taken back per Card exactly as applyTopUp spread
+// them. Copies already pulled by players stay with them: a Card gives back at
+// most what is still in the pool (and at most its bonus_copies), so the Top-up
+// Copies that were pulled remain in play. Runs once per Collection. A later
+// pending Top-up may appear afterwards if the Rare+ share is below the trigger.
+const reversedKey = (collectionId) => `relaunch_topup_reversed:${collectionId}`;
+
+const reverseRelaunchTopUp = db.transaction((collectionId, amounts) => {
+  const removed = { rare: 0, epic: 0 };
+  for (const rarity of TOPUP_RARITIES) {
+    const n = amounts[rarity];
+    if (!n) continue;
+    const rows = db
+      .prepare("SELECT card_id, copies_remaining, bonus_copies FROM card_pool WHERE collection_id = ? AND rarity = ? ORDER BY card_id")
+      .all(collectionId, rarity)
+      .filter((r) => cardById.has(r.card_id));
+    const stmt = db.prepare(
+      "UPDATE card_pool SET total_copies = total_copies - ?, copies_remaining = copies_remaining - ?, bonus_copies = bonus_copies - ? WHERE card_id = ?",
+    );
+    rows.forEach((r, i) => {
+      const share = Math.floor(n / rows.length) + (i < n % rows.length ? 1 : 0);
+      const take = Math.min(share, r.copies_remaining, r.bonus_copies);
+      if (take > 0) { stmt.run(take, take, take, r.card_id); removed[rarity] += take; }
+    });
+  }
+  const result = { at: new Date(clock.now()).toISOString(), requested: amounts, removed };
+  db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)").run(reversedKey(collectionId), JSON.stringify(result));
+  return result;
+});
+
+app.post("/api/admin/topups/:collectionId/reverse-relaunch", requireAdmin, (request, response) => {
+  const { collectionId } = request.params;
+  const amounts = readRelaunchMigrationMarker(db)?.topUps?.find((t) => t.collectionId === collectionId);
+  if (!amounts) { response.status(404).json({ message: "Relanseringen la ingen Top-up på samlingen." }); return; }
+  if (db.prepare("SELECT 1 FROM settings WHERE key = ?").get(reversedKey(collectionId))) {
+    response.status(409).json({ message: "Relanseringens Top-up är redan ångrad för samlingen." });
+    return;
+  }
+  const result = reverseRelaunchTopUp(collectionId, { rare: amounts.rare ?? 0, epic: amounts.epic ?? 0 });
+  refreshTopUps();
+  response.json({ ok: true, ...result });
+});
+
 // ── Event Top-up on start ─────────────────────────────────────────────────────
 // An Event may carry a Top-up of a Collection that fires when the Event starts,
 // aiming for the target share, with no second confirmation. It only fires while
