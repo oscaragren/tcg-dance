@@ -300,6 +300,10 @@ export async function fetchAdminTrades(): Promise<AdminTrade[]> {
   return adminRequest<AdminTrade[]>("/api/admin/trades", { method: "GET" });
 }
 
+export async function reverseAdminTrade(tradeId: string): Promise<{ id: string; status: "reversed" }> {
+  return adminRequest<{ id: string; status: "reversed" }>(`/api/admin/trades/${tradeId}/reverse`, { method: "POST" });
+}
+
 export async function fetchAdminTradePairs(): Promise<AdminTradePair[]> {
   return adminRequest<AdminTradePair[]>("/api/admin/trade-pairs", { method: "GET" });
 }

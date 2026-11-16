@@ -3593,6 +3593,62 @@ app.get("/api/admin/trades", requireAdmin, (_request, response) => {
   );
 });
 
+// Undo an accepted Trade (e.g. the receiver accepted by mistake): every Copy and
+// Diamond goes back to where it came from and the Trade becomes 'reversed'.
+// All-or-nothing: if either side no longer holds what it received (traded or
+// upgraded onward, Diamonds spent) nothing moves and the admin is told what is
+// missing. Weekly goal progress and "ever owned" history are not rolled back.
+app.post("/api/admin/trades/:id/reverse", requireAdmin, (request, response) => {
+  const row = db.prepare("SELECT * FROM trades WHERE id = ?").get(request.params.id);
+  if (!row) { response.status(404).json({ message: "Handeln hittades inte." }); return; }
+  if (row.status !== "accepted") { response.status(400).json({ message: "Bara genomförda byten kan ångras." }); return; }
+
+  const offeredCardIds = JSON.parse(row.offered_card_ids);
+  const requestedCardIds = JSON.parse(row.requested_card_ids);
+  const senderId = row.sender_user_id;
+  const receiverId = row.receiver_user_id;
+
+  try {
+    db.transaction(() => {
+      const stmtCountOwned = db.prepare("SELECT COUNT(*) AS n FROM owned_cards WHERE user_id = ? AND card_id = ?");
+      // The receiver got the offered Copies and must hand them back; the sender got the requested ones.
+      for (const [cardId, need] of tallyIds(offeredCardIds)) {
+        if (stmtCountOwned.get(receiverId, cardId).n < need)
+          throw new Error(`Mottagaren äger inte längre alla kort från bytet (saknar ${cardId}).`);
+      }
+      for (const [cardId, need] of tallyIds(requestedCardIds)) {
+        if (stmtCountOwned.get(senderId, cardId).n < need)
+          throw new Error(`Avsändaren äger inte längre alla kort från bytet (saknar ${cardId}).`);
+      }
+      const diamondsOf = (id) => { ensurePlayerState(id); return db.prepare("SELECT diamonds FROM player_state WHERE user_id = ?").get(id).diamonds; };
+      if (row.offered_diamonds > 0 && diamondsOf(receiverId) < row.offered_diamonds)
+        throw new Error("Mottagaren har inte längre tillräckligt med diamanter.");
+      if (row.requested_diamonds > 0 && diamondsOf(senderId) < row.requested_diamonds)
+        throw new Error("Avsändaren har inte längre tillräckligt med diamanter.");
+
+      const stmtMove = db.prepare("UPDATE owned_cards SET user_id = ? WHERE id = (SELECT id FROM owned_cards WHERE user_id = ? AND card_id = ? LIMIT 1)");
+      for (const cardId of offeredCardIds) stmtMove.run(senderId, receiverId, cardId);
+      for (const cardId of requestedCardIds) stmtMove.run(receiverId, senderId, cardId);
+
+      const stmtDiamonds = db.prepare("UPDATE player_state SET diamonds = diamonds + ? WHERE user_id = ?");
+      if (row.offered_diamonds > 0) {
+        stmtDiamonds.run(-row.offered_diamonds, receiverId); stmtDiamonds.run(row.offered_diamonds, senderId);
+        logGameEvent(receiverId, "trade_reversal", { diamonds: -row.offered_diamonds });
+        logGameEvent(senderId, "trade_reversal", { diamonds: row.offered_diamonds });
+      }
+      if (row.requested_diamonds > 0) {
+        stmtDiamonds.run(-row.requested_diamonds, senderId); stmtDiamonds.run(row.requested_diamonds, receiverId);
+        logGameEvent(senderId, "trade_reversal", { diamonds: -row.requested_diamonds });
+        logGameEvent(receiverId, "trade_reversal", { diamonds: row.requested_diamonds });
+      }
+      db.prepare("UPDATE trades SET status = 'reversed' WHERE id = ?").run(row.id);
+    })();
+    response.json({ id: row.id, status: "reversed" });
+  } catch (err) {
+    response.status(409).json({ message: err.message });
+  }
+});
+
 function pairKey(a, b) {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
 }
