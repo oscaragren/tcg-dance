@@ -177,7 +177,7 @@ export function TradePage({ currentUser }: TradePageProps) {
 
 const STATUS_LABEL: Record<Trade["status"], string> = {
   pending: "", accepted: "Accepterat", rejected: "Avböjt", cancelled: "Avbrutet",
-  countered: "Motbud lämnat",
+  countered: "Motbud lämnat", reversed: "Ångrat av admin",
 };
 
 function TradeCard({ trade, myId, actionLoading, onAccept, onReject, onCancel, onCounter }: {

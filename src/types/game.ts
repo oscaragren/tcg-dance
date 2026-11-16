@@ -208,7 +208,7 @@ export type CollectChestResponse = ChestsMutationResponse & {
   cards: DanceCard[];
 };
 
-export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled" | "countered";
+export type TradeStatus = "pending" | "accepted" | "rejected" | "cancelled" | "countered" | "reversed";
 
 export type Achievement = {
   id: string;
