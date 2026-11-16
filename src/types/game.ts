@@ -73,11 +73,11 @@ export type BuyPackResponse = {
 
 /**
  * What players may know about a Collection's Card pool: sold out or not, and
- * which Rarities still have Copies. Never how many.
+ * how many Copies of each Rarity (Special included) are left. Never which Cards.
  */
 export type CollectionAvailability = Record<
   string,
-  { soldOut: boolean; rarityInStock: Partial<Record<CardRarity, boolean>> }
+  { soldOut: boolean; rarityInStock: Partial<Record<CardRarity, boolean>>; copiesLeft: Partial<Record<CardRarity, number>> }
 >;
 
 export type UpgradeResponse = {

@@ -47,7 +47,7 @@ How many of a Collection's Cards a player owns at least one Copy of, counted out
 _Avoid_: Completion rate, percentage
 
 **Card pool**:
-The finite, game-wide supply of Copies not yet owned by any player; Packs and Upgrades draw from it.
+The finite, game-wide supply of Copies not yet owned by any player; Packs and Upgrades draw from it. Players can see how many Copies of each Rarity (Special included) remain in a Collection's Card pool, but not which individual Cards are left.
 _Avoid_: Stock, deck
 
 **Top-up**:
