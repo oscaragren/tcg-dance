@@ -4,6 +4,7 @@ import { collections } from "../../data/packs";
 import { CollectionScoreboard } from "./CollectionScoreboard";
 import { DiamondIcon } from "./DiamondIcon";
 import { HemBanner, StreakTrack, WeeklyGoalTiles } from "./HemParts";
+import { IncomingTradePill } from "./IncomingTradePill";
 import { WaitingStrip } from "./WaitingStrip";
 
 type DailyItem = Extract<WaitingItem, { type: "daily" }>;
@@ -13,6 +14,8 @@ type HemDesktopProps = {
   gameState: GameState | null;
   daily: DailyItem | null;
   /** "Väntar på dig" items (the Daily claim is shown in the Dagens panel instead). */
+  /** Incoming Trades waiting on the player. */
+  pendingTradeCount: number;
   tiles: WaitingItem[];
   weeklyGoals: WeeklyGoal[];
   starter: StarterResponse | null;
@@ -40,6 +43,7 @@ export function HemDesktop(p: HemDesktopProps) {
       <header className="flex items-baseline justify-between">
         <h1 className="font-display text-2xl font-bold">Hej, {p.username}!</h1>
         <span className="flex items-center gap-1.5 text-lg font-bold text-diamonds">
+          <IncomingTradePill count={p.pendingTradeCount} />
           {p.gameState ? p.gameState.diamonds : "–"} <DiamondIcon />
         </span>
       </header>

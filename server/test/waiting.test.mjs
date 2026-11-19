@@ -49,28 +49,16 @@ test("nothing is waiting once the Daily claim is taken", async () => {
   assert.deepEqual((await waiting()).body.items, []);
 });
 
-test("items come in order: Trades, Chest, Achievements, Daily claim", async () => {
-  await sendTrade(other, player);
+test("items come in order: Chest, Achievements, Daily claim", async () => {
   addChest(player.userId, "ch1", -1000);
   give(player.userId, "r1"); // the only Rare: first Rare and every Rare → two claimable Achievements
   const { body } = await waiting();
-  assert.deepEqual(body.items.map((i) => i.type), ["trade", "chest", "achievement", "achievement", "daily"]);
+  assert.deepEqual(body.items.map((i) => i.type), ["chest", "achievement", "achievement", "daily"]);
 });
 
-test("an incoming Trade carries the trade and its sender", async () => {
-  const sent = await sendTrade(other, player);
-  const [item] = (await waiting()).body.items;
-  assert.equal(item.type, "trade");
-  assert.equal(item.id, sent.body.tradeId);
-  assert.equal(item.trade.sender.id, other.userId);
-  assert.equal(item.trade.offeredDiamonds, 10);
-});
-
-test("outgoing and answered Trades are not waiting on the player", async () => {
-  const sent = await sendTrade(player, other);
+test("an Incoming Trade is never waiting: Väntar på dig holds rewards only", async () => {
+  await sendTrade(other, player);
   assert.equal((await types(player)).includes("trade"), false);
-  await t.request("POST", `/api/trade/${sent.body.tradeId}/reject`, { cookie: other.cookie });
-  assert.equal((await types(other)).includes("trade"), false);
 });
 
 test("a Chest is waiting only when ready", async () => {
@@ -91,17 +79,6 @@ test("a claimed Achievement is no longer waiting", async () => {
     assert.equal(res.status, 200);
   }
   assert.equal((await types()).includes("achievement"), false);
-});
-
-test("Trades are ordered newest first and only the player's own show", async () => {
-  const a = await sendTrade(other, player);
-  clock.advance(1000);
-  const third = await t.registerPlayer();
-  t.db.prepare("UPDATE starter_state SET free_pack = 0, checklist = 0").run();
-  const b = await sendTrade(third, player);
-  const ids = (await waiting()).body.items.filter((i) => i.type === "trade").map((i) => i.id);
-  assert.deepEqual(ids, [b.body.tradeId, a.body.tradeId]);
-  assert.deepEqual((await types(third)), ["daily"]);
 });
 
 test("during an Event the Daily claim shows the Event's amount", async () => {
