@@ -37,9 +37,9 @@ function LandingPage() {
   );
 }
 
-function HomePage({ currentUser }: { currentUser: AuthUser | null }) {
+function HomePage({ currentUser, pendingTradeCount }: { currentUser: AuthUser | null; pendingTradeCount: number }) {
   return currentUser
-    ? <LoggedInHomePage username={currentUser.username} userEmail={currentUser.email} />
+    ? <LoggedInHomePage username={currentUser.username} userEmail={currentUser.email} pendingTradeCount={pendingTradeCount} />
     : <LandingPage />;
 }
 
@@ -208,7 +208,7 @@ export default function App() {
         />
       )}
       <Routes>
-        <Route path="/"         element={<HomePage currentUser={currentUser} />} />
+        <Route path="/"         element={<HomePage currentUser={currentUser} pendingTradeCount={pendingTradeCount} />} />
         <Route path="/samling"      element={<CollectionPage userEmail={currentUser?.email ?? null} />} />
         <Route path="/samling/byte" element={<Navigate to="/samling" replace />} />
         <Route path="/butik"    element={<ButikPage currentUser={currentUser} />} />

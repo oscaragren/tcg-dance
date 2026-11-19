@@ -8,12 +8,13 @@ import { EventSheet } from "../../components/web/EventSheet";
 import { HemDesktop } from "../../components/web/HemDesktop";
 import { HemBanner, StreakTrack, WeeklyGoalTiles } from "../../components/web/HemParts";
 import { ProgressRing } from "../../components/web/ProgressRing";
+import { IncomingTradePill } from "../../components/web/IncomingTradePill";
 import { WaitingStrip } from "../../components/web/WaitingStrip";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
 import type { AnnouncementBanner, CollectionProgress, ComebackSummary, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WhatsNewSheet, WeeklyGoal } from "../../types/game";
 import {
-  acceptTrade, dismissAnnouncementBanner, fetchAnnouncementBanner, claimAchievement, claimDailyDiamonds, claimWeeklyGoal,
+  dismissAnnouncementBanner, fetchAnnouncementBanner, claimAchievement, claimDailyDiamonds, claimWeeklyGoal,
   claimComebackGift, claimEventGift, claimStarterPack, claimStarterStep, collectChest, fetchStarter,
   fetchCollectionProgress, fetchComeback, fetchWhatsNew, markWhatsNewSeen, fetchGameState, markComebackSummarySeen, fetchLeaderboard, fetchWaiting, fetchWeeklyGoals,
 } from "../../utils/gameApi";
@@ -23,10 +24,12 @@ import { useNow } from "../../utils/useNow";
 type LoggedInHomePageProps = {
   username: string;
   userEmail: string;
+  /** Incoming Trades waiting on the player (the same count as the Byte tab badge). */
+  pendingTradeCount: number;
 };
 
 /** Hem, layout B "Kompakt": everything fits on one 390×844 screen. */
-export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps) {
+export function LoggedInHomePage({ username, userEmail, pendingTradeCount }: LoggedInHomePageProps) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [waiting, setWaiting] = useState<WaitingItem[]>([]);
   const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
@@ -77,8 +80,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
     setBusyId(item.id);
     setError(null);
     try {
-      if (item.type === "trade") await acceptTrade(item.id);
-      else if (item.type === "achievement") await claimAchievement(item.id);
+      if (item.type === "achievement") await claimAchievement(item.id);
       else if (item.type === "weekly_goal") await claimWeeklyGoal(item.id);
       else if (item.type === "event_gift") await claimEventGift(item.id);
       else if (item.type === "comeback_gift") await claimComebackGift();
@@ -147,6 +149,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
         {overlays}
         <HemDesktop
           username={username}
+          pendingTradeCount={pendingTradeCount}
           gameState={gameState}
           daily={daily?.type === "daily" ? daily : null}
           tiles={tiles}
@@ -175,6 +178,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       <header className="flex items-baseline justify-between px-4">
         <h1 className="font-display text-xl font-bold">Hej, {username}!</h1>
         <span className="flex items-center gap-1.5 text-lg font-bold text-diamonds">
+          <IncomingTradePill count={pendingTradeCount} />
           {gameState ? gameState.diamonds : "–"} <DiamondIcon />
         </span>
       </header>

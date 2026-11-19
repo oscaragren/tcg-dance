@@ -302,7 +302,6 @@ export type Trophy = {
 
 /** One thing the player can claim or act on right now ("Väntar på dig"). */
 export type WaitingItem =
-  | { type: "trade"; id: string; trade: Trade }
   | { type: "chest"; id: string; chest: Chest }
   | { type: "achievement"; id: string; achievement: Achievement }
   | { type: "weekly_goal"; id: string; goal: WeeklyGoal }

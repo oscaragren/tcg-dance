@@ -72,6 +72,10 @@ _Avoid_: Combine, craft, fuse
 An exchange of Copies and/or Diamonds between two players.
 _Avoid_: Swap, byte (in English text)
 
+**Incoming Trade**:
+A Trade proposed to a player that they have not yet accepted or declined. It is a decision about another player, so it is never mixed in with rewards and is only accepted after seeing exactly what is given and received.
+_Avoid_: Pending trade, trade request
+
 ### Economy
 
 **Diamonds**:
@@ -92,6 +96,10 @@ _Avoid_: Campaign, promo
 
 **Achievement**:
 A Collection milestone that a player can claim for a Diamond reward. Every Collection uses the same table (first Rare/Epic/Legendary, every Card of a Rarity, unique-Card counts, Full Collection), with Special cards left out.
+
+**Väntar på dig**:
+The strip on Hem of rewards ready to collect (Chests, Achievements, Daily claim and so on). Only rewards belong here: nothing that involves another player, so an Incoming Trade never appears in it.
+_Avoid_: Inbox, to-do list
 
 **Daily claim**:
 The once-per-day tap that collects a player's daily Diamonds; the day resets at midnight Swedish time.

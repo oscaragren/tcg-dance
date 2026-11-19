@@ -2469,16 +2469,6 @@ app.get("/api/game/waiting", authed, (request, response) => {
   const starter = buildStarterResponse(userId);
   if (starter.freePack) items.push({ type: "starter_pack", id: "starter-pack", ...starter.freePack });
 
-  const incoming = db.prepare(`
-    SELECT t.*, su.username AS sender_username, ru.username AS receiver_username
-    FROM trades t
-    JOIN users su ON su.id = t.sender_user_id
-    JOIN users ru ON ru.id = t.receiver_user_id
-    WHERE t.receiver_user_id = ? AND t.status = 'pending' AND t.created_at >= ?
-    ORDER BY t.created_at DESC
-  `).all(userId, tradeCutoffIso());
-  for (const row of incoming) items.push({ type: "trade", id: row.id, trade: buildTrade(row) });
-
   for (const chest of buildChestsResponse(userId).chests) {
     if (chest.ready) items.push({ type: "chest", id: chest.id, chest });
   }

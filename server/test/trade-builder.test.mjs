@@ -140,11 +140,10 @@ test("accepting a Trade whose Copy is gone fails and moves nothing", async () =>
   assert.equal((await trades(bob))[0].status, "pending");
 });
 
-test("an expired Trade can't be cancelled and leaves the waiting strip", async () => {
+test("an expired Trade can't be cancelled and leaves the Incoming Trade count", async () => {
   const { alice, bob, id } = await pendingPair();
-  const waiting = async () => (await t.request("GET", "/api/game/waiting", { cookie: bob.cookie })).body;
-  assert.equal(JSON.stringify(await waiting()).includes(id), true);
+  assert.equal(await incomingCount(bob), 1);
   t.clock.advance(8 * DAY);
-  assert.equal(JSON.stringify(await waiting()).includes(id), false);
+  assert.equal(await incomingCount(bob), 0);
   assert.equal((await t.request("POST", `/api/trade/${id}/cancel`, { cookie: alice.cookie })).status, 400);
 });
