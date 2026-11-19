@@ -9,6 +9,7 @@ import { HemDesktop } from "../../components/web/HemDesktop";
 import { HemBanner, StreakTrack, WeeklyGoalTiles } from "../../components/web/HemParts";
 import { ProgressRing } from "../../components/web/ProgressRing";
 import { WaitingStrip } from "../../components/web/WaitingStrip";
+import { HeaderBadge, IncomingTradeBlock, PrototypeSwitcher, useProtoTrades } from "../../components/web/IncomingTradePrototype";
 import type { DanceCard } from "../../data/cards";
 import { collections } from "../../data/packs";
 import type { AnnouncementBanner, CollectionProgress, ComebackSummary, GameState, LeaderboardEntry, StarterResponse, WaitingItem, WhatsNewSheet, WeeklyGoal } from "../../types/game";
@@ -42,6 +43,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
   const [whatsNew, setWhatsNew] = useState<WhatsNewSheet | null>(null);
   const [banner, setBanner] = useState<AnnouncementBanner | null>(null);
   const now = useNow(1000);
+  const proto = useProtoTrades(waiting); // PROTOTYPE
   const desktop = useIsDesktop();
 
   const reload = useCallback(async () => {
@@ -175,6 +177,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
       <header className="flex items-baseline justify-between px-4">
         <h1 className="font-display text-xl font-bold">Hej, {username}!</h1>
         <span className="flex items-center gap-1.5 text-lg font-bold text-diamonds">
+          <HeaderBadge variant={proto.variant} trades={proto.trades} />
           {gameState ? gameState.diamonds : "–"} <DiamondIcon />
         </span>
       </header>
@@ -194,7 +197,9 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
 
       <HemBanner banner={banner} onDismiss={dismissBanner} className="mx-4" />
 
-      <WaitingStrip items={tiles} busyId={busyId} onAct={(item) => void handleAct(item)} />
+      <IncomingTradeBlock variant={proto.variant} trades={proto.trades} />
+
+      <WaitingStrip items={tiles.filter((i) => i.type !== "trade")} busyId={busyId} onAct={(item) => void handleAct(item)} />
 
       {/* Daily claim: one slim row, only on Hem. */}
       <div className="mx-4 flex items-center justify-between gap-3 rounded-xl border bg-surface px-3 py-2">
@@ -252,6 +257,7 @@ export function LoggedInHomePage({ username, userEmail }: LoggedInHomePageProps)
         {me ? <>Du är <span className="font-semibold">#{me.rank}</span> · {me.points} p</> : "Topplista"}
         {top && <span className="text-secondary"> · topp: {top}</span>}
       </Link>
+      <PrototypeSwitcher variant={proto.variant} />
     </main>
   );
 }
